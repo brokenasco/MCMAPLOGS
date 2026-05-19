@@ -8,6 +8,14 @@ export function AppProvider({ children }) {
   const [beltUser, setBeltUser] = React.useState(currentBeltUser);
   const [maiUser, setMaiUser] = React.useState(currentMai);
   const [logs, setLogs] = React.useState(trainingLogs);
+  const [subscription, setSubscription] = React.useState({
+    status: 'trial',
+    planName: 'MCMAP Logbook Monthly',
+    monthlyPrice: 2,
+    trialStartedAt: new Date().toISOString().slice(0, 10),
+    trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
+    paymentMethod: null
+  });
 
   const beltLogs = logs.filter((log) => log.marine === beltUser.name);
   const pendingLogs = logs.filter((log) => log.status === 'Pending');
@@ -83,6 +91,25 @@ export function AppProvider({ children }) {
     return updatedBeltUser;
   };
 
+  const startPaidSubscription = () => {
+    setSubscription((current) => ({
+      ...current,
+      status: 'active',
+      paymentMethod: 'Mock card ending in 4242'
+    }));
+  };
+
+  const resetTrial = () => {
+    setSubscription({
+      status: 'trial',
+      planName: 'MCMAP Logbook Monthly',
+      monthlyPrice: 2,
+      trialStartedAt: new Date().toISOString().slice(0, 10),
+      trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
+      paymentMethod: null
+    });
+  };
+
   const value = {
     activeRole,
     setActiveRole,
@@ -92,13 +119,22 @@ export function AppProvider({ children }) {
     beltLogs,
     pendingLogs,
     verifiedLogs,
+    subscription,
     submitLog,
     verifyLog,
     returnLog,
-    createMockAccount
+    createMockAccount,
+    startPaidSubscription,
+    resetTrial
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
 }
 
 export function useApp() {

@@ -45,7 +45,7 @@ export default function SignUp() {
     <PageShell
       eyebrow="Create account"
       title="Sign up"
-      description="Choose whether this mock account is for a Belt User submitting hours or an MAI verifying and signing logbooks."
+      description="Choose whether this mock account is for a Belt User submitting hours or an MAI verifying and signing logbooks. New accounts include a 1-month free trial."
     >
       <div className="mx-auto max-w-3xl rounded-md border border-ink/10 bg-white p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
@@ -96,6 +96,10 @@ export default function SignUp() {
               Belt Users will enter the verifying MAI number when submitting each training log.
             </div>
           )}
+
+          <div className="rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
+            Subscription: first month free, then $2 per month. Billing is mocked in this front-end version.
+          </div>
 
           <button
             type="submit"

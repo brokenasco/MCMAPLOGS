@@ -12,6 +12,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - MAI dashboard
 - Pending logs page
 - Verified logbook page
+- Subscription page with 1-month free trial and $2/month mock plan
 - Mock Belt User and MAI data
 - Supabase client setup placeholder
 
@@ -44,3 +45,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 ## Supabase notes
 
 The app currently uses mock data only. When you are ready to connect real accounts and logs, add your Supabase URL and anon key to `.env`, then replace the mock data calls in `src/data/mockData.js` with Supabase queries.
+
+## Billing notes
+
+The subscription flow is front-end only for now. It shows a 1-month free trial and a $2/month plan, but it does not charge real cards. Use a payment provider such as Stripe plus backend subscription checks before accepting real payments.

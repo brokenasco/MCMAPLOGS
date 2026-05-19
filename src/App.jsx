@@ -9,6 +9,7 @@ import PendingLogs from './pages/PendingLogs.jsx';
 import Profile from './pages/Profile.jsx';
 import SignUp from './pages/SignUp.jsx';
 import SubmitHours from './pages/SubmitHours.jsx';
+import Subscription from './pages/Subscription.jsx';
 import VerifiedLogbook from './pages/VerifiedLogbook.jsx';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="mai/pending" element={<PendingLogs />} />
         <Route path="logbook/verified" element={<VerifiedLogbook />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="subscription" element={<Subscription />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

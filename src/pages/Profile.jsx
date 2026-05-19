@@ -5,7 +5,7 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Profile() {
-  const { activeRole, setActiveRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs } = useApp();
+  const { activeRole, setActiveRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, subscription } = useApp();
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
 
@@ -26,6 +26,10 @@ export default function Profile() {
             <Detail label="Unit" value={user.unit || maiUser.unit} />
             <Detail label="Belt level" value={beltUser.beltLevel} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
+            <Detail
+              label="Subscription"
+              value={subscription.status === 'trial' ? `Trial until ${subscription.trialEndsAt}` : '$2/month active'}
+            />
           </dl>
         </section>
 

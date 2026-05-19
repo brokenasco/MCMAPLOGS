@@ -8,13 +8,15 @@ const roleLinks = {
     { label: 'Dashboard', to: '/belt/dashboard' },
     { label: 'Submit Hours', to: '/belt/submit' },
     { label: 'Logbook', to: '/logbook/verified' },
-    { label: 'Profile', to: '/profile' }
+    { label: 'Profile', to: '/profile' },
+    { label: 'Billing', to: '/subscription' }
   ],
   MAI: [
     { label: 'Dashboard', to: '/mai/dashboard' },
     { label: 'Pending Logs', to: '/mai/pending' },
     { label: 'Logbook', to: '/logbook/verified' },
-    { label: 'Profile', to: '/profile' }
+    { label: 'Profile', to: '/profile' },
+    { label: 'Billing', to: '/subscription' }
   ]
 };
 
