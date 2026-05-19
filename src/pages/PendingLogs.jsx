@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, MessageSquare, XCircle } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
@@ -10,6 +10,9 @@ export default function PendingLogs() {
   const { maiUser, pendingLogs, verifyLog, returnLog, setActiveRole } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [confirmationLog, setConfirmationLog] = React.useState(null);
+  const [returningLog, setReturningLog] = React.useState(null);
+  const [returnReason, setReturnReason] = React.useState('Missing detail');
+  const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
 
   React.useEffect(() => {
     setActiveRole('MAI');
@@ -23,6 +26,12 @@ export default function PendingLogs() {
   const handleVerify = () => {
     verifyLog(confirmationLog.id);
     setConfirmationLog(null);
+    setSelectedLog(null);
+  };
+
+  const handleReturn = () => {
+    returnLog(returningLog.id, returnReason, returnMessage);
+    setReturningLog(null);
     setSelectedLog(null);
   };
 
@@ -53,6 +62,53 @@ export default function PendingLogs() {
               type="button"
               onClick={() => setConfirmationLog(null)}
               className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-white"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {returningLog ? (
+        <div className="mb-6 rounded-md border border-clay/20 bg-white p-5 shadow-sm">
+          <p className="text-sm font-bold uppercase tracking-wide text-clay">Return for correction</p>
+          <h2 className="mt-2 text-2xl font-bold">{returningLog.marine}</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-ink">Reason</span>
+              <select
+                value={returnReason}
+                onChange={(event) => setReturnReason(event.target.value)}
+                className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-white px-3 text-sm"
+              >
+                <option>Missing detail</option>
+                <option>Incorrect hours</option>
+                <option>Wrong MAI number</option>
+                <option>Needs correction</option>
+              </select>
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-sm font-bold text-ink">Message to Belt User</span>
+              <textarea
+                value={returnMessage}
+                onChange={(event) => setReturnMessage(event.target.value)}
+                className="focus-ring mt-2 min-h-24 w-full rounded-md border border-ink/15 px-3 py-3 text-sm"
+              />
+            </label>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleReturn}
+              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white"
+            >
+              <MessageSquare size={17} aria-hidden="true" />
+              Send correction message
+            </button>
+            <button
+              type="button"
+              onClick={() => setReturningLog(null)}
+              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
             >
               Cancel
             </button>
@@ -92,11 +148,14 @@ export default function PendingLogs() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => returnLog(log.id)}
+                    onClick={() => {
+                      setReturningLog(log);
+                      setSelectedLog(log);
+                    }}
                     className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-white"
                   >
                     <XCircle size={17} aria-hidden="true" />
-                    Return
+                    Return with note
                   </button>
                   <button
                     type="button"

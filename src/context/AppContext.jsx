@@ -20,6 +20,7 @@ export function AppProvider({ children }) {
   const beltLogs = logs.filter((log) => log.marine === beltUser.name);
   const pendingLogs = logs.filter((log) => log.status === 'Pending');
   const verifiedLogs = logs.filter((log) => log.status === 'Verified');
+  const returnedLogs = logs.filter((log) => log.status === 'Returned');
 
   const submitLog = (log) => {
     const newLog = {
@@ -50,7 +51,7 @@ export function AppProvider({ children }) {
     );
   };
 
-  const returnLog = (logId) => {
+  const returnLog = (logId, reason = 'Needs correction', message = 'Please add more detail and resubmit this log.') => {
     setLogs((currentLogs) =>
       currentLogs.map((log) =>
         log.id === logId
@@ -59,7 +60,29 @@ export function AppProvider({ children }) {
               status: 'Returned',
               returnedAt: new Date().toISOString().slice(0, 10),
               returnedBy: maiUser.name,
-              returnedByMaiNumber: maiUser.maiNumber
+              returnedByMaiNumber: maiUser.maiNumber,
+              returnReason: reason,
+              returnMessage: message
+            }
+          : log
+      )
+    );
+  };
+
+  const resubmitLog = (logId, updates) => {
+    setLogs((currentLogs) =>
+      currentLogs.map((log) =>
+        log.id === logId
+          ? {
+              ...log,
+              ...updates,
+              status: 'Pending',
+              submittedAt: new Date().toISOString().slice(0, 10),
+              returnedAt: null,
+              returnedBy: null,
+              returnedByMaiNumber: null,
+              returnReason: null,
+              returnMessage: null
             }
           : log
       )
@@ -119,10 +142,12 @@ export function AppProvider({ children }) {
     beltLogs,
     pendingLogs,
     verifiedLogs,
+    returnedLogs,
     subscription,
     submitLog,
     verifyLog,
     returnLog,
+    resubmitLog,
     createMockAccount,
     startPaidSubscription,
     resetTrial

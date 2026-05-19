@@ -1,5 +1,6 @@
 import React from 'react';
-import { Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Send } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { beltLevels } from '../data/mockData.js';
@@ -12,11 +13,26 @@ const initialForm = {
   description: ''
 };
 
+const steps = [
+  'When did you train?',
+  'How many hours?',
+  'What belt level?',
+  'What did you do?',
+  'Who verifies it?'
+];
+
+const sampleDescriptions = [
+  '2 hours Green Belt sustainment: counters to strikes, warrior study, and supervised practical application.',
+  '1.5 hours Tan Belt fundamentals: basic warrior stance, movement drills, and break falls.',
+  '3 hours Brown Belt sustainment: ground fighting, responsible use of force review, and practical evaluation.'
+];
+
 export default function SubmitHours() {
   const { submitLog, setActiveRole } = useApp();
+  const [step, setStep] = React.useState(0);
   const [form, setForm] = React.useState(initialForm);
   const [errors, setErrors] = React.useState({});
-  const [confirmation, setConfirmation] = React.useState('');
+  const [submittedLog, setSubmittedLog] = React.useState(null);
 
   React.useEffect(() => {
     setActiveRole('Belt User');
@@ -24,30 +40,34 @@ export default function SubmitHours() {
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
-    setErrors((current) => ({ ...current, [event.target.name]: '' }));
-    setConfirmation('');
+    setErrors({});
   };
 
-  const validate = () => {
+  const validateStep = (targetStep = step) => {
     const nextErrors = {};
     const hours = Number(form.hours);
 
-    if (!form.date) nextErrors.date = 'Choose a training date.';
-    if (!hours || hours <= 0) nextErrors.hours = 'Enter hours greater than zero.';
-    if (!form.beltLevel) nextErrors.beltLevel = 'Choose the belt level trained.';
-    if (!/^MAI-\d{4}$/i.test(form.maiNumber.trim())) nextErrors.maiNumber = 'Use the format MAI-1842.';
-    if (!form.description.trim()) nextErrors.description = 'Add a short training description.';
+    if (targetStep === 0 && !form.date) nextErrors.date = 'Choose a training date.';
+    if (targetStep === 1 && (!hours || hours <= 0)) nextErrors.hours = 'Enter hours greater than zero.';
+    if (targetStep === 2 && !form.beltLevel) nextErrors.beltLevel = 'Choose the belt level trained.';
+    if (targetStep === 3 && !form.description.trim()) nextErrors.description = 'Add a short training description.';
+    if (targetStep === 4 && !/^MAI-\d{4}$/i.test(form.maiNumber.trim())) nextErrors.maiNumber = 'Use the format MAI-1842.';
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const nextStep = () => {
+    if (validateStep()) {
+      setStep((current) => Math.min(current + 1, steps.length - 1));
+    }
+  };
+
+  const submit = (event) => {
     event.preventDefault();
 
-    if (!validate()) {
-      return;
-    }
+    const allValid = steps.every((_, index) => validateStep(index));
+    if (!allValid) return;
 
     const savedLog = submitLog({
       date: form.date,
@@ -57,82 +77,168 @@ export default function SubmitHours() {
       maiNumber: form.maiNumber.trim().toUpperCase()
     });
 
-    setConfirmation(`Your log was sent to ${savedLog.maiNumber} for verification.`);
+    setSubmittedLog(savedLog);
     setForm(initialForm);
+    setStep(0);
   };
 
   return (
     <PageShell
       eyebrow="Belt User"
       title="Submit MCMAP Hours"
-      description="Ask your instructor for their assigned MAI number, then submit the training log for review."
+      description="Answer one question at a time. Ask your instructor for their assigned MAI number before submitting."
     >
-      <form
-        className="mx-auto grid max-w-3xl gap-5 rounded-md border border-ink/10 bg-white p-6 shadow-sm sm:grid-cols-2"
-        onSubmit={handleSubmit}
-      >
-        {confirmation ? (
-          <div className="rounded-md border border-olive/20 bg-olive/10 p-4 text-sm font-semibold text-olive sm:col-span-2">
-            {confirmation}
+      {submittedLog ? (
+        <section className="mx-auto max-w-3xl rounded-md border border-olive/20 bg-white p-6 shadow-sm">
+          <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-olive">
+            <CheckCircle2 size={18} aria-hidden="true" />
+            Submitted
+          </p>
+          <h2 className="mt-3 text-2xl font-bold text-ink">Submitted to {submittedLog.maiNumber}</h2>
+          <p className="mt-2 text-sm leading-6 text-ink/70">
+            Status: Pending. You will see it in your logbook once an MAI signs and verifies it.
+          </p>
+          <dl className="mt-5 grid gap-4 sm:grid-cols-3">
+            <Summary label="Date" value={new Date(`${submittedLog.date}T12:00:00`).toLocaleDateString()} />
+            <Summary label="Hours" value={submittedLog.hours} />
+            <Summary label="Belt" value={submittedLog.beltLevel} />
+          </dl>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setSubmittedLog(null)}
+              className="focus-ring inline-flex h-10 items-center rounded-md bg-olive px-4 text-sm font-bold text-white"
+            >
+              Submit another log
+            </button>
+            <Link
+              to="/belt/dashboard"
+              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+            >
+              Back to dashboard
+            </Link>
           </div>
-        ) : null}
+        </section>
+      ) : (
+        <form className="mx-auto max-w-3xl rounded-md border border-ink/10 bg-white p-5 shadow-sm sm:p-6" onSubmit={submit}>
+          <div className="mb-5">
+            <p className="text-sm font-bold text-clay">
+              Step {step + 1} of {steps.length}
+            </p>
+            <h2 className="mt-1 text-2xl font-bold text-ink">{steps[step]}</h2>
+          </div>
 
-        <Field label="Date" name="date" type="date" value={form.date} onChange={updateField} error={errors.date} />
-        <Field
-          label="Hours"
-          name="hours"
-          type="number"
-          min="0.25"
-          step="0.25"
-          value={form.hours}
-          onChange={updateField}
-          placeholder="2"
-          error={errors.hours}
-        />
-        <label className="block">
-          <span className="text-sm font-bold text-ink">Belt level</span>
-          <select
-            name="beltLevel"
-            value={form.beltLevel}
-            onChange={updateField}
-            className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-white px-3 text-sm"
-          >
-            {beltLevels.map((level) => (
-              <option key={level}>{level}</option>
-            ))}
-          </select>
-          <ErrorText message={errors.beltLevel} />
-        </label>
-        <Field
-          label="Verifying MAI number"
-          name="maiNumber"
-          value={form.maiNumber}
-          onChange={updateField}
-          placeholder="MAI-1842"
-          error={errors.maiNumber}
-          hint="Ask your instructor for their assigned MAI number."
-        />
-        <label className="block sm:col-span-2">
-          <span className="text-sm font-bold text-ink">Training description</span>
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={updateField}
-            className="focus-ring mt-2 min-h-32 w-full rounded-md border border-ink/15 px-3 py-3 text-sm"
-            placeholder="Describe techniques, sustainment training, discussion topics, or practical application."
-          />
-          <ErrorText message={errors.description} />
-        </label>
-        <div className="sm:col-span-2">
-          <button
-            type="submit"
-            className="focus-ring inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 sm:w-auto"
-          >
-            <Send size={17} aria-hidden="true" />
-            Submit log for verification
-          </button>
-        </div>
-      </form>
+          <div className="rounded-md bg-field p-4">
+            {step === 0 ? (
+              <Field label="Training date" name="date" type="date" value={form.date} onChange={updateField} error={errors.date} />
+            ) : null}
+
+            {step === 1 ? (
+              <Field
+                label="Training hours"
+                name="hours"
+                type="number"
+                min="0.25"
+                step="0.25"
+                value={form.hours}
+                onChange={updateField}
+                placeholder="2"
+                error={errors.hours}
+              />
+            ) : null}
+
+            {step === 2 ? (
+              <label className="block">
+                <span className="text-sm font-bold text-ink">Belt level trained</span>
+                <select
+                  name="beltLevel"
+                  value={form.beltLevel}
+                  onChange={updateField}
+                  className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-white px-3 text-base"
+                >
+                  {beltLevels.map((level) => (
+                    <option key={level}>{level}</option>
+                  ))}
+                </select>
+                <ErrorText message={errors.beltLevel} />
+              </label>
+            ) : null}
+
+            {step === 3 ? (
+              <div>
+                <label className="block">
+                  <span className="text-sm font-bold text-ink">Training description</span>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={updateField}
+                    className="focus-ring mt-2 min-h-36 w-full rounded-md border border-ink/15 px-3 py-3 text-base"
+                    placeholder="Example: 2 hours Green Belt sustainment: counters to strikes, warrior study, supervised practical application."
+                  />
+                  <ErrorText message={errors.description} />
+                </label>
+                <div className="mt-4">
+                  <p className="text-sm font-bold text-ink">Example entries</p>
+                  <div className="mt-2 grid gap-2">
+                    {sampleDescriptions.map((sample) => (
+                      <button
+                        key={sample}
+                        type="button"
+                        onClick={() => setForm((current) => ({ ...current, description: sample }))}
+                        className="focus-ring rounded-md border border-ink/10 bg-white p-3 text-left text-sm leading-6 text-ink/70 hover:border-olive/40"
+                      >
+                        {sample}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {step === 4 ? (
+              <Field
+                label="Verifying MAI number"
+                name="maiNumber"
+                value={form.maiNumber}
+                onChange={updateField}
+                placeholder="MAI-1842"
+                error={errors.maiNumber}
+                hint="This is the number assigned to your MAI account. Belt Users enter it so their log goes to the right instructor."
+              />
+            ) : null}
+          </div>
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={() => setStep((current) => Math.max(current - 1, 0))}
+              disabled={step === 0}
+              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ArrowLeft size={17} aria-hidden="true" />
+              Back
+            </button>
+            {step === steps.length - 1 ? (
+              <button
+                type="submit"
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+              >
+                <Send size={17} aria-hidden="true" />
+                Submit for verification
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+              >
+                Continue
+                <ArrowRight size={17} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </form>
+      )}
     </PageShell>
   );
 }
@@ -141,13 +247,22 @@ function Field({ label, error, hint, ...props }) {
   return (
     <label className="block">
       <span className="text-sm font-bold text-ink">{label}</span>
-      <input className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 px-3 text-sm" {...props} />
-      {hint ? <p className="mt-1 text-xs text-ink/55">{hint}</p> : null}
+      <input className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 px-3 text-base" {...props} />
+      {hint ? <p className="mt-2 text-sm leading-6 text-ink/60">{hint}</p> : null}
       <ErrorText message={error} />
     </label>
   );
 }
 
 function ErrorText({ message }) {
-  return message ? <p className="mt-1 text-xs font-semibold text-clay">{message}</p> : null;
+  return message ? <p className="mt-2 text-sm font-semibold text-clay">{message}</p> : null;
+}
+
+function Summary({ label, value }) {
+  return (
+    <div>
+      <dt className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold text-ink">{value}</dd>
+    </div>
+  );
 }

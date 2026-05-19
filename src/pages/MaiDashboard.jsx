@@ -9,7 +9,10 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function MaiDashboard() {
-  const { maiUser, pendingLogs, verifiedLogs, setActiveRole } = useApp();
+  const { maiUser, pendingLogs, verifiedLogs, returnedLogs, setActiveRole } = useApp();
+  const oldestPending = pendingLogs
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   React.useEffect(() => {
     setActiveRole('MAI');
@@ -22,9 +25,10 @@ export default function MaiDashboard() {
       description={`Unit: ${maiUser.unit}. Assigned MAI number: ${maiUser.maiNumber}.`}
       actions={<RoleBadge role="MAI" />}
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Pending logs" value={pendingLogs.length} detail="Need review" />
         <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
+        <StatCard label="Returned logs" value={returnedLogs.length} detail="Need follow-up" />
         <StatCard label="Assigned MAI number" value={maiUser.maiNumber} detail="Used to verify logbooks" />
       </div>
 
@@ -45,6 +49,11 @@ export default function MaiDashboard() {
       </div>
 
       <div className="mt-8">
+        {oldestPending ? (
+          <div className="mb-4 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
+            Oldest pending log: {oldestPending.marine}, submitted for {new Date(`${oldestPending.date}T12:00:00`).toLocaleDateString()}.
+          </div>
+        ) : null}
         {pendingLogs.length ? (
           <LogTable logs={pendingLogs} />
         ) : (

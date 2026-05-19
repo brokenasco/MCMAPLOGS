@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
@@ -10,8 +10,10 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, setActiveRole } = useApp();
+  const { beltUser, beltLogs, resubmitLog, setActiveRole } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
+  const [editingLog, setEditingLog] = React.useState(null);
+  const [correctionText, setCorrectionText] = React.useState('');
   const totalHours = beltLogs.reduce((total, log) => total + Number(log.hours), 0);
   const verifiedHours = beltLogs
     .filter((log) => log.status === 'Verified')
@@ -19,6 +21,8 @@ export default function BeltDashboard() {
   const pendingHours = beltLogs
     .filter((log) => log.status === 'Pending')
     .reduce((total, log) => total + Number(log.hours), 0);
+  const returnedCount = beltLogs.filter((log) => log.status === 'Returned').length;
+  const progressPercent = Math.min(100, Math.round(((verifiedHours || beltUser.verifiedHours) / 40) * 100));
 
   React.useEffect(() => {
     setActiveRole('Belt User');
@@ -34,14 +38,20 @@ export default function BeltDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Total hours submitted" value={totalHours || beltUser.totalHours} detail={beltUser.beltLevel} />
         <StatCard label="Verified hours" value={verifiedHours || beltUser.verifiedHours} detail="Approved by an MAI" />
-        <StatCard label="Pending hours" value={pendingHours || beltUser.pendingHours} detail="Waiting for verification" />
+        <StatCard label="Returned logs" value={returnedCount} detail="Need correction" />
       </div>
 
       <div className="mt-8 rounded-md border border-ink/10 bg-white p-5 shadow-sm">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-xl font-bold">Next goal</h2>
-            <p className="mt-1 text-sm text-ink/65">{beltUser.nextGoal}</p>
+            <p className="mt-1 text-sm text-ink/65">
+              {beltUser.nextGoal}. Pending hours: {pendingHours || beltUser.pendingHours}.
+            </p>
+            <div className="mt-4 h-3 overflow-hidden rounded-full bg-field">
+              <div className="h-full rounded-full bg-olive" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <p className="mt-2 text-xs font-semibold text-ink/55">{progressPercent}% toward the 40-hour demo goal</p>
           </div>
           <Link
             to="/belt/submit"
@@ -52,6 +62,74 @@ export default function BeltDashboard() {
           </Link>
         </div>
       </div>
+
+      {beltLogs.some((log) => log.status === 'Returned') ? (
+        <section className="mt-8 rounded-md border border-clay/20 bg-clay/10 p-5">
+          <h2 className="text-xl font-bold text-ink">Returned logs need correction</h2>
+          <p className="mt-1 text-sm text-ink/65">Fix the note from your MAI and resubmit the log for review.</p>
+          <div className="mt-4 grid gap-3">
+            {beltLogs
+              .filter((log) => log.status === 'Returned')
+              .map((log) => (
+                <article key={log.id} className="rounded-md bg-white p-4 shadow-sm">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="font-bold">{new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {log.hours} hours</p>
+                      <p className="mt-1 text-sm font-semibold text-clay">{log.returnReason}</p>
+                      <p className="mt-1 text-sm leading-6 text-ink/65">{log.returnMessage}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLog(log);
+                        setCorrectionText(log.description);
+                      }}
+                      className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white"
+                    >
+                      <RotateCcw size={17} aria-hidden="true" />
+                      Correct
+                    </button>
+                  </div>
+                </article>
+              ))}
+          </div>
+        </section>
+      ) : null}
+
+      {editingLog ? (
+        <section className="mt-8 rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+          <h2 className="text-xl font-bold">Correct returned log</h2>
+          <p className="mt-1 text-sm text-ink/65">{editingLog.returnMessage}</p>
+          <label className="mt-4 block">
+            <span className="text-sm font-bold text-ink">Updated training description</span>
+            <textarea
+              value={correctionText}
+              onChange={(event) => setCorrectionText(event.target.value)}
+              className="focus-ring mt-2 min-h-28 w-full rounded-md border border-ink/15 px-3 py-3 text-sm"
+            />
+          </label>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                resubmitLog(editingLog.id, { description: correctionText });
+                setEditingLog(null);
+                setCorrectionText('');
+              }}
+              className="focus-ring inline-flex h-10 items-center rounded-md bg-olive px-4 text-sm font-bold text-white"
+            >
+              Resubmit log
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingLog(null)}
+              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+            >
+              Cancel
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_380px]">
         <div>

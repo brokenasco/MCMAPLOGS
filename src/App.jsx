@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout.jsx';
 import BeltDashboard from './pages/BeltDashboard.jsx';
+import Help from './pages/Help.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import MaiDashboard from './pages/MaiDashboard.jsx';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="logbook/verified" element={<VerifiedLogbook />} />
         <Route path="profile" element={<Profile />} />
         <Route path="subscription" element={<Subscription />} />
+        <Route path="help" element={<Help />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

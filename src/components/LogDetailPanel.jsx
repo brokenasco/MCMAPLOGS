@@ -38,6 +38,15 @@ export default function LogDetailPanel({ log, onClose }) {
         <p className="text-sm font-bold text-ink">Training description</p>
         <p className="mt-2 text-sm leading-6 text-ink/70">{log.description}</p>
       </div>
+
+      {log.status === 'Returned' ? (
+        <div className="mt-4 rounded-md border border-clay/20 bg-clay/10 p-4">
+          <p className="text-sm font-bold text-clay">{log.returnReason || 'Returned for correction'}</p>
+          <p className="mt-2 text-sm leading-6 text-ink/70">
+            {log.returnMessage || 'Review the returned log, correct the details, and resubmit it.'}
+          </p>
+        </div>
+      ) : null}
     </aside>
   );
 }

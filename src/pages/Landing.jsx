@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ClipboardCheck, Dumbbell, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ClipboardCheck, Dumbbell, ShieldCheck, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -36,17 +36,17 @@ export default function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/signup"
+                to="/belt/submit"
                 className="focus-ring inline-flex h-11 items-center gap-2 rounded-md bg-olive px-5 text-sm font-bold text-white shadow-sm hover:bg-olive/90"
               >
-                Create mock account
+                I need to submit training hours
                 <ArrowRight size={17} aria-hidden="true" />
               </Link>
               <Link
-                to="/belt/dashboard"
+                to="/mai/pending"
                 className="focus-ring inline-flex h-11 items-center rounded-md border border-ink/15 bg-white px-5 text-sm font-bold text-ink shadow-sm hover:border-olive/40"
               >
-                View demo dashboard
+                I&apos;m an MAI verifying logs
               </Link>
             </div>
           </div>
@@ -83,6 +83,27 @@ export default function Landing() {
             </article>
           );
         })}
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-clay">Not sure what to do?</p>
+              <h2 className="mt-1 text-2xl font-bold">Start with the job in front of you.</h2>
+              <p className="mt-2 text-sm leading-6 text-ink/65">
+                Belt Users submit hours. MAIs sign or return logs. The app keeps the record organized.
+              </p>
+            </div>
+            <Link
+              to="/help"
+              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-field px-4 text-sm font-bold text-ink"
+            >
+              <UserCheck size={17} aria-hidden="true" />
+              Open help page
+            </Link>
+          </div>
+        </div>
       </section>
     </>
   );

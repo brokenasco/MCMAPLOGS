@@ -90,6 +90,22 @@ export const trainingLogs = [
     maiNumber: 'MAI-1842',
     submittedAt: '2026-04-29',
     status: 'Pending'
+  },
+  {
+    id: 7,
+    marine: 'LCpl Jordan Hayes',
+    date: '2026-04-25',
+    hours: 1,
+    beltLevel: 'Green Belt',
+    description: 'MCMAP training.',
+    maiNumber: 'MAI-1842',
+    submittedAt: '2026-04-25',
+    returnedAt: '2026-04-26',
+    returnedBy: 'Sgt Avery Morgan',
+    returnedByMaiNumber: 'MAI-1842',
+    returnReason: 'Needs correction',
+    returnMessage: 'Add the techniques trained and who supervised the period before resubmitting.',
+    status: 'Returned'
   }
 ];
 
