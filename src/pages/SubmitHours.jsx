@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Save, Search, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
@@ -36,11 +36,13 @@ const beltSwatches = {
 };
 
 export default function SubmitHours() {
-  const { submitLog, setActiveRole } = useApp();
+  const { submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft, setActiveRole } = useApp();
   const [step, setStep] = React.useState(0);
-  const [form, setForm] = React.useState(initialForm);
+  const [form, setForm] = React.useState(savedDraft || initialForm);
   const [errors, setErrors] = React.useState({});
   const [submittedLog, setSubmittedLog] = React.useState(null);
+  const [draftMessage, setDraftMessage] = React.useState('');
+  const matchedMai = form.maiNumber ? findMaiByNumber(form.maiNumber) : null;
 
   React.useEffect(() => {
     setActiveRole('Belt User');
@@ -49,6 +51,7 @@ export default function SubmitHours() {
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
     setErrors({});
+    setDraftMessage('');
   };
 
   const validateStep = (targetStep = step) => {
@@ -86,8 +89,14 @@ export default function SubmitHours() {
     });
 
     setSubmittedLog(savedLog);
+    clearDraft();
     setForm(initialForm);
     setStep(0);
+  };
+
+  const handleSaveDraft = () => {
+    saveDraft(form);
+    setDraftMessage('Draft saved. You can come back and finish it later.');
   };
 
   return (
@@ -96,6 +105,12 @@ export default function SubmitHours() {
       title="Submit MCMAP Hours"
       description="Answer one question at a time. Ask your instructor for their assigned MAI number before submitting."
     >
+      {savedDraft && !submittedLog ? (
+        <div className="mx-auto mb-4 max-w-3xl rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
+          Saved draft loaded. Continue where you left off or submit when complete.
+        </div>
+      ) : null}
+
       {submittedLog ? (
         <section className="mx-auto max-w-3xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm">
           <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-olive">
@@ -135,6 +150,12 @@ export default function SubmitHours() {
             </p>
             <h2 className="mt-1 text-2xl font-bold text-ink">{steps[step]}</h2>
           </div>
+
+          {draftMessage ? (
+            <div className="mb-4 rounded-md border border-olive/25 bg-olive/10 p-3 text-sm font-semibold text-olive">
+              {draftMessage}
+            </div>
+          ) : null}
 
           <div className="rounded-md bg-field p-4">
             {step === 0 ? (
@@ -209,28 +230,55 @@ export default function SubmitHours() {
             ) : null}
 
             {step === 4 ? (
-              <Field
-                label="Verifying MAI number"
-                name="maiNumber"
-                value={form.maiNumber}
-                onChange={updateField}
-                placeholder="MAI-1842"
-                error={errors.maiNumber}
-                hint="This is the number assigned to your MAI account. Belt Users enter it so their log goes to the right instructor."
-              />
+              <div>
+                <Field
+                  label="Verifying MAI number"
+                  name="maiNumber"
+                  value={form.maiNumber}
+                  onChange={updateField}
+                  placeholder="MAI-1842"
+                  error={errors.maiNumber}
+                  hint="This is the number assigned to your MAI account. Belt Users enter it so their log goes to the right instructor."
+                />
+                <div className="mt-4 rounded-md border border-coyote/35 bg-paper p-4">
+                  <p className="flex items-center gap-2 text-sm font-bold text-ink">
+                    <Search size={17} aria-hidden="true" />
+                    MAI number confirmation
+                  </p>
+                  {matchedMai ? (
+                    <p className="mt-2 text-sm leading-6 text-olive">
+                      This log will go to {matchedMai.name}, {matchedMai.unit}.
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm leading-6 text-clay">
+                      No mock MAI match yet. Check the number before submitting.
+                    </p>
+                  )}
+                </div>
+              </div>
             ) : null}
           </div>
 
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-            <button
-              type="button"
-              onClick={() => setStep((current) => Math.max(current - 1, 0))}
-              disabled={step === 0}
-              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ArrowLeft size={17} aria-hidden="true" />
-              Back
-            </button>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setStep((current) => Math.max(current - 1, 0))}
+                disabled={step === 0}
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ArrowLeft size={17} aria-hidden="true" />
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-paper px-4 text-sm font-bold text-ink"
+              >
+                <Save size={17} aria-hidden="true" />
+                Save draft
+              </button>
+            </div>
             {step === steps.length - 1 ? (
               <button
                 type="submit"

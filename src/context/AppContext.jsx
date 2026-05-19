@@ -8,6 +8,13 @@ export function AppProvider({ children }) {
   const [beltUser, setBeltUser] = React.useState(currentBeltUser);
   const [maiUser, setMaiUser] = React.useState(currentMai);
   const [logs, setLogs] = React.useState(trainingLogs);
+  const [savedDraft, setSavedDraft] = React.useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mcmap-log-draft')) || null;
+    } catch {
+      return null;
+    }
+  });
   const [subscription, setSubscription] = React.useState({
     status: 'trial',
     planName: 'MCMAP Logbook Monthly',
@@ -21,6 +28,19 @@ export function AppProvider({ children }) {
   const pendingLogs = logs.filter((log) => log.status === 'Pending');
   const verifiedLogs = logs.filter((log) => log.status === 'Verified');
   const returnedLogs = logs.filter((log) => log.status === 'Returned');
+  const urgentCount = beltLogs.filter((log) => log.status === 'Returned').length;
+  const maiDirectory = [
+    {
+      name: maiUser.name,
+      maiNumber: maiUser.maiNumber,
+      unit: maiUser.unit
+    },
+    {
+      name: 'SSgt Cameron Reed',
+      maiNumber: 'MAI-2497',
+      unit: 'Weapons Training Detachment'
+    }
+  ];
 
   const submitLog = (log) => {
     const newLog = {
@@ -89,6 +109,19 @@ export function AppProvider({ children }) {
     );
   };
 
+  const findMaiByNumber = (maiNumber) =>
+    maiDirectory.find((mai) => mai.maiNumber.toLowerCase() === maiNumber.trim().toLowerCase()) || null;
+
+  const saveDraft = (draft) => {
+    setSavedDraft(draft);
+    localStorage.setItem('mcmap-log-draft', JSON.stringify(draft));
+  };
+
+  const clearDraft = () => {
+    setSavedDraft(null);
+    localStorage.removeItem('mcmap-log-draft');
+  };
+
   const createMockAccount = ({ role, name, email, beltLevel }) => {
     setActiveRole(role);
 
@@ -143,11 +176,17 @@ export function AppProvider({ children }) {
     pendingLogs,
     verifiedLogs,
     returnedLogs,
+    urgentCount,
+    maiDirectory,
+    savedDraft,
     subscription,
     submitLog,
     verifyLog,
     returnLog,
     resubmitLog,
+    findMaiByNumber,
+    saveDraft,
+    clearDraft,
     createMockAccount,
     startPaidSubscription,
     resetTrial

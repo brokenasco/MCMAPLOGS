@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, RotateCcw } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, PlusCircle, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
@@ -10,7 +10,7 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, resubmitLog, setActiveRole } = useApp();
+  const { beltUser, beltLogs, resubmitLog, savedDraft, setActiveRole } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [correctionText, setCorrectionText] = React.useState('');
@@ -35,6 +35,31 @@ export default function BeltDashboard() {
       description="Track your submitted MCMAP hours, pending verification, and verified logbook progress."
       actions={<RoleBadge role="Belt User" />}
     >
+      <section className="mb-8 rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-brass">Today</p>
+            <h2 className="mt-1 text-2xl font-bold">
+              {returnedCount ? 'Fix your returned log first' : savedDraft ? 'Finish your saved draft' : 'Ready to submit training hours'}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-paper/70">
+              {returnedCount
+                ? `${returnedCount} returned log needs correction before it can be verified.`
+                : savedDraft
+                  ? 'You have a saved log draft waiting in the submit flow.'
+                  : 'No urgent issues. Submit hours after your next training period.'}
+            </p>
+          </div>
+          <Link
+            to="/belt/submit"
+            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-brass px-4 text-sm font-bold text-ink"
+          >
+            {returnedCount ? <AlertTriangle size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
+            {returnedCount ? 'Review corrections' : savedDraft ? 'Resume draft' : 'Submit hours'}
+          </Link>
+        </div>
+      </section>
+
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Total hours submitted" value={totalHours || beltUser.totalHours} detail={beltUser.beltLevel} />
         <StatCard label="Verified hours" value={verifiedHours || beltUser.verifiedHours} detail="Approved by an MAI" />
