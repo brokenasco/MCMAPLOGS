@@ -3,7 +3,7 @@ import { Inbox } from 'lucide-react';
 
 export default function EmptyState({ title, text, action }) {
   return (
-    <div className="rounded-md border border-dashed border-ink/20 bg-white p-8 text-center">
+    <div className="rounded-md border border-dashed border-coyote/45 bg-paper p-8 text-center">
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-md bg-field text-olive">
         <Inbox size={24} aria-hidden="true" />
       </span>

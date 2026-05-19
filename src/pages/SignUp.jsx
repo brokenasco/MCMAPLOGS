@@ -47,7 +47,7 @@ export default function SignUp() {
       title="Sign up"
       description="Choose whether this mock account is for a Belt User submitting hours or an MAI verifying and signing logbooks. New accounts include a 1-month free trial."
     >
-      <div className="mx-auto max-w-3xl rounded-md border border-ink/10 bg-white p-6 shadow-sm">
+      <div className="mx-auto max-w-3xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <RoleCard role="Belt User" selected={accountType === 'Belt User'} onSelect={setAccountType} />
@@ -64,7 +64,7 @@ export default function SignUp() {
                 name="beltLevel"
                 value={form.beltLevel}
                 onChange={updateField}
-                className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-white px-3 text-sm"
+                className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
               >
                 {beltLevels.map((level) => (
                   <option key={level}>{level}</option>

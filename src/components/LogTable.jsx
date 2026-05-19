@@ -1,12 +1,20 @@
 import React from 'react';
 import StatusBadge from './StatusBadge.jsx';
 
+const beltStyles = {
+  'Tan Belt': 'bg-[#c2a878] text-ink',
+  'Gray Belt': 'bg-[#7a7d7d] text-white',
+  'Green Belt': 'bg-[#3f5f3b] text-white',
+  'Brown Belt': 'bg-[#6b4226] text-white',
+  'Black Belt': 'bg-[#111111] text-white'
+};
+
 export default function LogTable({ logs, showMarine = true, onSelectLog }) {
   return (
-    <div className="overflow-hidden rounded-md border border-ink/10 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-ink/10">
-          <thead className="bg-ink/[0.03]">
+        <table className="min-w-full divide-y divide-coyote/25">
+          <thead className="bg-charcoal text-paper">
             <tr>
               {showMarine ? <HeaderCell>Marine</HeaderCell> : null}
               <HeaderCell>Date</HeaderCell>
@@ -16,7 +24,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
               <HeaderCell>Status</HeaderCell>
             </tr>
           </thead>
-          <tbody className="divide-y divide-ink/10">
+          <tbody className="divide-y divide-coyote/20">
             {logs.map((log) => (
               <tr
                 key={log.id}
@@ -26,7 +34,11 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
                 {showMarine ? <BodyCell className="font-semibold text-ink">{log.marine}</BodyCell> : null}
                 <BodyCell>{new Date(`${log.date}T12:00:00`).toLocaleDateString()}</BodyCell>
                 <BodyCell>{log.hours}</BodyCell>
-                <BodyCell>{log.beltLevel}</BodyCell>
+                <BodyCell>
+                  <span className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wide ${beltStyles[log.beltLevel] || 'bg-field text-ink'}`}>
+                    {log.beltLevel}
+                  </span>
+                </BodyCell>
                 <BodyCell>{log.maiNumber}</BodyCell>
                 <BodyCell>
                   <StatusBadge status={log.status} />
@@ -41,7 +53,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
 }
 
 function HeaderCell({ children }) {
-  return <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-ink/60">{children}</th>;
+  return <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-paper/70">{children}</th>;
 }
 
 function BodyCell({ children, className = '' }) {

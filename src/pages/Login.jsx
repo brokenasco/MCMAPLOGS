@@ -22,7 +22,7 @@ export default function Login() {
       title="Login"
       description="Choose the account type first, then continue into the matching mock dashboard."
     >
-      <div className="mx-auto max-w-3xl rounded-md border border-ink/10 bg-white p-6 shadow-sm">
+      <div className="mx-auto max-w-3xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <RoleCard role="Belt User" selected={role === 'Belt User'} onSelect={setRole} />

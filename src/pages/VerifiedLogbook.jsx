@@ -38,7 +38,7 @@ export default function VerifiedLogbook() {
               setSelectedLog(null);
             }}
             className={`focus-ring h-10 rounded-md px-4 text-sm font-bold ${
-              activeFilter === filter ? 'bg-olive text-white' : 'border border-ink/15 bg-white text-ink hover:bg-field'
+              activeFilter === filter ? 'bg-olive text-white' : 'border border-ink/15 bg-paper text-ink hover:bg-field'
             }`}
           >
             {filter}

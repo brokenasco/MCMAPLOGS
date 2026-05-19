@@ -17,7 +17,7 @@ export default function Profile() {
       actions={<RoleBadge role={activeRole} />}
     >
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
-        <section className="rounded-md border border-ink/10 bg-white p-6 shadow-sm">
+        <section className="rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wide text-clay">Account</p>
           <h2 className="mt-2 text-2xl font-bold text-ink">{user.name}</h2>
           <p className="mt-1 text-sm text-ink/60">{user.email}</p>
@@ -40,7 +40,7 @@ export default function Profile() {
             <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
           </div>
 
-          <div className="mt-5 rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
             <h2 className="text-xl font-bold">Demo role switch</h2>
             <p className="mt-2 text-sm leading-6 text-ink/65">
               During the mock front-end phase, this lets you preview how navigation changes for each account type.
@@ -52,7 +52,7 @@ export default function Profile() {
                   type="button"
                   onClick={() => setActiveRole(role)}
                   className={`focus-ring h-10 rounded-md px-4 text-sm font-bold ${
-                    activeRole === role ? 'bg-olive text-white' : 'border border-ink/15 bg-field text-ink hover:bg-white'
+                    activeRole === role ? 'bg-olive text-white' : 'border border-ink/15 bg-field text-ink hover:bg-paper'
                   }`}
                 >
                   {role}

@@ -12,7 +12,7 @@ export default function SubscriptionBanner() {
   );
 
   return (
-    <div className="border-b border-ink/10 bg-ink text-white">
+    <div className="border-b border-coyote/30 bg-olive text-paper">
       <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:px-6 lg:px-8">
         <p className="font-semibold">
           {isTrial
@@ -21,7 +21,7 @@ export default function SubscriptionBanner() {
         </p>
         <Link
           to="/subscription"
-          className="focus-ring inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-3 text-sm font-bold text-ink hover:bg-field"
+          className="focus-ring inline-flex h-9 items-center justify-center gap-2 rounded-md bg-paper px-3 text-sm font-bold text-ink hover:bg-field"
         >
           <CreditCard size={16} aria-hidden="true" />
           Manage subscription

@@ -32,7 +32,7 @@ export default function MaiDashboard() {
         <StatCard label="Assigned MAI number" value={maiUser.maiNumber} detail="Used to verify logbooks" />
       </div>
 
-      <div className="mt-8 flex flex-col justify-between gap-4 rounded-md border border-ink/10 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
+      <div className="mt-8 flex flex-col justify-between gap-4 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:flex-row sm:items-center">
         <div>
           <h2 className="text-xl font-bold">Pending verification</h2>
           <p className="mt-1 text-sm text-ink/65">

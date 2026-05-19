@@ -50,14 +50,14 @@ export default function Help() {
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="grid gap-4">
           {faqs.map((item) => (
-            <article key={item.question} className="rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+            <article key={item.question} className="rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
               <h2 className="text-xl font-bold text-ink">{item.question}</h2>
               <p className="mt-2 text-sm leading-6 text-ink/70">{item.answer}</p>
             </article>
           ))}
         </section>
 
-        <aside className="rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+        <aside className="rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
           <h2 className="text-xl font-bold text-ink">Sample entry examples</h2>
           <div className="mt-4 grid gap-3">
             {examples.map((example, index) => (

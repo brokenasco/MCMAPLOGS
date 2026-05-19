@@ -23,10 +23,10 @@ export default function RoleCard({ role, selected, onSelect }) {
       type="button"
       onClick={() => onSelect(role)}
       className={`focus-ring min-h-36 rounded-md border p-5 text-left transition ${
-        selected ? 'border-olive bg-olive/10 shadow-sm' : 'border-ink/10 bg-white hover:border-olive/40'
+        selected ? 'border-olive bg-olive/10 shadow-sm' : 'border-coyote/35 bg-paper hover:border-olive/50'
       }`}
     >
-      <span className={`grid h-11 w-11 place-items-center rounded-md ${selected ? 'bg-olive text-white' : 'bg-field text-olive'}`}>
+      <span className={`grid h-11 w-11 place-items-center rounded-md ${selected ? 'bg-olive text-paper' : 'bg-field text-olive'}`}>
         <Icon size={22} aria-hidden="true" />
       </span>
       <span className="mt-4 block text-lg font-bold text-ink">{details.title}</span>

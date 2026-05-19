@@ -27,6 +27,14 @@ const sampleDescriptions = [
   '3 hours Brown Belt sustainment: ground fighting, responsible use of force review, and practical evaluation.'
 ];
 
+const beltSwatches = {
+  'Tan Belt': '#c2a878',
+  'Gray Belt': '#7a7d7d',
+  'Green Belt': '#3f5f3b',
+  'Brown Belt': '#6b4226',
+  'Black Belt': '#111111'
+};
+
 export default function SubmitHours() {
   const { submitLog, setActiveRole } = useApp();
   const [step, setStep] = React.useState(0);
@@ -89,7 +97,7 @@ export default function SubmitHours() {
       description="Answer one question at a time. Ask your instructor for their assigned MAI number before submitting."
     >
       {submittedLog ? (
-        <section className="mx-auto max-w-3xl rounded-md border border-olive/20 bg-white p-6 shadow-sm">
+        <section className="mx-auto max-w-3xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm">
           <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-olive">
             <CheckCircle2 size={18} aria-hidden="true" />
             Submitted
@@ -120,7 +128,7 @@ export default function SubmitHours() {
           </div>
         </section>
       ) : (
-        <form className="mx-auto max-w-3xl rounded-md border border-ink/10 bg-white p-5 shadow-sm sm:p-6" onSubmit={submit}>
+        <form className="mx-auto max-w-3xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6" onSubmit={submit}>
           <div className="mb-5">
             <p className="text-sm font-bold text-clay">
               Step {step + 1} of {steps.length}
@@ -150,16 +158,21 @@ export default function SubmitHours() {
             {step === 2 ? (
               <label className="block">
                 <span className="text-sm font-bold text-ink">Belt level trained</span>
-                <select
-                  name="beltLevel"
-                  value={form.beltLevel}
-                  onChange={updateField}
-                  className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-white px-3 text-base"
-                >
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   {beltLevels.map((level) => (
-                    <option key={level}>{level}</option>
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, beltLevel: level }))}
+                      className={`focus-ring flex h-12 items-center gap-3 rounded-md border px-3 text-left text-sm font-bold ${
+                        form.beltLevel === level ? 'border-olive bg-paper shadow-sm' : 'border-coyote/35 bg-paper/70'
+                      }`}
+                    >
+                      <span className="h-4 w-9 rounded-sm" style={{ backgroundColor: beltSwatches[level] }} />
+                      {level}
+                    </button>
                   ))}
-                </select>
+                </div>
                 <ErrorText message={errors.beltLevel} />
               </label>
             ) : null}
@@ -185,7 +198,7 @@ export default function SubmitHours() {
                         key={sample}
                         type="button"
                         onClick={() => setForm((current) => ({ ...current, description: sample }))}
-                        className="focus-ring rounded-md border border-ink/10 bg-white p-3 text-left text-sm leading-6 text-ink/70 hover:border-olive/40"
+                        className="focus-ring rounded-md border border-coyote/35 bg-paper p-3 text-left text-sm leading-6 text-ink/70 hover:border-olive/40"
                       >
                         {sample}
                       </button>

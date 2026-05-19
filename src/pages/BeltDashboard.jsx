@@ -41,7 +41,7 @@ export default function BeltDashboard() {
         <StatCard label="Returned logs" value={returnedCount} detail="Need correction" />
       </div>
 
-      <div className="mt-8 rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+      <div className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-xl font-bold">Next goal</h2>
@@ -71,7 +71,7 @@ export default function BeltDashboard() {
             {beltLogs
               .filter((log) => log.status === 'Returned')
               .map((log) => (
-                <article key={log.id} className="rounded-md bg-white p-4 shadow-sm">
+                <article key={log.id} className="rounded-md bg-paper p-4 shadow-sm">
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                     <div>
                       <p className="font-bold">{new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {log.hours} hours</p>
@@ -97,7 +97,7 @@ export default function BeltDashboard() {
       ) : null}
 
       {editingLog ? (
-        <section className="mt-8 rounded-md border border-ink/10 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
           <h2 className="text-xl font-bold">Correct returned log</h2>
           <p className="mt-1 text-sm text-ink/65">{editingLog.returnMessage}</p>
           <label className="mt-4 block">
