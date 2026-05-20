@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, authMessage, isSupabaseEnabled } = useApp();
+  const { signIn, authMessage, isSupabaseEnabled, supabaseConfigStatus } = useApp();
   const [role, setRole] = React.useState('Belt User');
   const [form, setForm] = React.useState({ email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -42,7 +42,7 @@ export default function Login() {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
             {isSupabaseEnabled
-              ? 'Real login is connected through Supabase.'
+              ? `Real login is connected to ${supabaseConfigStatus.urlHost}.`
               : 'Demo mode is active because Supabase keys are not available locally.'}
           </div>
 

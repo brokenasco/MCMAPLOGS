@@ -1,6 +1,6 @@
 import React from 'react';
 import { currentBeltUser, currentMai, trainingLogs } from '../data/mockData.js';
-import { supabase } from '../lib/supabaseClient.js';
+import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
 
@@ -439,6 +439,7 @@ export function AppProvider({ children }) {
     loading,
     authMessage,
     isSupabaseEnabled,
+    supabaseConfigStatus,
     logs,
     beltLogs,
     pendingLogs,
