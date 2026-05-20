@@ -25,8 +25,8 @@ export default function Login() {
     try {
       await signIn({ email: form.email, password: form.password, role });
       navigate(role === 'MAI' ? '/mai/dashboard' : '/belt/dashboard');
-    } catch {
-      setStatusMessage('Login failed. Check your email and password.');
+    } catch (error) {
+      setStatusMessage(error.message || 'Login failed. Check your email and password.');
     } finally {
       setIsSubmitting(false);
     }

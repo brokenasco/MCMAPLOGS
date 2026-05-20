@@ -52,8 +52,8 @@ export default function SignUp() {
       }
 
       navigate('/belt/dashboard');
-    } catch {
-      setStatusMessage('Account could not be created. Check the form and try again.');
+    } catch (error) {
+      setStatusMessage(error.message || 'Account could not be created. Check the form and try again.');
     } finally {
       setIsSubmitting(false);
     }
