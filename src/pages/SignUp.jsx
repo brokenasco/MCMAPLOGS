@@ -8,7 +8,7 @@ import { beltLevels } from '../data/mockData.js';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { createAccount, authMessage, isSupabaseEnabled, supabaseConfigStatus } = useApp();
+  const { createAccount, authMessage, isSupabaseEnabled, isProductionBuild, supabaseConfigStatus } = useApp();
   const [accountType, setAccountType] = React.useState('Belt User');
   const [form, setForm] = React.useState({
     name: '',
@@ -70,7 +70,9 @@ export default function SignUp() {
           <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
             {isSupabaseEnabled
               ? `Real account creation is connected to ${supabaseConfigStatus.urlHost}. Supabase will store the user account and profile.`
-              : 'Demo mode is active because Supabase keys are not available locally.'}
+              : isProductionBuild
+                ? 'Supabase is not connected on this deployment. Add the Vercel environment variables, then redeploy.'
+                : 'Demo mode is active because Supabase keys are not available locally.'}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

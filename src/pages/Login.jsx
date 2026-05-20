@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, authMessage, isSupabaseEnabled, supabaseConfigStatus } = useApp();
+  const { signIn, authMessage, isSupabaseEnabled, isProductionBuild, supabaseConfigStatus } = useApp();
   const [role, setRole] = React.useState('Belt User');
   const [form, setForm] = React.useState({ email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -43,7 +43,9 @@ export default function Login() {
           <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
             {isSupabaseEnabled
               ? `Real login is connected to ${supabaseConfigStatus.urlHost}.`
-              : 'Demo mode is active because Supabase keys are not available locally.'}
+              : isProductionBuild
+                ? 'Supabase is not connected on this deployment. Add the Vercel environment variables, then redeploy.'
+                : 'Demo mode is active because Supabase keys are not available locally.'}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
