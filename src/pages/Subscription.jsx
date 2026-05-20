@@ -5,12 +5,43 @@ import StatCard from '../components/StatCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Subscription() {
-  const { activeRole, displaySubscription, subscriptionPlans, startPaidSubscription, resetTrial } = useApp();
+  const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, resetTrial } = useApp();
+  const [isRedirecting, setIsRedirecting] = React.useState(false);
+  const [billingMessage, setBillingMessage] = React.useState('');
   const isTrial = displaySubscription.status === 'trial';
+  const billingEmail = activeRole === 'MAI' ? maiUser.email : beltUser.email;
   const daysLeft = Math.max(
     0,
     Math.ceil((new Date(`${displaySubscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
   );
+
+  const startStripeCheckout = async () => {
+    setIsRedirecting(true);
+    setBillingMessage('');
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          role: activeRole,
+          email: billingEmail
+        })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to start Stripe Checkout.');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      setBillingMessage(error.message);
+      setIsRedirecting(false);
+    }
+  };
 
   return (
     <PageShell
@@ -49,11 +80,12 @@ export default function Subscription() {
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={startPaidSubscription}
+              onClick={startStripeCheckout}
+              disabled={isRedirecting}
               className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
             >
               <CreditCard size={17} aria-hidden="true" />
-              Activate ${displaySubscription.monthlyPrice}/month plan
+              {isRedirecting ? 'Opening Stripe...' : `Start ${displaySubscription.monthlyPrice}/month checkout`}
             </button>
             <button
               type="button"
@@ -64,6 +96,11 @@ export default function Subscription() {
               Reset free trial
             </button>
           </div>
+          {billingMessage ? (
+            <div className="mt-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
+              {billingMessage}
+            </div>
+          ) : null}
         </section>
 
         <aside className="grid gap-4">
@@ -75,8 +112,8 @@ export default function Subscription() {
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        To charge real cards, connect a payment processor such as Stripe and verify subscription status from a
-        backend or Supabase edge function.
+        Stripe Checkout is prepared. Add your Stripe secret key and role-based Price IDs in Vercel, then redeploy.
+        Webhooks are still needed to automatically update subscription status in Supabase.
       </div>
     </PageShell>
   );
