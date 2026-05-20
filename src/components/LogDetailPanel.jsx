@@ -45,7 +45,7 @@ export default function LogDetailPanel({ log, onClose }) {
           }
         />
         <Detail label="MAI number" value={log.maiNumber} />
-        <Detail label="Submitted" value={log.submittedAt || 'Mock record'} />
+        <Detail label="Submitted" value={log.submittedAt || 'Saved record'} />
         <Detail label="Signed by" value={log.verifiedBy ? `${log.verifiedBy} | ${log.verifiedByMaiNumber}` : 'Not signed yet'} />
       </dl>
 

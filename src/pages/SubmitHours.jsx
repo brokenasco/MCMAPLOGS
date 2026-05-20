@@ -36,7 +36,7 @@ const beltSwatches = {
 };
 
 export default function SubmitHours() {
-  const { submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft, setActiveRole } = useApp();
+  const { submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft } = useApp();
   const [step, setStep] = React.useState(0);
   const [form, setForm] = React.useState(savedDraft || initialForm);
   const [errors, setErrors] = React.useState({});
@@ -44,10 +44,6 @@ export default function SubmitHours() {
   const [draftMessage, setDraftMessage] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const matchedMai = form.maiNumber ? findMaiByNumber(form.maiNumber) : null;
-
-  React.useEffect(() => {
-    setActiveRole('Belt User');
-  }, [setActiveRole]);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -258,7 +254,7 @@ export default function SubmitHours() {
                     </p>
                   ) : (
                     <p className="mt-2 text-sm leading-6 text-clay">
-                      No mock MAI match yet. Check the number before submitting.
+                      No MAI match found yet. Check the number before submitting.
                     </p>
                   )}
                 </div>

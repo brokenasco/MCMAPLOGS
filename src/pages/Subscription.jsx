@@ -53,7 +53,7 @@ export default function Subscription() {
               className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
             >
               <CreditCard size={17} aria-hidden="true" />
-              Activate $2/month mock plan
+              Activate $2/month plan
             </button>
             <button
               type="button"
@@ -69,13 +69,13 @@ export default function Subscription() {
         <aside className="grid gap-4">
           <StatCard label="Trial length" value="1 month" detail="Starts at account creation" />
           <StatCard label="Trial days left" value={isTrial ? daysLeft : 0} detail={isTrial ? 'Before billing starts' : 'Paid plan active'} />
-          <StatCard label="Monthly price" value="$2" detail="Mock billing only for now" />
+          <StatCard label="Monthly price" value="$2" detail="After the free trial" />
         </aside>
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        This is a front-end billing mock. To charge real cards, connect a payment processor such as Stripe and
-        verify subscription status from a backend or Supabase edge function.
+        To charge real cards, connect a payment processor such as Stripe and verify subscription status from a
+        backend or Supabase edge function.
       </div>
     </PageShell>
   );

@@ -9,14 +9,10 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function MaiDashboard() {
-  const { maiUser, pendingLogs, verifiedLogs, returnedLogs, setActiveRole } = useApp();
+  const { maiUser, pendingLogs, verifiedLogs, returnedLogs } = useApp();
   const oldestPending = pendingLogs
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-
-  React.useEffect(() => {
-    setActiveRole('MAI');
-  }, [setActiveRole]);
 
   return (
     <PageShell
@@ -35,7 +31,7 @@ export default function MaiDashboard() {
             <p className="mt-2 text-sm leading-6 text-paper/70">
               {returnedLogs.length
                 ? `${returnedLogs.length} returned log is waiting for Belt User follow-up.`
-                : 'No urgent issues in the mock queue.'}
+                : 'No urgent issues in the queue.'}
             </p>
           </div>
           <Link

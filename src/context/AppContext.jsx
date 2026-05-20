@@ -97,11 +97,12 @@ export function AppProvider({ children }) {
 
     if (profileError) {
       setAuthMessage(profileError.message);
-      return;
+      throw profileError;
     }
 
     applyProfile(profileData);
     await loadLogs(profileData);
+    return profileData;
   }
 
   async function loadLogs(profileData = profile) {
@@ -313,6 +314,9 @@ export function AppProvider({ children }) {
     const maiNumber = role === 'MAI' ? `MAI-${Math.floor(2000 + Math.random() * 7000)}` : null;
 
     if (!supabase) {
+      if (import.meta.env.PROD) {
+        throw new Error('Supabase is not configured for this deployment.');
+      }
       return createMockAccount({ role, name, email, beltLevel, maiNumber });
     }
 
@@ -357,12 +361,15 @@ export function AppProvider({ children }) {
     };
   };
 
-  const signIn = async ({ email, password, role }) => {
+  const signIn = async ({ email, password }) => {
     setAuthMessage('');
 
     if (!supabase) {
-      setActiveRole(role);
-      return;
+      if (import.meta.env.PROD) {
+        throw new Error('Supabase is not configured for this deployment.');
+      }
+      setActiveRole('Belt User');
+      return { account_type: 'Belt User' };
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -373,7 +380,8 @@ export function AppProvider({ children }) {
     }
 
     setSession(data.session);
-    await loadProfileAndLogs(data.user.id);
+    const signedInProfile = await loadProfileAndLogs(data.user.id);
+    return signedInProfile;
   };
 
   const signOut = async () => {

@@ -5,7 +5,7 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Profile() {
-  const { activeRole, setActiveRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, subscription } = useApp();
+  const { activeRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, subscription } = useApp();
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
 
@@ -13,7 +13,7 @@ export default function Profile() {
     <PageShell
       eyebrow="Settings"
       title="Profile"
-      description="Review the mock account details that would eventually come from Supabase."
+      description="Review your account details."
       actions={<RoleBadge role={activeRole} />}
     >
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
@@ -41,24 +41,10 @@ export default function Profile() {
           </div>
 
           <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-            <h2 className="text-xl font-bold">Demo role switch</h2>
+            <h2 className="text-xl font-bold">Account role</h2>
             <p className="mt-2 text-sm leading-6 text-ink/65">
-              During the mock front-end phase, this lets you preview how navigation changes for each account type.
+              Your role is controlled by your saved account profile. Belt Users submit logs. MAIs review and sign logs.
             </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {['Belt User', 'MAI'].map((role) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => setActiveRole(role)}
-                  className={`focus-ring h-10 rounded-md px-4 text-sm font-bold ${
-                    activeRole === role ? 'bg-olive text-white' : 'border border-ink/15 bg-field text-ink hover:bg-paper'
-                  }`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
       </div>

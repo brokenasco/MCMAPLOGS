@@ -72,7 +72,7 @@ export default function SignUp() {
               ? `Real account creation is connected to ${supabaseConfigStatus.urlHost}. Supabase will store the user account and profile.`
               : isProductionBuild
                 ? 'Supabase is not connected on this deployment. Add the Vercel environment variables, then redeploy.'
-                : 'Demo mode is active because Supabase keys are not available locally.'}
+                : 'Local setup mode: add Supabase keys to run real account creation locally.'}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -124,7 +124,7 @@ export default function SignUp() {
           )}
 
           <div className="rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-            Subscription: first month free, then $2 per month. Billing is mocked in this front-end version.
+            Subscription: first month free, then $2 per month. Payment processing will be connected through billing.
           </div>
 
           {(statusMessage || authMessage) ? (

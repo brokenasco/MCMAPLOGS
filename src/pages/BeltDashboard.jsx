@@ -10,7 +10,7 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, resubmitLog, savedDraft, setActiveRole } = useApp();
+  const { beltUser, beltLogs, resubmitLog, savedDraft } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [correctionText, setCorrectionText] = React.useState('');
@@ -23,10 +23,6 @@ export default function BeltDashboard() {
     .reduce((total, log) => total + Number(log.hours), 0);
   const returnedCount = beltLogs.filter((log) => log.status === 'Returned').length;
   const progressPercent = Math.min(100, Math.round(((verifiedHours || beltUser.verifiedHours) / 40) * 100));
-
-  React.useEffect(() => {
-    setActiveRole('Belt User');
-  }, [setActiveRole]);
 
   return (
     <PageShell

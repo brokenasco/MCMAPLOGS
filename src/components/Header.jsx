@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpenCheck, LogIn, LogOut, Menu, ShieldCheck, UserCircle, UserPlus } from 'lucide-react';
+import { BookOpenCheck, LogIn, LogOut, Menu, ShieldCheck, UserPlus } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 
@@ -23,7 +23,7 @@ const roleLinks = {
 };
 
 export default function Header() {
-  const { activeRole, setActiveRole, session, signOut } = useApp();
+  const { activeRole, session, signOut } = useApp();
   const navLinks = roleLinks[activeRole];
 
   return (
@@ -58,14 +58,6 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveRole(activeRole === 'Belt User' ? 'MAI' : 'Belt User')}
-            className="focus-ring hidden h-10 items-center gap-2 rounded-md border border-coyote/30 bg-paper/10 px-3 text-sm font-semibold text-paper shadow-sm hover:bg-paper/15 sm:inline-flex"
-          >
-            <UserCircle size={16} aria-hidden="true" />
-            {activeRole}
-          </button>
           {session ? (
             <button
               type="button"

@@ -12,6 +12,7 @@ import SignUp from './pages/SignUp.jsx';
 import SubmitHours from './pages/SubmitHours.jsx';
 import Subscription from './pages/Subscription.jsx';
 import VerifiedLogbook from './pages/VerifiedLogbook.jsx';
+import { useApp } from './context/AppContext.jsx';
 
 export default function App() {
   return (
@@ -20,16 +21,102 @@ export default function App() {
         <Route index element={<Landing />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<SignUp />} />
-        <Route path="belt/dashboard" element={<BeltDashboard />} />
-        <Route path="belt/submit" element={<SubmitHours />} />
-        <Route path="mai/dashboard" element={<MaiDashboard />} />
-        <Route path="mai/pending" element={<PendingLogs />} />
-        <Route path="logbook/verified" element={<VerifiedLogbook />} />
-        <Route path="profile" element={<Profile />} />
+        <Route
+          path="belt/dashboard"
+          element={
+            <RequireRole role="Belt User">
+              <BeltDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="belt/submit"
+          element={
+            <RequireRole role="Belt User">
+              <SubmitHours />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="mai/dashboard"
+          element={
+            <RequireRole role="MAI">
+              <MaiDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="mai/pending"
+          element={
+            <RequireRole role="MAI">
+              <PendingLogs />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="logbook/verified"
+          element={
+            <RequireAccount>
+              <VerifiedLogbook />
+            </RequireAccount>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <RequireAccount>
+              <Profile />
+            </RequireAccount>
+          }
+        />
         <Route path="subscription" element={<Subscription />} />
         <Route path="help" element={<Help />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+  );
+}
+
+function RequireAccount({ children }) {
+  const { session, loading, isSupabaseEnabled, isProductionBuild } = useApp();
+
+  if (loading) {
+    return <RouteLoading />;
+  }
+
+  if ((isSupabaseEnabled || isProductionBuild) && !session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function RequireRole({ role, children }) {
+  const { activeRole, profile, session, loading, isSupabaseEnabled, isProductionBuild } = useApp();
+
+  if (loading) {
+    return <RouteLoading />;
+  }
+
+  if ((isSupabaseEnabled || isProductionBuild) && !session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const accountRole = profile?.account_type || activeRole;
+
+  if (accountRole !== role) {
+    return <Navigate to={accountRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard'} replace />;
+  }
+
+  return children;
+}
+
+function RouteLoading() {
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="rounded-md border border-coyote/35 bg-paper p-6 text-sm font-semibold text-ink shadow-sm">
+        Loading account...
+      </div>
+    </section>
   );
 }

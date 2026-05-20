@@ -7,16 +7,12 @@ import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function PendingLogs() {
-  const { maiUser, pendingLogs, verifyLog, returnLog, setActiveRole } = useApp();
+  const { maiUser, pendingLogs, verifyLog, returnLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [confirmationLog, setConfirmationLog] = React.useState(null);
   const [returningLog, setReturningLog] = React.useState(null);
   const [returnReason, setReturnReason] = React.useState('Missing detail');
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
-
-  React.useEffect(() => {
-    setActiveRole('MAI');
-  }, [setActiveRole]);
 
   const openConfirmation = (log) => {
     setSelectedLog(log);

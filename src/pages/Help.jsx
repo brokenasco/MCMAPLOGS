@@ -21,7 +21,7 @@ const faqs = [
   {
     question: 'Can I edit a verified log?',
     answer:
-      'In this mock app, verified logs are treated as signed records. A real version should only let admins correct verified entries with an audit trail.'
+      'Verified logs are treated as signed records. Admin corrections should keep an audit trail.'
   }
 ];
 
