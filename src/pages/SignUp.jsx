@@ -124,7 +124,7 @@ export default function SignUp() {
           )}
 
           <div className="rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-            Subscription: first month free, then $2 per month. Payment processing will be connected through billing.
+            Subscription: first month free. Belt Users are $2.99 per month after trial. MAIs are $5.99 per month after trial.
           </div>
 
           {(statusMessage || authMessage) ? (

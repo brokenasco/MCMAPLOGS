@@ -4,6 +4,17 @@ import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
 
+const subscriptionPlans = {
+  'Belt User': {
+    planName: 'MCMAP Logbook Belt User',
+    monthlyPrice: 2.99
+  },
+  MAI: {
+    planName: 'MCMAP Logbook MAI',
+    monthlyPrice: 5.99
+  }
+};
+
 export function AppProvider({ children }) {
   const [activeRole, setActiveRole] = React.useState('Belt User');
   const [beltUser, setBeltUser] = React.useState(currentBeltUser);
@@ -22,8 +33,8 @@ export function AppProvider({ children }) {
   });
   const [subscription, setSubscription] = React.useState({
     status: 'trial',
-    planName: 'MCMAP Logbook Monthly',
-    monthlyPrice: 2,
+    planName: subscriptionPlans['Belt User'].planName,
+    monthlyPrice: subscriptionPlans['Belt User'].monthlyPrice,
     trialStartedAt: new Date().toISOString().slice(0, 10),
     trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
     paymentMethod: null
@@ -49,6 +60,12 @@ export function AppProvider({ children }) {
       unit: 'Weapons Training Detachment'
     }
   ];
+  const currentPlan = subscriptionPlans[activeRole] || subscriptionPlans['Belt User'];
+  const displaySubscription = {
+    ...subscription,
+    planName: currentPlan.planName,
+    monthlyPrice: currentPlan.monthlyPrice
+  };
 
   React.useEffect(() => {
     if (!supabase) {
@@ -430,8 +447,8 @@ export function AppProvider({ children }) {
   const resetTrial = () => {
     setSubscription({
       status: 'trial',
-      planName: 'MCMAP Logbook Monthly',
-      monthlyPrice: 2,
+      planName: currentPlan.planName,
+      monthlyPrice: currentPlan.monthlyPrice,
       trialStartedAt: new Date().toISOString().slice(0, 10),
       trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
       paymentMethod: null
@@ -459,6 +476,8 @@ export function AppProvider({ children }) {
     maiDirectory,
     savedDraft,
     subscription,
+    displaySubscription,
+    subscriptionPlans,
     submitLog,
     verifyLog,
     returnLog,

@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function SubscriptionBanner() {
-  const { subscription } = useApp();
-  const isTrial = subscription.status === 'trial';
+  const { displaySubscription } = useApp();
+  const isTrial = displaySubscription.status === 'trial';
   const daysLeft = Math.max(
     0,
-    Math.ceil((new Date(`${subscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
+    Math.ceil((new Date(`${displaySubscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
   );
 
   return (
@@ -16,8 +16,8 @@ export default function SubscriptionBanner() {
       <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:px-6 lg:px-8">
         <p className="font-semibold">
           {isTrial
-            ? `Free trial active: ${daysLeft} days left. Then $2/month.`
-            : 'Subscription active: $2/month plan.'}
+            ? `Free trial active: ${daysLeft} days left. Then $${displaySubscription.monthlyPrice}/month.`
+            : `Subscription active: $${displaySubscription.monthlyPrice}/month plan.`}
         </p>
         <Link
           to="/subscription"

@@ -12,7 +12,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - MAI dashboard
 - Pending logs page
 - Verified logbook page
-- Subscription page with 1-month free trial and $2/month mock plan
+- Subscription page with 1-month free trial, $2.99/month Belt User plan, and $5.99/month MAI plan
 - Help page with FAQ and sample log entries
 - Mock Belt User and MAI data
 - Supabase client setup placeholder
