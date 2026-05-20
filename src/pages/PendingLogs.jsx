@@ -23,14 +23,14 @@ export default function PendingLogs() {
     setConfirmationLog(log);
   };
 
-  const handleVerify = () => {
-    verifyLog(confirmationLog.id);
+  const handleVerify = async () => {
+    await verifyLog(confirmationLog.id);
     setConfirmationLog(null);
     setSelectedLog(null);
   };
 
-  const handleReturn = () => {
-    returnLog(returningLog.id, returnReason, returnMessage);
+  const handleReturn = async () => {
+    await returnLog(returningLog.id, returnReason, returnMessage);
     setReturningLog(null);
     setSelectedLog(null);
   };

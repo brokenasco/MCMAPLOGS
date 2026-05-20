@@ -136,8 +136,8 @@ export default function BeltDashboard() {
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => {
-                resubmitLog(editingLog.id, { description: correctionText });
+              onClick={async () => {
+                await resubmitLog(editingLog.id, { description: correctionText });
                 setEditingLog(null);
                 setCorrectionText('');
               }}

@@ -8,7 +8,7 @@ import { beltLevels } from '../data/mockData.js';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { createMockAccount } = useApp();
+  const { createAccount, authMessage, isSupabaseEnabled } = useApp();
   const [accountType, setAccountType] = React.useState('Belt User');
   const [form, setForm] = React.useState({
     name: '',
@@ -17,6 +17,8 @@ export default function SignUp() {
     beltLevel: 'Green Belt'
   });
   const [assignedMaiNumber, setAssignedMaiNumber] = React.useState('');
+  const [statusMessage, setStatusMessage] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const isMai = accountType === 'MAI';
 
@@ -24,21 +26,37 @@ export default function SignUp() {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const account = createMockAccount({
-      role: accountType,
-      name: form.name,
-      email: form.email,
-      beltLevel: form.beltLevel
-    });
+    setIsSubmitting(true);
+    setStatusMessage('');
 
-    if (isMai) {
-      setAssignedMaiNumber(account.maiNumber);
-      return;
+    try {
+      const account = await createAccount({
+        role: accountType,
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        beltLevel: form.beltLevel
+      });
+
+      if (account.needsEmailConfirmation) {
+        setStatusMessage('Account created. Check your email to confirm your account, then return to login.');
+        if (isMai) setAssignedMaiNumber(account.mai_number);
+        return;
+      }
+
+      if (isMai) {
+        setAssignedMaiNumber(account.maiNumber || account.mai_number);
+        return;
+      }
+
+      navigate('/belt/dashboard');
+    } catch {
+      setStatusMessage('Account could not be created. Check the form and try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate('/belt/dashboard');
   };
 
   return (
@@ -49,6 +67,12 @@ export default function SignUp() {
     >
       <div className="mx-auto max-w-3xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
+            {isSupabaseEnabled
+              ? 'Real account creation is connected. Supabase will store the user account and profile.'
+              : 'Demo mode is active because Supabase keys are not available locally.'}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <RoleCard role="Belt User" selected={accountType === 'Belt User'} onSelect={setAccountType} />
             <RoleCard role="MAI" selected={accountType === 'MAI'} onSelect={setAccountType} />
@@ -101,12 +125,19 @@ export default function SignUp() {
             Subscription: first month free, then $2 per month. Billing is mocked in this front-end version.
           </div>
 
+          {(statusMessage || authMessage) ? (
+            <div className="rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
+              {authMessage || statusMessage}
+            </div>
+          ) : null}
+
           <button
             type="submit"
+            disabled={isSubmitting}
             className="focus-ring inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 sm:w-auto"
           >
             <UserPlus size={17} aria-hidden="true" />
-            {isMai ? 'Create MAI account' : 'Create Belt User account'}
+            {isSubmitting ? 'Creating account...' : isMai ? 'Create MAI account' : 'Create Belt User account'}
           </button>
         </form>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpenCheck, LogIn, Menu, ShieldCheck, UserCircle, UserPlus } from 'lucide-react';
+import { BookOpenCheck, LogIn, LogOut, Menu, ShieldCheck, UserCircle, UserPlus } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 
@@ -23,7 +23,7 @@ const roleLinks = {
 };
 
 export default function Header() {
-  const { activeRole, setActiveRole } = useApp();
+  const { activeRole, setActiveRole, session, signOut } = useApp();
   const navLinks = roleLinks[activeRole];
 
   return (
@@ -66,20 +66,33 @@ export default function Header() {
             <UserCircle size={16} aria-hidden="true" />
             {activeRole}
           </button>
-          <NavLink
-            to="/login"
-            className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/30 bg-paper px-3 text-sm font-semibold text-ink shadow-sm hover:bg-field"
-          >
-            <LogIn size={16} aria-hidden="true" />
-            Login
-          </NavLink>
-          <NavLink
-            to="/signup"
-            className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-brass px-3 text-sm font-semibold text-ink shadow-sm hover:bg-brass/90"
-          >
-            <UserPlus size={16} aria-hidden="true" />
-            Sign up
-          </NavLink>
+          {session ? (
+            <button
+              type="button"
+              onClick={signOut}
+              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/30 bg-paper px-3 text-sm font-semibold text-ink shadow-sm hover:bg-field"
+            >
+              <LogOut size={16} aria-hidden="true" />
+              Sign out
+            </button>
+          ) : (
+            <>
+              <NavLink
+                to="/login"
+                className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/30 bg-paper px-3 text-sm font-semibold text-ink shadow-sm hover:bg-field"
+              >
+                <LogIn size={16} aria-hidden="true" />
+                Login
+              </NavLink>
+              <NavLink
+                to="/signup"
+                className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-brass px-3 text-sm font-semibold text-ink shadow-sm hover:bg-brass/90"
+              >
+                <UserPlus size={16} aria-hidden="true" />
+                Sign up
+              </NavLink>
+            </>
+          )}
           <button
             type="button"
             className="focus-ring inline-grid h-10 w-10 place-items-center rounded-md border border-coyote/30 bg-paper text-ink lg:hidden"

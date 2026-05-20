@@ -42,6 +42,7 @@ export default function SubmitHours() {
   const [errors, setErrors] = React.useState({});
   const [submittedLog, setSubmittedLog] = React.useState(null);
   const [draftMessage, setDraftMessage] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const matchedMai = form.maiNumber ? findMaiByNumber(form.maiNumber) : null;
 
   React.useEffect(() => {
@@ -74,24 +75,30 @@ export default function SubmitHours() {
     }
   };
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
 
     const allValid = steps.every((_, index) => validateStep(index));
     if (!allValid) return;
 
-    const savedLog = submitLog({
-      date: form.date,
-      hours: Number(form.hours),
-      beltLevel: form.beltLevel,
-      description: form.description.trim(),
-      maiNumber: form.maiNumber.trim().toUpperCase()
-    });
+    setIsSubmitting(true);
 
-    setSubmittedLog(savedLog);
-    clearDraft();
-    setForm(initialForm);
-    setStep(0);
+    try {
+      const savedLog = await submitLog({
+        date: form.date,
+        hours: Number(form.hours),
+        beltLevel: form.beltLevel,
+        description: form.description.trim(),
+        maiNumber: form.maiNumber.trim().toUpperCase()
+      });
+
+      setSubmittedLog(savedLog);
+      clearDraft();
+      setForm(initialForm);
+      setStep(0);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -282,10 +289,11 @@ export default function SubmitHours() {
             {step === steps.length - 1 ? (
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
               >
                 <Send size={17} aria-hidden="true" />
-                Submit for verification
+                {isSubmitting ? 'Submitting...' : 'Submit for verification'}
               </button>
             ) : (
               <button
