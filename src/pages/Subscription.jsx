@@ -1,20 +1,30 @@
 import React from 'react';
-import { CheckCircle2, CreditCard, RotateCcw } from 'lucide-react';
+import { CheckCircle2, CreditCard } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Subscription() {
-  const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, resetTrial } = useApp();
+  const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, session, refreshAccount } = useApp();
+  const [searchParams] = useSearchParams();
   const [isRedirecting, setIsRedirecting] = React.useState(false);
   const [billingMessage, setBillingMessage] = React.useState('');
-  const isTrial = displaySubscription.status === 'trial';
   const billingEmail = activeRole === 'MAI' ? maiUser.email : beltUser.email;
   const isMai = activeRole === 'MAI';
-  const daysLeft = Math.max(
-    0,
-    Math.ceil((new Date(`${displaySubscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
-  );
+  const isActiveMai = isMai && displaySubscription.status === 'active';
+  const checkoutResult = searchParams.get('checkout');
+
+  React.useEffect(() => {
+    if (checkoutResult === 'success') {
+      setBillingMessage('Checkout finished. Stripe is confirming the MAI subscription now.');
+      refreshAccount();
+    }
+
+    if (checkoutResult === 'cancelled') {
+      setBillingMessage('Checkout was cancelled. MAI verification access is still locked.');
+    }
+  }, [checkoutResult]);
 
   const startStripeCheckout = async () => {
     setIsRedirecting(true);
@@ -24,7 +34,8 @@ export default function Subscription() {
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`
         },
         body: JSON.stringify({
           role: activeRole,
@@ -73,19 +84,19 @@ export default function Subscription() {
           <div className="mt-6 rounded-md border border-olive/20 bg-olive/10 p-4">
             <p className="flex items-center gap-2 text-sm font-bold text-olive">
               <CheckCircle2 size={17} aria-hidden="true" />
-              {!isMai ? 'Free Belt User account' : isTrial ? 'Free trial active' : 'Paid annual subscription active'}
+              {!isMai ? 'Free Belt User account' : isActiveMai ? 'Paid annual subscription active' : 'MAI billing required'}
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
                 ? 'Belt Users can create accounts and submit logs without a subscription charge.'
-                : isTrial
-                  ? `Your free trial ends on ${formatDate(displaySubscription.trialEndsAt)}. After that, the MAI plan is $84.99 per year.`
-                  : `Your annual MAI subscription is active using ${displaySubscription.paymentMethod}.`}
+                : isActiveMai
+                  ? `Your annual MAI plan is active${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
+                  : 'Complete annual checkout to unlock MAI verification and signing tools.'}
             </p>
           </div>
 
-          {isMai ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {isMai && !isActiveMai ? (
+            <div className="mt-6">
               <button
                 type="button"
                 onClick={startStripeCheckout}
@@ -94,14 +105,6 @@ export default function Subscription() {
               >
                 <CreditCard size={17} aria-hidden="true" />
                 {isRedirecting ? 'Opening Stripe...' : 'Start MAI annual checkout'}
-              </button>
-              <button
-                type="button"
-                onClick={resetTrial}
-                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
-              >
-                <RotateCcw size={17} aria-hidden="true" />
-                Reset free trial
               </button>
             </div>
           ) : null}
@@ -117,19 +120,18 @@ export default function Subscription() {
           <StatCard label="MAI offer" value="$7/mo" detail="Billed annually" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
-            <StatCard label="Trial days left" value={isTrial ? daysLeft : 0} detail={isTrial ? 'Before annual billing' : 'Annual plan active'} />
+            <StatCard label="MAI status" value={isActiveMai ? 'Active' : 'Locked'} detail={isActiveMai ? 'Stripe confirmed' : 'Checkout required'} />
           ) : null}
         </aside>
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout is prepared for MAI annual billing. Add your Stripe secret key and MAI annual Price ID in Vercel, then redeploy.
-        Webhooks are still needed to automatically update subscription status in Supabase.
+        Stripe Checkout and the Stripe webhook control MAI billing status. Belt User accounts stay free.
       </div>
     </PageShell>
   );
 }
 
 function formatDate(dateString) {
-  return new Date(`${dateString}T12:00:00`).toLocaleDateString();
+  return new Date(dateString).toLocaleDateString();
 }

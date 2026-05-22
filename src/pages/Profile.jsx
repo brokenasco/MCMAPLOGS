@@ -30,9 +30,9 @@ export default function Profile() {
               label="Subscription"
               value={
                 activeRole === 'MAI'
-                  ? displaySubscription.status === 'trial'
-                    ? `Trial until ${displaySubscription.trialEndsAt}, then $84.99/year`
-                    : '$84.99/year active'
+                  ? displaySubscription.status === 'active'
+                    ? '$84.99/year active'
+                    : 'Annual checkout required'
                   : 'Free Belt User account'
               }
             />

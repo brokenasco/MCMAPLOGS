@@ -10,9 +10,14 @@ export default async function handler(request, response) {
 
   try {
     const { role, email } = request.body || {};
+    const accessToken = readBearerToken(request);
 
     if (role !== 'MAI') {
       return response.status(400).json({ error: 'Belt User accounts are free and do not need checkout.' });
+    }
+
+    if (!accessToken) {
+      return response.status(401).json({ error: 'Log in as an MAI before starting checkout.' });
     }
 
     const priceId = priceIds[role];
@@ -25,19 +30,36 @@ export default async function handler(request, response) {
       return response.status(400).json({ error: 'Stripe price ID is missing for this account type.' });
     }
 
+    const signedInUser = await getSupabaseUser(accessToken);
+
+    if (!signedInUser?.id) {
+      return response.status(401).json({ error: 'Your login expired. Log in again, then start checkout.' });
+    }
+
+    const profile = await getProfile(signedInUser.id);
+
+    if (profile?.account_type !== 'MAI') {
+      return response.status(403).json({ error: 'Only MAI accounts need a paid checkout.' });
+    }
+
     const origin = request.headers.origin || `https://${request.headers.host}`;
     const body = new URLSearchParams({
       mode: 'subscription',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
-      'subscription_data[trial_period_days]': '30',
       'subscription_data[metadata][account_role]': role,
+      'subscription_data[metadata][user_id]': signedInUser.id,
+      'metadata[account_role]': role,
+      'metadata[user_id]': signedInUser.id,
+      client_reference_id: signedInUser.id,
       success_url: `${origin}/subscription?checkout=success`,
       cancel_url: `${origin}/subscription?checkout=cancelled`
     });
 
-    if (email) {
-      body.set('customer_email', email);
+    if (profile.stripe_customer_id) {
+      body.set('customer', profile.stripe_customer_id);
+    } else if (email || signedInUser.email) {
+      body.set('customer_email', email || signedInUser.email);
     }
 
     const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -58,4 +80,60 @@ export default async function handler(request, response) {
   } catch (error) {
     return response.status(500).json({ error: error.message || 'Unable to create checkout session.' });
   }
+}
+
+function readBearerToken(request) {
+  const authorization = request.headers.authorization || '';
+  return authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+}
+
+async function getSupabaseUser(accessToken) {
+  const supabaseUrl = normalizeUrl(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
+  const supabaseKey =
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase server auth settings are missing in Vercel.');
+  }
+
+  const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!userResponse.ok) return null;
+  return userResponse.json();
+}
+
+async function getProfile(userId) {
+  const supabaseUrl = normalizeUrl(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
+
+  if (!supabaseUrl || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase service role settings are missing in Vercel.');
+  }
+
+  const profileResponse = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,account_type,stripe_customer_id`,
+    {
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    }
+  );
+
+  if (!profileResponse.ok) {
+    throw new Error('Unable to load the MAI billing profile.');
+  }
+
+  const profiles = await profileResponse.json();
+  return profiles[0] || null;
+}
+
+function normalizeUrl(rawUrl) {
+  return rawUrl?.trim().replace(/\/$/, '') || '';
 }

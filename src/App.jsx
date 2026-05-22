@@ -92,7 +92,7 @@ function RequireAccount({ children }) {
 }
 
 function RequireRole({ role, children }) {
-  const { activeRole, profile, session, loading, isSupabaseEnabled, isProductionBuild } = useApp();
+  const { activeRole, profile, session, loading, isSupabaseEnabled, isProductionBuild, hasPaidMaiAccess } = useApp();
 
   if (loading) {
     return <RouteLoading />;
@@ -106,6 +106,10 @@ function RequireRole({ role, children }) {
 
   if (accountRole !== role) {
     return <Navigate to={accountRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard'} replace />;
+  }
+
+  if (role === 'MAI' && (isSupabaseEnabled || isProductionBuild) && !hasPaidMaiAccess) {
+    return <Navigate to="/subscription" replace />;
   }
 
   return children;

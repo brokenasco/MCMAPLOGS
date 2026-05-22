@@ -14,8 +14,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - Verified logbook page
 - Subscription page with free Belt User accounts and MAI annual billing at $84.99/year
 - Help page with FAQ and sample log entries
-- Mock Belt User and MAI data
-- Supabase client setup placeholder
+- Supabase-backed account, profile, and log flows when environment variables are configured
 
 ## Run locally
 
@@ -45,8 +44,32 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 
 ## Supabase notes
 
-The app currently uses mock data only. When you are ready to connect real accounts and logs, add your Supabase URL and anon key to `.env`, then replace the mock data calls in `src/data/mockData.js` with Supabase queries.
+Add your Supabase URL and public key to `.env` for local browser testing and to Vercel for deployed accounts:
+
+```bash
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
+
+Run `supabase/mai-subscriptions.sql` in the Supabase SQL editor before enabling MAI billing enforcement. It adds the Stripe subscription fields on `profiles`, marks existing Belt Users as free, and marks existing MAIs as unpaid until Stripe confirms a subscription.
 
 ## Billing notes
 
-The subscription flow prepares Stripe Checkout for MAI annual billing. Belt User accounts are free. Use Stripe webhooks plus backend subscription checks before enforcing paid MAI access.
+Stripe Checkout is used only for MAI annual billing. Belt User accounts are free.
+
+The deployed billing flow needs these Vercel environment variables:
+
+```bash
+STRIPE_SECRET_KEY=...
+STRIPE_MAI_ANNUAL_PRICE_ID=...
+STRIPE_WEBHOOK_SECRET=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+Register the Stripe webhook URL as `/api/stripe-webhook` and send these events:
+
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+The webhook stores Stripe customer, subscription, and status fields on the MAI profile. MAI dashboard and verification routes only open after the stored subscription status is `active`.

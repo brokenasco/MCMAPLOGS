@@ -6,11 +6,7 @@ import { useApp } from '../context/AppContext.jsx';
 export default function SubscriptionBanner() {
   const { activeRole, displaySubscription } = useApp();
   const isMai = activeRole === 'MAI';
-  const isTrial = isMai && displaySubscription.status === 'trial';
-  const daysLeft = Math.max(
-    0,
-    Math.ceil((new Date(`${displaySubscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
-  );
+  const hasActiveMaiPlan = isMai && displaySubscription.status === 'active';
 
   return (
     <div className="border-b border-coyote/30 bg-olive text-paper">
@@ -18,9 +14,9 @@ export default function SubscriptionBanner() {
         <p className="font-semibold">
           {!isMai
             ? 'Belt User accounts are free.'
-            : isTrial
-              ? `MAI trial active: ${daysLeft} days left. Then $84.99 billed annually.`
-              : 'MAI annual subscription: $84.99/year.'}
+            : hasActiveMaiPlan
+              ? 'MAI annual subscription active: $84.99/year.'
+              : 'MAI access requires the $84.99 annual subscription.'}
         </p>
         <Link
           to="/subscription"

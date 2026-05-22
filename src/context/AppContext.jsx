@@ -38,11 +38,11 @@ export function AppProvider({ children }) {
     }
   });
   const [subscription, setSubscription] = React.useState({
-    status: 'trial',
+    status: 'free',
     planName: subscriptionPlans['Belt User'].planName,
     annualPrice: subscriptionPlans['Belt User'].annualPrice,
-    trialStartedAt: new Date().toISOString().slice(0, 10),
-    trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
     paymentMethod: null
   });
 
@@ -75,6 +75,7 @@ export function AppProvider({ children }) {
     requiresPayment: currentPlan.requiresPayment,
     label: currentPlan.label
   };
+  const hasPaidMaiAccess = activeRole !== 'MAI' || displaySubscription.status === 'active';
 
   React.useEffect(() => {
     if (!supabase) {
@@ -150,6 +151,7 @@ export function AppProvider({ children }) {
   function applyProfile(profileData) {
     setProfile(profileData);
     setActiveRole(profileData.account_type);
+    setSubscription(getProfileSubscription(profileData));
 
     if (profileData.account_type === 'MAI') {
       setMaiUser({
@@ -373,7 +375,8 @@ export function AppProvider({ children }) {
       account_type: role,
       belt_level: beltLevel,
       unit: role === 'MAI' ? currentMai.unit : currentBeltUser.unit,
-      mai_number: maiNumber
+      mai_number: maiNumber,
+      subscription_status: role === 'MAI' ? 'unpaid' : 'free'
     };
 
     if (data.session) {
@@ -451,23 +454,9 @@ export function AppProvider({ children }) {
     return updatedBeltUser;
   };
 
-  const startPaidSubscription = () => {
-    setSubscription((current) => ({
-      ...current,
-      status: 'active',
-      paymentMethod: 'Mock card ending in 4242'
-    }));
-  };
-
-  const resetTrial = () => {
-    setSubscription({
-      status: 'trial',
-      planName: currentPlan.planName,
-      annualPrice: currentPlan.annualPrice,
-      trialStartedAt: new Date().toISOString().slice(0, 10),
-      trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
-      paymentMethod: null
-    });
+  const refreshAccount = async () => {
+    if (!supabase || !currentUserId) return null;
+    return loadProfileAndLogs(currentUserId);
   };
 
   const value = {
@@ -492,6 +481,7 @@ export function AppProvider({ children }) {
     savedDraft,
     subscription,
     displaySubscription,
+    hasPaidMaiAccess,
     subscriptionPlans,
     submitLog,
     verifyLog,
@@ -504,8 +494,7 @@ export function AppProvider({ children }) {
     createMockAccount,
     signIn,
     signOut,
-    startPaidSubscription,
-    resetTrial
+    refreshAccount
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -531,10 +520,13 @@ function mapLogFromSupabase(row) {
   };
 }
 
-function addDays(date, days) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
+function getProfileSubscription(profileData) {
+  return {
+    status: profileData.account_type === 'MAI' ? profileData.subscription_status || 'unpaid' : 'free',
+    currentPeriodEnd: profileData.subscription_current_period_end,
+    cancelAtPeriodEnd: Boolean(profileData.subscription_cancel_at_period_end),
+    paymentMethod: null
+  };
 }
 
 export function useApp() {
