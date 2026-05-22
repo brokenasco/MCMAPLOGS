@@ -366,6 +366,14 @@ export function AppProvider({ children }) {
       throw error;
     }
 
+    if (!data.user?.id) {
+      const signupError = new Error(
+        'Supabase did not return a new account. Try a different email address, or log in if this email was already used.'
+      );
+      setAuthMessage(signupError.message);
+      throw signupError;
+    }
+
     const profilePayload = {
       id: data.user.id,
       full_name: name,
