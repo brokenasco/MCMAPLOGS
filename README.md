@@ -12,7 +12,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - MAI dashboard
 - Pending logs page
 - Verified logbook page
-- Subscription page with 1-month free trial, $2.99/month Belt User plan, and $5.99/month MAI plan
+- Subscription page with free Belt User accounts and MAI annual billing at $84.99/year
 - Help page with FAQ and sample log entries
 - Mock Belt User and MAI data
 - Supabase client setup placeholder
@@ -49,4 +49,4 @@ The app currently uses mock data only. When you are ready to connect real accoun
 
 ## Billing notes
 
-The subscription flow is front-end only for now. It shows a 1-month free trial and a $2/month plan, but it does not charge real cards. Use a payment provider such as Stripe plus backend subscription checks before accepting real payments.
+The subscription flow prepares Stripe Checkout for MAI annual billing. Belt User accounts are free. Use Stripe webhooks plus backend subscription checks before enforcing paid MAI access.

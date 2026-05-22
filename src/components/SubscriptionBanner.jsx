@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function SubscriptionBanner() {
-  const { displaySubscription } = useApp();
-  const isTrial = displaySubscription.status === 'trial';
+  const { activeRole, displaySubscription } = useApp();
+  const isMai = activeRole === 'MAI';
+  const isTrial = isMai && displaySubscription.status === 'trial';
   const daysLeft = Math.max(
     0,
     Math.ceil((new Date(`${displaySubscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
@@ -15,9 +16,11 @@ export default function SubscriptionBanner() {
     <div className="border-b border-coyote/30 bg-olive text-paper">
       <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:px-6 lg:px-8">
         <p className="font-semibold">
-          {isTrial
-            ? `Free trial active: ${daysLeft} days left. Then $${displaySubscription.monthlyPrice}/month.`
-            : `Subscription active: $${displaySubscription.monthlyPrice}/month plan.`}
+          {!isMai
+            ? 'Belt User accounts are free.'
+            : isTrial
+              ? `MAI trial active: ${daysLeft} days left. Then $84.99 billed annually.`
+              : 'MAI annual subscription: $84.99/year.'}
         </p>
         <Link
           to="/subscription"

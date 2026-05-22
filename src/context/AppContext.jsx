@@ -7,11 +7,17 @@ const AppContext = React.createContext(null);
 const subscriptionPlans = {
   'Belt User': {
     planName: 'MCMAP Logbook Belt User',
-    monthlyPrice: 2.99
+    label: 'Free',
+    requiresPayment: false,
+    annualPrice: 0,
+    monthlyDisplay: 'Free'
   },
   MAI: {
-    planName: 'MCMAP Logbook MAI',
-    monthlyPrice: 5.99
+    planName: 'MCMAP Logbook MAI Annual',
+    label: '$84.99/year',
+    requiresPayment: true,
+    annualPrice: 84.99,
+    monthlyDisplay: '$7/mo billed annually'
   }
 };
 
@@ -34,7 +40,7 @@ export function AppProvider({ children }) {
   const [subscription, setSubscription] = React.useState({
     status: 'trial',
     planName: subscriptionPlans['Belt User'].planName,
-    monthlyPrice: subscriptionPlans['Belt User'].monthlyPrice,
+    annualPrice: subscriptionPlans['Belt User'].annualPrice,
     trialStartedAt: new Date().toISOString().slice(0, 10),
     trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
     paymentMethod: null
@@ -64,7 +70,10 @@ export function AppProvider({ children }) {
   const displaySubscription = {
     ...subscription,
     planName: currentPlan.planName,
-    monthlyPrice: currentPlan.monthlyPrice
+    annualPrice: currentPlan.annualPrice,
+    monthlyDisplay: currentPlan.monthlyDisplay,
+    requiresPayment: currentPlan.requiresPayment,
+    label: currentPlan.label
   };
 
   React.useEffect(() => {
@@ -448,7 +457,7 @@ export function AppProvider({ children }) {
     setSubscription({
       status: 'trial',
       planName: currentPlan.planName,
-      monthlyPrice: currentPlan.monthlyPrice,
+      annualPrice: currentPlan.annualPrice,
       trialStartedAt: new Date().toISOString().slice(0, 10),
       trialEndsAt: addDays(new Date(), 30).toISOString().slice(0, 10),
       paymentMethod: null

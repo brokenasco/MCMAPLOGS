@@ -70,6 +70,22 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="border-b border-coyote/30 bg-brass/15">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-clay">Simple pricing</p>
+            <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs are $7/month billed annually.</h2>
+            <p className="mt-1 text-sm leading-6 text-ink/70">MAI annual billing is $84.99/year for log review and verification tools.</p>
+          </div>
+          <Link
+            to="/signup"
+            className="focus-ring inline-flex h-11 items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white"
+          >
+            Create an account
+          </Link>
+        </div>
+      </section>
+
       <section className="mx-auto grid max-w-7xl gap-4 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
         {features.map((feature) => {
           const Icon = feature.icon;

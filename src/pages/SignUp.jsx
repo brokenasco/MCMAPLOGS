@@ -63,7 +63,7 @@ export default function SignUp() {
     <PageShell
       eyebrow="Create account"
       title="Sign up"
-      description="Choose whether this mock account is for a Belt User submitting hours or an MAI verifying and signing logbooks. New accounts include a 1-month free trial."
+      description="Choose Belt User for free training-log access or MAI for logbook verification and signing tools."
     >
       <div className="mx-auto max-w-3xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
@@ -124,7 +124,7 @@ export default function SignUp() {
           )}
 
           <div className="rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-            Subscription: first month free. Belt Users are $2.99 per month after trial. MAIs are $5.99 per month after trial.
+            Belt User accounts are free. MAI accounts are $7/month billed annually at $84.99/year.
           </div>
 
           {(statusMessage || authMessage) ? (

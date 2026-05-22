@@ -1,6 +1,5 @@
 const priceIds = {
-  'Belt User': process.env.STRIPE_BELT_USER_PRICE_ID,
-  MAI: process.env.STRIPE_MAI_PRICE_ID
+  MAI: process.env.STRIPE_MAI_ANNUAL_PRICE_ID
 };
 
 export default async function handler(request, response) {
@@ -11,6 +10,11 @@ export default async function handler(request, response) {
 
   try {
     const { role, email } = request.body || {};
+
+    if (role !== 'MAI') {
+      return response.status(400).json({ error: 'Belt User accounts are free and do not need checkout.' });
+    }
+
     const priceId = priceIds[role];
 
     if (!process.env.STRIPE_SECRET_KEY) {

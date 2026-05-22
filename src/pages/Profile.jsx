@@ -29,9 +29,11 @@ export default function Profile() {
             <Detail
               label="Subscription"
               value={
-                displaySubscription.status === 'trial'
-                  ? `Trial until ${displaySubscription.trialEndsAt}, then $${displaySubscription.monthlyPrice}/month`
-                  : `$${displaySubscription.monthlyPrice}/month active`
+                activeRole === 'MAI'
+                  ? displaySubscription.status === 'trial'
+                    ? `Trial until ${displaySubscription.trialEndsAt}, then $84.99/year`
+                    : '$84.99/year active'
+                  : 'Free Belt User account'
               }
             />
           </dl>

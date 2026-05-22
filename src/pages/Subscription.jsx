@@ -10,6 +10,7 @@ export default function Subscription() {
   const [billingMessage, setBillingMessage] = React.useState('');
   const isTrial = displaySubscription.status === 'trial';
   const billingEmail = activeRole === 'MAI' ? maiUser.email : beltUser.email;
+  const isMai = activeRole === 'MAI';
   const daysLeft = Math.max(
     0,
     Math.ceil((new Date(`${displaySubscription.trialEndsAt}T12:00:00`) - new Date()) / 86400000)
@@ -47,7 +48,7 @@ export default function Subscription() {
     <PageShell
       eyebrow="Billing"
       title="Subscription"
-      description="Every new account starts with a 1-month free trial. Pricing depends on the account type."
+      description="Belt User accounts are free. MAIs use the annual plan for verification and logbook signing."
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
@@ -56,46 +57,54 @@ export default function Subscription() {
             <div>
               <h2 className="text-3xl font-bold text-ink">{displaySubscription.planName}</h2>
               <p className="mt-2 text-sm leading-6 text-ink/65">
-                Current account type: {activeRole}. Belt Users can submit logs. MAIs can review and sign logs.
+                {isMai
+                  ? 'MAI accounts can review, return, and sign submitted MCMAP logbooks.'
+                  : 'Belt Users can create a free account and submit training logs.'}
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">${displaySubscription.monthlyPrice}</p>
-              <p className="text-sm font-semibold text-ink/60">per month</p>
+              <p className="text-3xl font-bold text-ink">{displaySubscription.monthlyDisplay}</p>
+              <p className="text-sm font-semibold text-ink/60">
+                {isMai ? '$84.99 billed annually' : 'no payment required'}
+              </p>
             </div>
           </div>
 
           <div className="mt-6 rounded-md border border-olive/20 bg-olive/10 p-4">
             <p className="flex items-center gap-2 text-sm font-bold text-olive">
               <CheckCircle2 size={17} aria-hidden="true" />
-              {isTrial ? 'Free trial active' : 'Paid subscription active'}
+              {!isMai ? 'Free Belt User account' : isTrial ? 'Free trial active' : 'Paid annual subscription active'}
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
-              {isTrial
-                ? `Your free trial ends on ${formatDate(displaySubscription.trialEndsAt)}. After that, the plan is $${displaySubscription.monthlyPrice} per month.`
-                : `Your subscription is active using ${displaySubscription.paymentMethod}.`}
+              {!isMai
+                ? 'Belt Users can create accounts and submit logs without a subscription charge.'
+                : isTrial
+                  ? `Your free trial ends on ${formatDate(displaySubscription.trialEndsAt)}. After that, the MAI plan is $84.99 per year.`
+                  : `Your annual MAI subscription is active using ${displaySubscription.paymentMethod}.`}
             </p>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={startStripeCheckout}
-              disabled={isRedirecting}
-              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-            >
-              <CreditCard size={17} aria-hidden="true" />
-              {isRedirecting ? 'Opening Stripe...' : `Start ${displaySubscription.monthlyPrice}/month checkout`}
-            </button>
-            <button
-              type="button"
-              onClick={resetTrial}
-              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
-            >
-              <RotateCcw size={17} aria-hidden="true" />
-              Reset free trial
-            </button>
-          </div>
+          {isMai ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={startStripeCheckout}
+                disabled={isRedirecting}
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+              >
+                <CreditCard size={17} aria-hidden="true" />
+                {isRedirecting ? 'Opening Stripe...' : 'Start MAI annual checkout'}
+              </button>
+              <button
+                type="button"
+                onClick={resetTrial}
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
+              >
+                <RotateCcw size={17} aria-hidden="true" />
+                Reset free trial
+              </button>
+            </div>
+          ) : null}
           {billingMessage ? (
             <div className="mt-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
               {billingMessage}
@@ -104,15 +113,17 @@ export default function Subscription() {
         </section>
 
         <aside className="grid gap-4">
-          <StatCard label="Trial length" value="1 month" detail="Starts at account creation" />
-          <StatCard label="Trial days left" value={isTrial ? daysLeft : 0} detail={isTrial ? 'Before billing starts' : 'Paid plan active'} />
-          <StatCard label="Belt User price" value={`$${subscriptionPlans['Belt User'].monthlyPrice}`} detail="Per month after trial" />
-          <StatCard label="MAI price" value={`$${subscriptionPlans.MAI.monthlyPrice}`} detail="Per month after trial" />
+          <StatCard label="Belt User accounts" value="Free" detail="No payment required" />
+          <StatCard label="MAI offer" value="$7/mo" detail="Billed annually" />
+          <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
+          {isMai ? (
+            <StatCard label="Trial days left" value={isTrial ? daysLeft : 0} detail={isTrial ? 'Before annual billing' : 'Annual plan active'} />
+          ) : null}
         </aside>
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout is prepared. Add your Stripe secret key and role-based Price IDs in Vercel, then redeploy.
+        Stripe Checkout is prepared for MAI annual billing. Add your Stripe secret key and MAI annual Price ID in Vercel, then redeploy.
         Webhooks are still needed to automatically update subscription status in Supabase.
       </div>
     </PageShell>
