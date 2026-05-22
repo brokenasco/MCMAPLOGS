@@ -366,16 +366,8 @@ export function AppProvider({ children }) {
       throw error;
     }
 
-    if (!data.user?.id) {
-      const signupError = new Error(
-        'Supabase did not return a new account. Try a different email address, or log in if this email was already used.'
-      );
-      setAuthMessage(signupError.message);
-      throw signupError;
-    }
-
     const profilePayload = {
-      id: data.user.id,
+      ...(data.user?.id ? { id: data.user.id } : {}),
       full_name: name,
       email,
       account_type: role,
@@ -385,6 +377,12 @@ export function AppProvider({ children }) {
     };
 
     if (data.session) {
+      if (!data.user?.id) {
+        const signupError = new Error('Account creation did not return a user ID. Please try again.');
+        setAuthMessage(signupError.message);
+        throw signupError;
+      }
+
       await supabase.from('profiles').upsert(profilePayload);
       applyProfile(profilePayload);
     }
