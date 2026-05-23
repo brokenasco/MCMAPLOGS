@@ -6,7 +6,7 @@ import StatCard from '../components/StatCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Subscription() {
-  const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, session, refreshAccount } = useApp();
+  const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, refreshAccount, getFreshAccessToken } = useApp();
   const [searchParams] = useSearchParams();
   const [isRedirecting, setIsRedirecting] = React.useState(false);
   const [billingMessage, setBillingMessage] = React.useState('');
@@ -31,11 +31,17 @@ export default function Subscription() {
     setBillingMessage('');
 
     try {
+      const accessToken = await getFreshAccessToken();
+
+      if (!accessToken) {
+        throw new Error('Log in again, then start checkout.');
+      }
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`
+          Authorization: `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           role: activeRole,

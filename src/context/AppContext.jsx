@@ -521,6 +521,22 @@ export function AppProvider({ children }) {
     return loadProfileAndLogs(currentUserId);
   };
 
+  const getFreshAccessToken = async () => {
+    if (!supabase) return session?.access_token || '';
+
+    const { data: refreshedData } = await supabase.auth.refreshSession();
+    const refreshedSession = refreshedData.session;
+
+    if (refreshedSession) {
+      setSession(refreshedSession);
+      return refreshedSession.access_token;
+    }
+
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session);
+    return data.session?.access_token || '';
+  };
+
   const value = {
     activeRole,
     setActiveRole,
@@ -559,7 +575,8 @@ export function AppProvider({ children }) {
     updatePassword,
     signOut,
     deleteAccount,
-    refreshAccount
+    refreshAccount,
+    getFreshAccessToken
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
