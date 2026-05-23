@@ -470,7 +470,9 @@ export function AppProvider({ children }) {
   };
 
   const deleteAccount = async () => {
-    if (!session?.access_token) {
+    const accessToken = await getFreshAccessToken();
+
+    if (!accessToken) {
       throw new Error('Log in before deleting your account.');
     }
 
@@ -478,7 +480,7 @@ export function AppProvider({ children }) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`
+        Authorization: `Bearer ${accessToken}`
       }
     });
     const data = await response.json().catch(() => ({}));
