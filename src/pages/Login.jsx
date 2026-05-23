@@ -51,6 +51,12 @@ export default function Login() {
             <Field label="Password" name="password" value={form.password} onChange={updateField} type="password" placeholder="Enter password" />
           </div>
 
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm font-bold text-clay hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
           {(statusMessage || authMessage) ? (
             <div className="rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
               {authMessage || statusMessage}

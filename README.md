@@ -7,6 +7,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - Landing page
 - Login page
 - Sign up page
+- Password recovery pages
 - Belt User dashboard
 - Submit MCMAP Hours page
 - MAI dashboard

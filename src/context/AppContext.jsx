@@ -420,6 +420,44 @@ export function AppProvider({ children }) {
     return signedInProfile;
   };
 
+  const requestPasswordReset = async (email) => {
+    setAuthMessage('');
+
+    if (!supabase) {
+      if (import.meta.env.PROD) {
+        throw new Error('Supabase is not configured for this deployment.');
+      }
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+  };
+
+  const updatePassword = async (password) => {
+    setAuthMessage('');
+
+    if (!supabase) {
+      if (import.meta.env.PROD) {
+        throw new Error('Supabase is not configured for this deployment.');
+      }
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -517,6 +555,8 @@ export function AppProvider({ children }) {
     createAccount,
     createMockAccount,
     signIn,
+    requestPasswordReset,
+    updatePassword,
     signOut,
     deleteAccount,
     refreshAccount

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout.jsx';
 import BeltDashboard from './pages/BeltDashboard.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
 import Help from './pages/Help.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
@@ -9,6 +10,7 @@ import MaiDashboard from './pages/MaiDashboard.jsx';
 import PendingLogs from './pages/PendingLogs.jsx';
 import Profile from './pages/Profile.jsx';
 import SignUp from './pages/SignUp.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import SubmitHours from './pages/SubmitHours.jsx';
 import Subscription from './pages/Subscription.jsx';
 import VerifiedLogbook from './pages/VerifiedLogbook.jsx';
@@ -21,6 +23,8 @@ export default function App() {
         <Route index element={<Landing />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<SignUp />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
         <Route
           path="belt/dashboard"
           element={
