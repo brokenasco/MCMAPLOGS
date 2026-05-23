@@ -32,7 +32,6 @@ export default function Landing() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-paper/75">
               A simple front end for Marines to submit MCMAP hours and for MAIs to verify training logs.
-              It is built with React, Vite, Tailwind CSS, and a Supabase-ready client.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link

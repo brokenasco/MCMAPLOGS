@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, authMessage, isSupabaseEnabled, isProductionBuild, supabaseConfigStatus } = useApp();
+  const { signIn, authMessage } = useApp();
   const [form, setForm] = React.useState({ email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState('');
@@ -38,14 +38,6 @@ export default function Login() {
     >
       <div className="mx-auto max-w-xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
-            {isSupabaseEnabled
-              ? `Real login is connected to ${supabaseConfigStatus.urlHost}.`
-              : isProductionBuild
-                ? 'Supabase is not connected on this deployment. Add the Vercel environment variables, then redeploy.'
-                : 'Local setup mode: add Supabase keys to run real login locally.'}
-          </div>
-
           <div className="grid gap-5">
             <Field label="Email" name="email" value={form.email} onChange={updateField} type="email" placeholder="name@example.mil" />
             <Field label="Password" name="password" value={form.password} onChange={updateField} type="password" placeholder="Enter password" />

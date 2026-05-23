@@ -5,7 +5,7 @@ import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function ForgotPassword() {
-  const { requestPasswordReset, authMessage, isSupabaseEnabled, isProductionBuild, supabaseConfigStatus } = useApp();
+  const { requestPasswordReset, authMessage } = useApp();
   const [email, setEmail] = React.useState('');
   const [statusMessage, setStatusMessage] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -33,14 +33,6 @@ export default function ForgotPassword() {
     >
       <div className="mx-auto max-w-xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
-            {isSupabaseEnabled
-              ? `Password recovery is connected to ${supabaseConfigStatus.urlHost}.`
-              : isProductionBuild
-                ? 'Supabase is not connected on this deployment. Add the Vercel environment variables, then redeploy.'
-                : 'Local setup mode: add Supabase keys to test password recovery locally.'}
-          </div>
-
           <label className="block">
             <span className="text-sm font-bold text-ink">Email</span>
             <input

@@ -8,7 +8,7 @@ import { beltLevels } from '../data/mockData.js';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { createAccount, authMessage, isSupabaseEnabled, isProductionBuild, supabaseConfigStatus } = useApp();
+  const { createAccount, authMessage } = useApp();
   const [accountType, setAccountType] = React.useState('Belt User');
   const [form, setForm] = React.useState({
     name: '',
@@ -67,14 +67,6 @@ export default function SignUp() {
     >
       <div className="mx-auto max-w-3xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md border border-coyote/30 bg-field p-4 text-sm leading-6 text-ink/70">
-            {isSupabaseEnabled
-              ? `Real account creation is connected to ${supabaseConfigStatus.urlHost}. Supabase will store the user account and profile.`
-              : isProductionBuild
-                ? 'Supabase is not connected on this deployment. Add the Vercel environment variables, then redeploy.'
-                : 'Local setup mode: add Supabase keys to run real account creation locally.'}
-          </div>
-
           <div className="grid gap-4 sm:grid-cols-2">
             <RoleCard role="Belt User" selected={accountType === 'Belt User'} onSelect={setAccountType} />
             <RoleCard role="MAI" selected={accountType === 'MAI'} onSelect={setAccountType} />
