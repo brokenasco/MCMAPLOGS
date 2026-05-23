@@ -22,11 +22,11 @@ export default function SubscriptionBanner() {
               : 'MAI access starts with a 3-month free trial, then $84.99/year.'}
         </p>
         <Link
-          to="/subscription"
+          to="/profile/subscription"
           className="focus-ring inline-flex h-9 items-center justify-center gap-2 rounded-md bg-paper px-3 text-sm font-bold text-ink hover:bg-field"
         >
           <CreditCard size={16} aria-hidden="true" />
-          Manage subscription
+          Manage Subscription
         </Link>
       </div>
     </div>

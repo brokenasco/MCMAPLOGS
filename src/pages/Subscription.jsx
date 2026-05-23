@@ -65,8 +65,8 @@ export default function Subscription() {
 
   return (
     <PageShell
-      eyebrow="Billing"
-      title="Subscription"
+      eyebrow="Profile"
+      title="Manage Subscription"
       description="Belt User accounts are free. MAIs use the annual plan for verification and logbook signing."
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">

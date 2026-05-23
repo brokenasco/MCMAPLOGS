@@ -43,7 +43,7 @@ export default function Landing() {
                 <ArrowRight size={17} aria-hidden="true" />
               </Link>
               <Link
-                to="/mai/pending"
+                to="/logbook/verified"
                 className="focus-ring inline-flex h-11 items-center rounded-md border border-paper/20 bg-paper/10 px-5 text-sm font-bold text-paper shadow-sm hover:bg-paper/15"
               >
                 I&apos;m an MAI verifying logs

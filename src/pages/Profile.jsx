@@ -1,6 +1,6 @@
 import React from 'react';
-import { AlertTriangle, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, CreditCard, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
@@ -76,6 +76,22 @@ export default function Profile() {
             <p className="mt-2 text-sm leading-6 text-ink/65">
               Your role is controlled by your saved account profile. Belt Users submit logs. MAIs review and sign logs.
             </p>
+          </div>
+
+          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+            <h2 className="text-xl font-bold">Manage Subscription</h2>
+            <p className="mt-2 text-sm leading-6 text-ink/65">
+              {isMai
+                ? 'Review MAI trial status, annual billing, and Stripe checkout from one place.'
+                : 'Belt User accounts are free. No subscription is required to submit training logs.'}
+            </p>
+            <Link
+              to="/profile/subscription"
+              className="focus-ring mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+            >
+              <CreditCard size={17} aria-hidden="true" />
+              Manage Subscription
+            </Link>
           </div>
 
           <div className="mt-5 rounded-md border border-clay/30 bg-clay/10 p-5 shadow-sm">

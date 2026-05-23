@@ -35,7 +35,7 @@ export default function MaiDashboard() {
             </p>
           </div>
           <Link
-            to="/mai/pending"
+            to="/logbook/verified"
             className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-brass px-4 text-sm font-bold text-ink"
           >
             <AlertTriangle size={18} aria-hidden="true" />
@@ -59,7 +59,7 @@ export default function MaiDashboard() {
           </p>
         </div>
         <Link
-          to="/mai/pending"
+          to="/logbook/verified"
           className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90"
         >
           <ClipboardList size={18} aria-hidden="true" />

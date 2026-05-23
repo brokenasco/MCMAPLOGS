@@ -25,7 +25,7 @@ export default async function handler(request, response) {
     const origin = request.headers.origin || `https://${request.headers.host}`;
     const body = new URLSearchParams({
       customer: profile.stripe_customer_id,
-      return_url: `${origin}/subscription`
+      return_url: `${origin}/profile/subscription`
     });
 
     const stripeResponse = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {

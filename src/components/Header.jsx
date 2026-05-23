@@ -6,18 +6,14 @@ import { useApp } from '../context/AppContext.jsx';
 const roleLinks = {
   'Belt User': [
     { label: 'Dashboard', to: '/belt/dashboard' },
-    { label: 'Submit Hours', to: '/belt/submit' },
     { label: 'Logbook', to: '/logbook/verified' },
     { label: 'Profile', to: '/profile' },
-    { label: 'Billing', to: '/subscription' },
     { label: 'Help', to: '/help' }
   ],
   MAI: [
     { label: 'Dashboard', to: '/mai/dashboard' },
-    { label: 'Pending Logs', to: '/mai/pending' },
     { label: 'Logbook', to: '/logbook/verified' },
     { label: 'Profile', to: '/profile' },
-    { label: 'Billing', to: '/subscription' },
     { label: 'Help', to: '/help' }
   ]
 };
@@ -41,21 +37,23 @@ export default function Header() {
           </span>
         </NavLink>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `focus-ring rounded-md px-3 py-2 text-sm font-semibold transition ${
-                  isActive ? 'bg-paper text-olive shadow-sm' : 'text-paper/70 hover:bg-paper/10 hover:text-paper'
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
+        {session ? (
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `focus-ring rounded-md px-3 py-2 text-sm font-semibold transition ${
+                    isActive ? 'bg-paper text-olive shadow-sm' : 'text-paper/70 hover:bg-paper/10 hover:text-paper'
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
+        ) : null}
 
         <div className="flex items-center gap-2">
           {session ? (
@@ -95,7 +93,8 @@ export default function Header() {
           </button>
         </div>
       </div>
-      <div className="border-t border-coyote/20 px-4 py-2 lg:hidden">
+      {session ? (
+        <div className="border-t border-coyote/20 px-4 py-2 lg:hidden">
         <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto">
           {navLinks.map((link) => (
             <NavLink
@@ -112,6 +111,7 @@ export default function Header() {
           ))}
         </div>
       </div>
+      ) : null}
     </header>
   );
 }

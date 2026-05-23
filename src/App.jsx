@@ -7,7 +7,6 @@ import Help from './pages/Help.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import MaiDashboard from './pages/MaiDashboard.jsx';
-import PendingLogs from './pages/PendingLogs.jsx';
 import Profile from './pages/Profile.jsx';
 import SignUp from './pages/SignUp.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
@@ -53,7 +52,7 @@ export default function App() {
           path="mai/pending"
           element={
             <RequireRole role="MAI">
-              <PendingLogs />
+              <Navigate to="/logbook/verified" replace />
             </RequireRole>
           }
         />
@@ -73,7 +72,15 @@ export default function App() {
             </RequireAccount>
           }
         />
-        <Route path="subscription" element={<Subscription />} />
+        <Route
+          path="profile/subscription"
+          element={
+            <RequireAccount>
+              <Subscription />
+            </RequireAccount>
+          }
+        />
+        <Route path="subscription" element={<Navigate to="/profile/subscription" replace />} />
         <Route path="help" element={<Help />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
@@ -113,7 +120,7 @@ function RequireRole({ role, children }) {
   }
 
   if (role === 'MAI' && (isSupabaseEnabled || isProductionBuild) && !hasPaidMaiAccess) {
-    return <Navigate to="/subscription" replace />;
+    return <Navigate to="/profile/subscription" replace />;
   }
 
   return children;

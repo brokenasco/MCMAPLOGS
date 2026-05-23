@@ -57,8 +57,8 @@ export default async function handler(request, response) {
       'metadata[account_role]': role,
       'metadata[user_id]': signedInUser.id,
       client_reference_id: signedInUser.id,
-      success_url: `${origin}/subscription?checkout=success`,
-      cancel_url: `${origin}/subscription?checkout=cancelled`
+      success_url: `${origin}/profile/subscription?checkout=success`,
+      cancel_url: `${origin}/profile/subscription?checkout=cancelled`
     });
 
     if (profile.stripe_customer_id) {
