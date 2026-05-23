@@ -31,7 +31,10 @@ export default function Landing() {
               MCMAP Logbook
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-paper/75">
-              A simple front end for Marines to submit MCMAP hours and for MAIs to verify training logs.
+              Built for the warrior. Designed for the instructor.
+              MCMAP hour tracking made simple. Belt users log and protect their hard-earned training hours,
+              while MAIs verify, sign, and manage records with professional accountability. A digital platform
+              that keeps training documented, organized, and mission-ready.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
