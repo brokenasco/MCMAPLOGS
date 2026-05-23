@@ -11,10 +11,14 @@ export default async function handler(request, response) {
       return response.status(401).json({ error: 'Log in before deleting your account.' });
     }
 
-    const user = await getSupabaseUser(accessToken);
+    const { user, error: authError } = await getSupabaseUser(accessToken);
 
     if (!user?.id) {
-      return response.status(401).json({ error: 'Your login expired. Log in again before deleting your account.' });
+      return response.status(401).json({
+        error:
+          authError ||
+          'Supabase could not confirm your login. Sign out, sign back in, then delete your account again.'
+      });
     }
 
     const profile = await getProfile(user.id);
@@ -41,24 +45,32 @@ function readBearerToken(request) {
 
 async function getSupabaseUser(accessToken) {
   const supabaseUrl = getSupabaseUrl();
-  const supabaseKey =
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+  const publicKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const authKeys = [publicKey, process.env.SUPABASE_SERVICE_ROLE_KEY].filter(Boolean);
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !authKeys.length) {
     throw new Error('Supabase server auth settings are missing in Vercel.');
   }
 
-  const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${accessToken}`
-    }
-  });
+  let lastError = '';
 
-  if (!userResponse.ok) return null;
-  return userResponse.json();
+  for (const supabaseKey of authKeys) {
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    if (userResponse.ok) {
+      return { user: await userResponse.json(), error: '' };
+    }
+
+    const errorText = await userResponse.text();
+    lastError = `Supabase rejected this login token (${userResponse.status}). Make sure Vercel uses the same Supabase project URL and anon key as the website, then redeploy. ${errorText}`;
+  }
+
+  return { user: null, error: lastError };
 }
 
 async function getProfile(userId) {

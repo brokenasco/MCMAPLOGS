@@ -526,17 +526,41 @@ export function AppProvider({ children }) {
   const getFreshAccessToken = async () => {
     if (!supabase) return session?.access_token || '';
 
-    const { data: refreshedData } = await supabase.auth.refreshSession();
-    const refreshedSession = refreshedData.session;
+    const { data: currentData } = await supabase.auth.getSession();
+    let currentSession = currentData.session;
 
-    if (refreshedSession) {
-      setSession(refreshedSession);
-      return refreshedSession.access_token;
+    if (!currentSession?.access_token) {
+      setSession(null);
+      return '';
     }
 
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
-    return data.session?.access_token || '';
+    const expiresInSeconds = currentSession.expires_at ? currentSession.expires_at - Math.floor(Date.now() / 1000) : 0;
+
+    if (expiresInSeconds < 300) {
+      const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+
+      if (refreshError) {
+        setSession(null);
+        throw new Error('Your login session could not be refreshed. Sign out, sign back in, then try again.');
+      }
+
+      currentSession = refreshedData.session;
+    }
+
+    if (!currentSession?.access_token) {
+      setSession(null);
+      return '';
+    }
+
+    const { error: userError } = await supabase.auth.getUser(currentSession.access_token);
+
+    if (userError) {
+      setSession(null);
+      throw new Error('Your login session could not be confirmed. Sign out, sign back in, then try again.');
+    }
+
+    setSession(currentSession);
+    return currentSession.access_token;
   };
 
   const value = {
