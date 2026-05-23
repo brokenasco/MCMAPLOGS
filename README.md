@@ -14,6 +14,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - Verified logbook page
 - Subscription page with free Belt User accounts and MAI annual billing at $84.99/year
 - Help page with FAQ and sample log entries
+- Account deletion from the profile page
 - Supabase-backed account, profile, and log flows when environment variables are configured
 
 ## Run locally
@@ -73,3 +74,7 @@ Register the Stripe webhook URL as `/api/stripe-webhook` and send these events:
 - `customer.subscription.deleted`
 
 The webhook stores Stripe customer, subscription, and status fields on the MAI profile. MAI dashboard and verification routes only open after the stored subscription status is `active`.
+
+## Account deletion notes
+
+The profile page includes an account deletion action. It requires `SUPABASE_SERVICE_ROLE_KEY` in Vercel because the server function must delete the authenticated Supabase user. For paid MAI accounts, the deletion endpoint also cancels the saved Stripe subscription before removing the profile.

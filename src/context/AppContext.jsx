@@ -101,10 +101,11 @@ export function AppProvider({ children }) {
       setSession(nextSession);
       if (nextSession?.user) {
         loadProfileAndLogs(nextSession.user.id);
-      } else {
-        setProfile(null);
-        setLogs(trainingLogs);
-      }
+    } else {
+      setProfile(null);
+      setLogs(trainingLogs);
+      setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
+    }
     });
 
     return () => {
@@ -427,6 +428,29 @@ export function AppProvider({ children }) {
     setProfile(null);
     setLogs(trainingLogs);
     setActiveRole('Belt User');
+    setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
+  };
+
+  const deleteAccount = async () => {
+    if (!session?.access_token) {
+      throw new Error('Log in before deleting your account.');
+    }
+
+    const response = await fetch('/api/delete-account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Unable to delete this account.');
+    }
+
+    await signOut();
+    return data;
   };
 
   const createMockAccount = ({ role, name, email, beltLevel, maiNumber }) => {
@@ -494,6 +518,7 @@ export function AppProvider({ children }) {
     createMockAccount,
     signIn,
     signOut,
+    deleteAccount,
     refreshAccount
   };
 

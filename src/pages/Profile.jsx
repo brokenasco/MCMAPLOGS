@@ -1,13 +1,36 @@
 import React from 'react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Profile() {
-  const { activeRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription } = useApp();
+  const navigate = useNavigate();
+  const { activeRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription, deleteAccount } = useApp();
+  const [deleteText, setDeleteText] = React.useState('');
+  const [deleteMessage, setDeleteMessage] = React.useState('');
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
+  const canDelete = deleteText === 'DELETE';
+
+  const handleDeleteAccount = async () => {
+    if (!canDelete) return;
+
+    setIsDeleting(true);
+    setDeleteMessage('');
+
+    try {
+      await deleteAccount();
+      navigate('/');
+    } catch (error) {
+      setDeleteMessage(error.message || 'Account could not be deleted. Try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <PageShell
@@ -51,6 +74,47 @@ export default function Profile() {
             <p className="mt-2 text-sm leading-6 text-ink/65">
               Your role is controlled by your saved account profile. Belt Users submit logs. MAIs review and sign logs.
             </p>
+          </div>
+
+          <div className="mt-5 rounded-md border border-clay/30 bg-clay/10 p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="mt-1 text-clay">
+                <AlertTriangle size={20} aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-xl font-bold text-ink">Delete account</h2>
+                <p className="mt-2 text-sm leading-6 text-ink/70">
+                  This removes your login, profile, and submitted training logs. If this is a paid MAI account,
+                  the connected Stripe subscription is canceled during deletion.
+                </p>
+              </div>
+            </div>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-bold text-ink">Type DELETE to confirm</span>
+              <input
+                value={deleteText}
+                onChange={(event) => setDeleteText(event.target.value)}
+                className="focus-ring mt-2 h-11 w-full rounded-md border border-clay/30 bg-paper px-3 text-sm"
+                placeholder="DELETE"
+              />
+            </label>
+
+            {deleteMessage ? (
+              <div className="mt-4 rounded-md border border-clay/20 bg-paper p-4 text-sm font-semibold text-clay">
+                {deleteMessage}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={!canDelete || isDeleting}
+              className="focus-ring mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={17} aria-hidden="true" />
+              {isDeleting ? 'Deleting account...' : 'Delete my account'}
+            </button>
           </div>
         </section>
       </div>
