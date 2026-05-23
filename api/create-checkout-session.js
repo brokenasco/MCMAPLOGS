@@ -147,5 +147,14 @@ async function getProfile(userId) {
 }
 
 function normalizeUrl(rawUrl) {
-  return rawUrl?.trim().replace(/\/$/, '') || '';
+  if (!rawUrl) return '';
+
+  const trimmedUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+  const withProtocol = /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+
+  try {
+    return new URL(withProtocol).origin;
+  } catch {
+    return '';
+  }
 }

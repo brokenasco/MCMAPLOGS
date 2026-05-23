@@ -168,5 +168,16 @@ async function supabaseFetch(path, options = {}) {
 }
 
 function getSupabaseUrl() {
-  return (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+  const rawUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+
+  if (!rawUrl) return '';
+
+  const trimmedUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+  const withProtocol = /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+
+  try {
+    return new URL(withProtocol).origin;
+  } catch {
+    return '';
+  }
 }
