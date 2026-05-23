@@ -74,8 +74,10 @@ export default function Landing() {
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-clay">Simple pricing</p>
-            <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs are $7/month billed annually.</h2>
-            <p className="mt-1 text-sm leading-6 text-ink/70">MAI annual billing is $84.99/year for log review and verification tools.</p>
+            <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs get 3 months free.</h2>
+            <p className="mt-1 text-sm leading-6 text-ink/70">
+              After the MAI trial, annual billing is $84.99/year for log review and verification tools.
+            </p>
           </div>
           <Link
             to="/signup"

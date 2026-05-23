@@ -17,9 +17,12 @@ const subscriptionPlans = {
     label: '$84.99/year',
     requiresPayment: true,
     annualPrice: 84.99,
+    trialDays: 90,
     monthlyDisplay: '$7/mo billed annually'
   }
 };
+
+const paidMaiAccessStatuses = ['active', 'trialing'];
 
 export function AppProvider({ children }) {
   const [activeRole, setActiveRole] = React.useState('Belt User');
@@ -73,9 +76,10 @@ export function AppProvider({ children }) {
     annualPrice: currentPlan.annualPrice,
     monthlyDisplay: currentPlan.monthlyDisplay,
     requiresPayment: currentPlan.requiresPayment,
+    trialDays: currentPlan.trialDays || 0,
     label: currentPlan.label
   };
-  const hasPaidMaiAccess = activeRole !== 'MAI' || displaySubscription.status === 'active';
+  const hasPaidMaiAccess = activeRole !== 'MAI' || paidMaiAccessStatuses.includes(displaySubscription.status);
 
   React.useEffect(() => {
     if (!supabase) {

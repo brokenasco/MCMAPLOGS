@@ -13,7 +13,7 @@ A beginner-friendly React, Vite, Tailwind CSS, and Supabase-ready front end for 
 - MAI dashboard
 - Pending logs page
 - Verified logbook page
-- Subscription page with free Belt User accounts and MAI annual billing at $84.99/year
+- Subscription page with free Belt User accounts and a 3-month MAI free trial before annual billing at $84.99/year
 - Help page with FAQ and sample log entries
 - Account deletion from the profile page
 - Supabase-backed account, profile, and log flows when environment variables are configured
@@ -57,7 +57,7 @@ Run `supabase/mai-subscriptions.sql` in the Supabase SQL editor before enabling 
 
 ## Billing notes
 
-Stripe Checkout is used only for MAI annual billing. Belt User accounts are free.
+Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 3-month free trial, then bills $84.99/year.
 
 The deployed billing flow needs these Vercel environment variables:
 
@@ -74,7 +74,7 @@ Register the Stripe webhook URL as `/api/stripe-webhook` and send these events:
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
 
-The webhook stores Stripe customer, subscription, and status fields on the MAI profile. MAI dashboard and verification routes only open after the stored subscription status is `active`.
+The webhook stores Stripe customer, subscription, and status fields on the MAI profile. MAI dashboard and verification routes open when the stored subscription status is `trialing` or `active`.
 
 ## Account deletion notes
 

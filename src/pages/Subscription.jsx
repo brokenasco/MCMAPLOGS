@@ -13,6 +13,8 @@ export default function Subscription() {
   const billingEmail = activeRole === 'MAI' ? maiUser.email : beltUser.email;
   const isMai = activeRole === 'MAI';
   const isActiveMai = isMai && displaySubscription.status === 'active';
+  const isTrialingMai = isMai && displaySubscription.status === 'trialing';
+  const hasMaiAccess = isActiveMai || isTrialingMai;
   const checkoutResult = searchParams.get('checkout');
 
   React.useEffect(() => {
@@ -90,18 +92,26 @@ export default function Subscription() {
           <div className="mt-6 rounded-md border border-olive/20 bg-olive/10 p-4">
             <p className="flex items-center gap-2 text-sm font-bold text-olive">
               <CheckCircle2 size={17} aria-hidden="true" />
-              {!isMai ? 'Free Belt User account' : isActiveMai ? 'Paid annual subscription active' : 'MAI billing required'}
+              {!isMai
+                ? 'Free Belt User account'
+                : isTrialingMai
+                  ? '3-month free trial active'
+                  : isActiveMai
+                    ? 'Paid annual subscription active'
+                    : 'MAI billing required'}
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
                 ? 'Belt Users can create accounts and submit logs without a subscription charge.'
-                : isActiveMai
+                : isTrialingMai
+                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year.`
+                  : isActiveMai
                   ? `Your annual MAI plan is active${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
-                  : 'Complete annual checkout to unlock MAI verification and signing tools.'}
+                  : 'Start the 3-month free trial to unlock MAI verification and signing tools. Annual billing is $84.99 after the trial.'}
             </p>
           </div>
 
-          {isMai && !isActiveMai ? (
+          {isMai && !hasMaiAccess ? (
             <div className="mt-6">
               <button
                 type="button"
@@ -110,7 +120,7 @@ export default function Subscription() {
                 className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
               >
                 <CreditCard size={17} aria-hidden="true" />
-                {isRedirecting ? 'Opening Stripe...' : 'Start MAI annual checkout'}
+                {isRedirecting ? 'Opening Stripe...' : 'Start 3-month free trial'}
               </button>
             </div>
           ) : null}
@@ -123,16 +133,22 @@ export default function Subscription() {
 
         <aside className="grid gap-4">
           <StatCard label="Belt User accounts" value="Free" detail="No payment required" />
-          <StatCard label="MAI offer" value="$7/mo" detail="Billed annually" />
+          <StatCard label="MAI trial" value="3 months" detail="Free before annual billing" />
+          <StatCard label="MAI offer" value="$7/mo" detail="Billed annually after trial" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
-            <StatCard label="MAI status" value={isActiveMai ? 'Active' : 'Locked'} detail={isActiveMai ? 'Stripe confirmed' : 'Checkout required'} />
+            <StatCard
+              label="MAI status"
+              value={hasMaiAccess ? 'Unlocked' : 'Locked'}
+              detail={isTrialingMai ? 'Trial active' : isActiveMai ? 'Stripe confirmed' : 'Checkout required'}
+            />
           ) : null}
         </aside>
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout and the Stripe webhook control MAI billing status. Belt User accounts stay free.
+        Stripe Checkout starts a 3-month MAI free trial. The Stripe webhook unlocks MAI access while the subscription is trialing or active.
+        Belt User accounts stay free.
       </div>
     </PageShell>
   );

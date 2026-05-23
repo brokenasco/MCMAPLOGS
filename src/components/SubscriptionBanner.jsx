@@ -7,6 +7,7 @@ export default function SubscriptionBanner() {
   const { activeRole, displaySubscription } = useApp();
   const isMai = activeRole === 'MAI';
   const hasActiveMaiPlan = isMai && displaySubscription.status === 'active';
+  const hasTrialingMaiPlan = isMai && displaySubscription.status === 'trialing';
 
   return (
     <div className="border-b border-coyote/30 bg-olive text-paper">
@@ -14,9 +15,11 @@ export default function SubscriptionBanner() {
         <p className="font-semibold">
           {!isMai
             ? 'Belt User accounts are free.'
-            : hasActiveMaiPlan
+            : hasTrialingMaiPlan
+              ? 'MAI 3-month free trial active. Then $84.99/year.'
+              : hasActiveMaiPlan
               ? 'MAI annual subscription active: $84.99/year.'
-              : 'MAI access requires the $84.99 annual subscription.'}
+              : 'MAI access starts with a 3-month free trial, then $84.99/year.'}
         </p>
         <Link
           to="/subscription"
