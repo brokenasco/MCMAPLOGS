@@ -54,10 +54,30 @@ export function buildTotalMcmapHours({ beltUser, logs }) {
 
   return {
     targetBelt,
+    completedBelts,
     completedBeltMinutes,
     targetBeltVerifiedMinutes,
     totalMinutes: completedBeltMinutes + targetBeltVerifiedMinutes
   };
+}
+
+export function getBeltTrail(currentBelt, progressPercent) {
+  const normalizedCurrentBelt = normalizeBeltName(currentBelt);
+  const targetBelt = getTargetBelt(normalizedCurrentBelt);
+  const currentBeltIndex = beltProgression.indexOf(normalizedCurrentBelt);
+  const targetBeltIndex = beltProgression.indexOf(targetBelt);
+
+  return beltProgression.map((belt, index) => {
+    if (index <= currentBeltIndex) {
+      return { belt, status: 'Complete', label: 'Complete' };
+    }
+
+    if (index === targetBeltIndex) {
+      return { belt, status: 'Current', label: `${progressPercent}%` };
+    }
+
+    return { belt, status: 'Locked', label: 'Locked' };
+  });
 }
 
 export function sumLogMinutes(logs) {
