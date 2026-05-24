@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import RoleCard from '../components/RoleCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
@@ -18,6 +19,7 @@ export default function SignUp() {
   });
   const [assignedMaiNumber, setAssignedMaiNumber] = React.useState('');
   const [statusMessage, setStatusMessage] = React.useState('');
+  const [emailNotice, setEmailNotice] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const isMai = accountType === 'MAI';
@@ -30,6 +32,7 @@ export default function SignUp() {
     event.preventDefault();
     setIsSubmitting(true);
     setStatusMessage('');
+    setEmailNotice(false);
 
     try {
       const account = await createAccount({
@@ -41,7 +44,8 @@ export default function SignUp() {
       });
 
       if (account.needsEmailConfirmation) {
-        setStatusMessage('Account created. Check your email to confirm your account, then return to login.');
+        setEmailNotice(true);
+        setStatusMessage('Account created. Confirm your email, then return to login.');
         if (isMai) setAssignedMaiNumber(account.mai_number);
         return;
       }
@@ -118,6 +122,8 @@ export default function SignUp() {
           <div className="rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
             Belt User accounts are free. MAI accounts start with a 3-month free trial, then bill annually at $84.99/year.
           </div>
+
+          {emailNotice ? <EmailNotice /> : null}
 
           {(statusMessage || authMessage) ? (
             <div className="rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">

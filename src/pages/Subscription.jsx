@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, CreditCard } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
@@ -11,6 +12,7 @@ export default function Subscription() {
   const [isRedirecting, setIsRedirecting] = React.useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = React.useState(false);
   const [billingMessage, setBillingMessage] = React.useState('');
+  const [billingEmailNotice, setBillingEmailNotice] = React.useState(false);
   const billingEmail = activeRole === 'MAI' ? maiUser.email : beltUser.email;
   const isMai = activeRole === 'MAI';
   const isActiveMai = isMai && displaySubscription.status === 'active';
@@ -29,6 +31,7 @@ export default function Subscription() {
   React.useEffect(() => {
     if (checkoutResult === 'success') {
       setBillingMessage('Checkout finished. Stripe is confirming the MAI subscription now.');
+      setBillingEmailNotice(true);
       refreshAccount();
     }
 
@@ -181,6 +184,14 @@ export default function Subscription() {
           {billingMessage ? (
             <div className="mt-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
               {billingMessage}
+            </div>
+          ) : null}
+          {billingEmailNotice ? (
+            <div className="mt-4">
+              <EmailNotice
+                title="Billing Email Sent"
+                text="Stripe may send a checkout or billing email. Please check your inbox. If you do not see it within a few minutes, check your Spam/Junk folder in case it was filtered there."
+              />
             </div>
           ) : null}
         </section>

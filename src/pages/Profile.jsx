@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, CreditCard, Pencil, Save, Trash2, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
@@ -15,6 +16,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
   const [editMessage, setEditMessage] = React.useState('');
+  const [emailNotice, setEmailNotice] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [deleteText, setDeleteText] = React.useState('');
   const [deleteMessage, setDeleteMessage] = React.useState('');
@@ -24,6 +26,7 @@ export default function Profile() {
   React.useEffect(() => {
     setEditForm({ email: user.email || '', unit: user.unit || '' });
     setEditMessage('');
+    setEmailNotice(false);
     setIsEditing(false);
   }, [user.email, user.unit]);
 
@@ -42,13 +45,15 @@ export default function Profile() {
 
     setIsSaving(true);
     setEditMessage('');
+    setEmailNotice(false);
 
     try {
       const result = await updateAccount(editForm);
       setIsEditing(false);
+      setEmailNotice(Boolean(result.emailConfirmationRequired));
       setEditMessage(
         result.emailConfirmationRequired
-          ? 'Saved. Check your email and confirm the change before using the new email to log in.'
+          ? 'Saved. Confirm the email change before using the new email to log in.'
           : 'Account updated.'
       );
     } catch (error) {
@@ -124,6 +129,8 @@ export default function Profile() {
               </div>
             ) : null}
 
+            {emailNotice ? <div className="mt-4"><EmailNotice title="Email Change Sent" /></div> : null}
+
             {isEditing ? (
               <form className="mt-4 grid gap-4" onSubmit={handleSaveAccount}>
                 <label className="block">
@@ -161,6 +168,7 @@ export default function Profile() {
                     onClick={() => {
                       setEditForm({ email: user.email || '', unit: user.unit || '' });
                       setEditMessage('');
+                      setEmailNotice(false);
                       setIsEditing(false);
                     }}
                     className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"

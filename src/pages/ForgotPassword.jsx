@@ -1,6 +1,7 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
@@ -8,15 +9,18 @@ export default function ForgotPassword() {
   const { requestPasswordReset, authMessage } = useApp();
   const [email, setEmail] = React.useState('');
   const [statusMessage, setStatusMessage] = React.useState('');
+  const [emailNotice, setEmailNotice] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setStatusMessage('');
+    setEmailNotice(false);
     setIsSubmitting(true);
 
     try {
       await requestPasswordReset(email);
+      setEmailNotice(true);
       setStatusMessage('If that email has an account, a password reset link has been sent.');
     } catch (error) {
       setStatusMessage(error.message || 'Unable to send password reset email.');
@@ -44,6 +48,8 @@ export default function ForgotPassword() {
               placeholder="name@example.mil"
             />
           </label>
+
+          {emailNotice ? <EmailNotice /> : null}
 
           {(statusMessage || authMessage) ? (
             <div className="rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
