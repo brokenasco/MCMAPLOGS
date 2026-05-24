@@ -3,8 +3,7 @@ import React from 'react';
 const styles = {
   Pending: 'bg-brass/20 text-ink ring-brass/50',
   Verified: 'bg-olive/20 text-olive ring-olive/40',
-  Returned: 'bg-clay/15 text-clay ring-clay/40',
-  Rejected: 'bg-clay/20 text-clay ring-clay/50'
+  Returned: 'bg-clay/15 text-clay ring-clay/40'
 };
 
 export default function StatusBadge({ status }) {

@@ -23,7 +23,7 @@ const lessons = [
       'A Pending log is waiting for MAI review and does not count toward verified hours.',
       'A Verified log has been approved and signed by an MAI. That time counts toward the selected class code.',
       'A Returned log needs correction. The Belt User should read the note, fix the issue, and resubmit.',
-      'Returned or rejected logs do not count toward verified hours or Total MCMAP Hours.'
+      'Returned logs do not count toward verified hours or Total MCMAP Hours.'
     ]
   },
   {
@@ -34,7 +34,7 @@ const lessons = [
       'It also includes verified logs for the belt currently being attempted.',
       'The current target belt is one belt above the Marine’s current belt.',
       'Submitted but unverified logs are not included.',
-      'Returned or rejected logs are not included.',
+      'Returned logs are not included.',
       'This keeps the total focused on completed belt work and MAI-approved current belt progress.'
     ]
   }

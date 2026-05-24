@@ -87,9 +87,9 @@ export function AppProvider({ children }) {
     ? assignedMaiLogs.filter((log) => log.status === 'Verified')
     : beltLogs.filter((log) => log.status === 'Verified');
   const returnedLogs = activeRole === 'MAI'
-    ? assignedMaiLogs.filter((log) => isReturnedOrRejected(log.status))
-    : beltLogs.filter((log) => isReturnedOrRejected(log.status));
-  const urgentCount = beltLogs.filter((log) => isReturnedOrRejected(log.status)).length;
+    ? assignedMaiLogs.filter((log) => log.status === 'Returned')
+    : beltLogs.filter((log) => log.status === 'Returned');
+  const urgentCount = beltLogs.filter((log) => log.status === 'Returned').length;
   const visibleMessageThreads = getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads });
   const unreadMessageCount = visibleMessageThreads.reduce(
     (total, thread) =>
@@ -542,43 +542,6 @@ export function AppProvider({ children }) {
       .from('training_logs')
       .update({
         status: 'Returned',
-        return_reason: reason,
-        return_message: message
-      })
-      .eq('id', logId);
-
-    if (error) {
-      setAuthMessage(error.message);
-      return;
-    }
-
-    await loadLogs();
-  };
-
-  const rejectLog = async (logId, reason = 'Rejected', message = 'This log was rejected by the MAI. Review the note before submitting a new log.') => {
-    if (!supabase || !currentUserId) {
-      setLogs((currentLogs) =>
-        currentLogs.map((log) =>
-          log.id === logId
-            ? {
-                ...log,
-                status: 'Rejected',
-                returnedAt: new Date().toISOString().slice(0, 10),
-                returnedBy: maiUser.name,
-                returnedByMaiNumber: maiUser.maiNumber,
-                returnReason: reason,
-                returnMessage: message
-              }
-            : log
-        )
-      );
-      return;
-    }
-
-    const { error } = await supabase
-      .from('training_logs')
-      .update({
-        status: 'Rejected',
         return_reason: reason,
         return_message: message
       })
@@ -1136,7 +1099,6 @@ export function AppProvider({ children }) {
     markThreadRead,
     verifyLog,
     returnLog,
-    rejectLog,
     updatePendingLog,
     cancelPendingLog,
     resubmitLog,
@@ -1286,10 +1248,6 @@ function getProfileSubscription(profileData) {
 
 function getEffectiveAccountRole(accountType) {
   return accountType === 'Owner/Developer' ? 'MAI' : accountType;
-}
-
-function isReturnedOrRejected(status) {
-  return status === 'Returned' || status === 'Rejected';
 }
 
 function getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads }) {

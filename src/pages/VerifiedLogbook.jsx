@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Download, Eye, Medal, MessageSquare, Pencil, Printer, RotateCcw, Trash2, XCircle } from 'lucide-react';
+import { Download, Eye, Medal, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import LogEditForm from '../components/LogEditForm.jsx';
@@ -11,7 +11,7 @@ import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, buildTotalMcmapHours, sumLogMinutes } from '../lib/mcmapProgress.js';
 
-const filters = ['All', 'Pending', 'Verified', 'Returned', 'Rejected'];
+const filters = ['All', 'Pending', 'Verified', 'Returned'];
 
 export default function VerifiedLogbook() {
   const {
@@ -22,24 +22,15 @@ export default function VerifiedLogbook() {
     cancelPendingLog,
     findMaiByNumber,
     maiSubmittedLogs,
-    maiUser,
     pendingLogs,
     resubmitLog,
-    updatePendingLog,
-    verifyLog,
-    returnLog,
-    rejectLog
+    updatePendingLog
   } = useApp();
   const [activeFilter, setActiveFilter] = React.useState(activeRole === 'MAI' ? 'Pending' : 'Verified');
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
-  const [confirmationLog, setConfirmationLog] = React.useState(null);
-  const [returningLog, setReturningLog] = React.useState(null);
-  const [returnAction, setReturnAction] = React.useState('return');
-  const [returnReason, setReturnReason] = React.useState('Missing detail');
-  const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
   const visibleLogs = activeRole === 'MAI' ? mergeLogs(assignedMaiLogs, maiSubmittedLogs) : beltLogs;
   const filteredLogs = activeFilter === 'All' ? visibleLogs : visibleLogs.filter((log) => log.status === activeFilter);
   const verifiedLogs = visibleLogs.filter((log) => log.status === 'Verified');
@@ -58,27 +49,6 @@ export default function VerifiedLogbook() {
     setEditingLog(null);
     setActionMessage('');
   }, [activeRole]);
-
-  const openConfirmation = (log) => {
-    setSelectedLog(log);
-    setConfirmationLog(log);
-  };
-
-  const handleVerify = async () => {
-    await verifyLog(confirmationLog.id);
-    setConfirmationLog(null);
-    setSelectedLog(null);
-  };
-
-  const handleReturn = async () => {
-    if (returnAction === 'reject') {
-      await rejectLog(returningLog.id, returnReason || 'Rejected', returnMessage);
-    } else {
-      await returnLog(returningLog.id, returnReason, returnMessage);
-    }
-    setReturningLog(null);
-    setSelectedLog(null);
-  };
 
   const exportCsv = () => {
     const rows = [
@@ -157,28 +127,6 @@ export default function VerifiedLogbook() {
       {!isMai ? <TotalMcmapHoursPanel summary={mcmapHourSummary} /> : null}
 
       {!isMai ? <BeltProgressDashboard progress={progress} /> : null}
-
-      {isMai ? (
-        <MaiPendingReview
-          confirmationLog={confirmationLog}
-          handleReturn={handleReturn}
-          handleVerify={handleVerify}
-          maiUser={maiUser}
-          openConfirmation={openConfirmation}
-          pendingLogs={pendingLogs}
-          returnMessage={returnMessage}
-          returnAction={returnAction}
-          returnReason={returnReason}
-          returningLog={returningLog}
-          selectedLog={selectedLog}
-          setConfirmationLog={setConfirmationLog}
-          setReturnMessage={setReturnMessage}
-          setReturnAction={setReturnAction}
-          setReturnReason={setReturnReason}
-          setReturningLog={setReturningLog}
-          setSelectedLog={setSelectedLog}
-        />
-      ) : null}
 
       {!isMai && actionMessage ? (
         <div className="mb-5 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
@@ -443,188 +391,6 @@ function ProgressHeader({ children }) {
 
 function ProgressCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
-}
-
-function MaiPendingReview({
-  confirmationLog,
-  handleReturn,
-  handleVerify,
-  maiUser,
-  openConfirmation,
-  pendingLogs,
-  returnMessage,
-  returnAction,
-  returnReason,
-  returningLog,
-  selectedLog,
-  setConfirmationLog,
-  setReturnMessage,
-  setReturnAction,
-  setReturnReason,
-  setReturningLog,
-  setSelectedLog
-}) {
-  return (
-    <section className="mb-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-      <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-clay">Pending logs</p>
-          <h2 className="mt-1 text-2xl font-bold">MAI verification queue</h2>
-          <p className="mt-2 text-sm leading-6 text-ink/65">
-            Signing with {maiUser.maiNumber} verifies your MAI account on the logbook record.
-          </p>
-        </div>
-        <StatusBadge status="Pending" />
-      </div>
-
-      {confirmationLog ? (
-        <div className="mb-6 rounded-md border border-olive/20 bg-olive/10 p-5">
-          <p className="text-sm font-bold uppercase tracking-wide text-clay">Confirm MAI signature</p>
-          <h3 className="mt-2 text-xl font-bold">{confirmationLog.marine}</h3>
-          <p className="mt-2 text-sm leading-6 text-ink/70">
-            You are about to sign {formatLogTime(confirmationLog)} of {confirmationLog.beltLevel} training using MAI number {maiUser.maiNumber}.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleVerify}
-              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-            >
-              <CheckCircle2 size={17} aria-hidden="true" />
-              Confirm signature
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmationLog(null)}
-              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {returningLog ? (
-        <div className="mb-6 rounded-md border border-clay/20 bg-clay/10 p-5">
-          <p className="text-sm font-bold uppercase tracking-wide text-clay">
-            {returnAction === 'reject' ? 'Reject log' : 'Return for correction'}
-          </p>
-          <h3 className="mt-2 text-xl font-bold">{returningLog.marine}</h3>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-bold text-ink">Reason</span>
-              <select
-                value={returnReason}
-                onChange={(event) => setReturnReason(event.target.value)}
-                className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
-              >
-                <option>Missing detail</option>
-                <option>Incorrect hours</option>
-                <option>Wrong MAI number</option>
-                <option>Needs correction</option>
-                <option>Rejected</option>
-              </select>
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-sm font-bold text-ink">Message to Belt User</span>
-              <textarea
-                value={returnMessage}
-                onChange={(event) => setReturnMessage(event.target.value)}
-                className="focus-ring mt-2 min-h-24 w-full rounded-md border border-ink/15 px-3 py-3 text-sm"
-              />
-            </label>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleReturn}
-              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white"
-            >
-              <MessageSquare size={17} aria-hidden="true" />
-              {returnAction === 'reject' ? 'Reject log' : 'Send correction message'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setReturningLog(null)}
-              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {pendingLogs.length ? (
-        <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
-          <div className="grid gap-4">
-            {pendingLogs.map((log) => (
-              <article key={log.id} className="rounded-md border border-coyote/35 bg-field p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl font-bold">{log.marine}</h3>
-                    <p className="mt-1 text-sm text-ink/60">
-                      {new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {formatLogTime(log)} | {log.beltLevel}
-                    </p>
-                  </div>
-                  <StatusBadge status={log.status} />
-                </div>
-                <p className="mt-4 text-sm leading-6 text-ink/70">{log.description}</p>
-                <p className="mt-3 text-sm font-semibold text-ink/65">Sent to {formatMaiDisplay(log)}</p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => openConfirmation(log)}
-                    className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-                  >
-                    <CheckCircle2 size={17} aria-hidden="true" />
-                    Sign and verify
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReturningLog(log);
-                      setSelectedLog(log);
-                      setReturnAction('return');
-                      setReturnReason('Missing detail');
-                      setReturnMessage('Add the techniques trained, who supervised the period, and resubmit.');
-                    }}
-                    className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink hover:bg-field"
-                  >
-                    <XCircle size={17} aria-hidden="true" />
-                    Return with note
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReturningLog(log);
-                      setSelectedLog(log);
-                      setReturnAction('reject');
-                      setReturnReason('Rejected');
-                      setReturnMessage('This log was rejected. Review the note and submit a new corrected log if needed.');
-                    }}
-                    className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-clay/30 bg-paper px-4 text-sm font-bold text-clay hover:bg-clay/10"
-                  >
-                    <XCircle size={17} aria-hidden="true" />
-                    Reject
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedLog(log)}
-                    className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink hover:bg-field"
-                  >
-                    Details
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-          <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
-        </div>
-      ) : (
-        <EmptyState title="No logs need review right now" text="When Belt Users submit hours to your assigned MAI number, their logs will appear here for signature." />
-      )}
-    </section>
-  );
 }
 
 function formatMaiDisplay(log) {
