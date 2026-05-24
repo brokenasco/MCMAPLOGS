@@ -28,6 +28,7 @@ export function AppProvider({ children }) {
   const [activeRole, setActiveRole] = React.useState('Belt User');
   const [beltUser, setBeltUser] = React.useState(currentBeltUser);
   const [maiUser, setMaiUser] = React.useState(currentMai);
+  const [maiDirectory, setMaiDirectory] = React.useState([currentMai, { name: 'SSgt Cameron Reed', maiNumber: 'MAI-2497', unit: 'Weapons Training Detachment' }]);
   const [profile, setProfile] = React.useState(null);
   const [session, setSession] = React.useState(null);
   const [logs, setLogs] = React.useState(trainingLogs);
@@ -57,7 +58,9 @@ export function AppProvider({ children }) {
   const beltLogs = currentUserId
     ? logs.filter((log) => log.beltUserId === currentUserId)
     : logs.filter((log) => log.marine === beltUser.name);
-  const assignedMaiLogs = logs.filter((log) => log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase());
+  const assignedMaiLogs = logs.filter((log) =>
+    (currentUserId && log.assignedMaiUserId === currentUserId) || log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
+  );
   const maiSubmittedLogs = logs.filter((log) =>
     (currentUserId ? log.beltUserId === currentUserId : log.marine === maiUser.name) && log.submitterRole === 'MAI'
   );
@@ -76,18 +79,6 @@ export function AppProvider({ children }) {
     (total, thread) => total + thread.messages.filter((message) => !message.readBy?.includes(currentMessageKey)).length,
     0
   );
-  const maiDirectory = [
-    {
-      name: maiUser.name,
-      maiNumber: maiUser.maiNumber,
-      unit: maiUser.unit
-    },
-    {
-      name: 'SSgt Cameron Reed',
-      maiNumber: 'MAI-2497',
-      unit: 'Weapons Training Detachment'
-    }
-  ];
   const currentPlan = subscriptionPlans[activeRole] || subscriptionPlans['Belt User'];
   const displaySubscription = {
     ...subscription,
@@ -153,6 +144,7 @@ export function AppProvider({ children }) {
     }
 
     applyProfile(profileData);
+    await loadMaiDirectory(profileData);
     await loadLogs(profileData);
     await loadMessages(profileData);
     return profileData;
@@ -189,6 +181,31 @@ export function AppProvider({ children }) {
     setMessageThreads(data.map(mapThreadFromSupabase));
   }
 
+  async function loadMaiDirectory(profileData = profile) {
+    if (!supabase) return;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id,full_name,email,unit,mai_number,account_type')
+      .not('mai_number', 'is', null);
+
+    if (error) {
+      return;
+    }
+
+    const directory = data
+      .filter((item) => ['MAI', 'Owner/Developer'].includes(item.account_type))
+      .map((item) => ({
+        id: item.id,
+        name: item.full_name,
+        email: item.email,
+        unit: item.unit,
+        maiNumber: item.mai_number
+      }));
+
+    setMaiDirectory(directory.length ? directory : [currentMai]);
+  }
+
   function applyProfile(profileData) {
     const accountRole = getEffectiveAccountRole(profileData.account_type);
     setProfile(profileData);
@@ -215,12 +232,24 @@ export function AppProvider({ children }) {
   }
 
   const submitLog = async (log) => {
+    const matchedMai = findMaiByNumber(log.maiNumber);
+
+    if (!matchedMai?.id && supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
+    }
+
+    if (!matchedMai && !supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
+    }
+
     const newLog = {
       id: crypto.randomUUID?.() || Date.now(),
       beltUserId: currentUserId,
       marine: beltUser.name,
       submittedAt: new Date().toISOString().slice(0, 10),
       status: 'Pending',
+      assignedMaiUserId: matchedMai?.id || null,
+      assignedMaiName: matchedMai?.name || '',
       ...log
     };
 
@@ -242,6 +271,8 @@ export function AppProvider({ children }) {
         class_code: log.classCode,
         technique_name: log.techniqueName,
         submitter_role: log.submitterRole || activeRole,
+        assigned_mai_user_id: matchedMai.id,
+        assigned_mai_name: matchedMai.name,
         description: log.description,
         mai_number: log.maiNumber,
         status: 'Pending'
@@ -260,8 +291,14 @@ export function AppProvider({ children }) {
   };
 
   const submitMaiLog = async (log) => {
+    const matchedMai = findMaiByNumber(log.maiNumber);
+
     if (log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()) {
       throw new Error('Choose another MAI for verification. MAIs cannot verify their own hours.');
+    }
+
+    if (!matchedMai?.id && supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
     }
 
     const newLog = {
@@ -271,6 +308,8 @@ export function AppProvider({ children }) {
       submittedAt: new Date().toISOString().slice(0, 10),
       status: 'Pending',
       submitterRole: 'MAI',
+      assignedMaiUserId: matchedMai?.id || null,
+      assignedMaiName: matchedMai?.name || '',
       ...log
     };
 
@@ -292,6 +331,8 @@ export function AppProvider({ children }) {
         class_code: log.classCode,
         technique_name: log.techniqueName,
         submitter_role: 'MAI',
+        assigned_mai_user_id: matchedMai.id,
+        assigned_mai_name: matchedMai.name,
         description: log.description,
         mai_number: log.maiNumber,
         status: 'Pending'
@@ -464,7 +505,7 @@ export function AppProvider({ children }) {
     await loadLogs();
   };
 
-  const findMaiByNumber = (maiNumber) =>
+  const findMaiByNumber = (maiNumber = '') =>
     maiDirectory.find((mai) => mai.maiNumber?.toLowerCase() === maiNumber.trim().toLowerCase()) || null;
 
   const saveDraft = (draft) => {
@@ -942,6 +983,8 @@ function mapLogFromSupabase(row) {
     classCode: row.class_code,
     techniqueName: row.technique_name,
     submitterRole: row.submitter_role || 'Belt User',
+    assignedMaiUserId: row.assigned_mai_user_id,
+    assignedMaiName: row.assigned_mai_name,
     description: row.description,
     maiNumber: row.mai_number,
     status: row.status,

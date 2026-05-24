@@ -1,5 +1,15 @@
 alter table public.training_logs
-  add column if not exists submitter_role text default 'Belt User';
+  add column if not exists submitter_role text default 'Belt User',
+  add column if not exists assigned_mai_user_id uuid references auth.users(id),
+  add column if not exists assigned_mai_name text;
+
+update public.training_logs l
+set
+  assigned_mai_user_id = p.id,
+  assigned_mai_name = p.full_name
+from public.profiles p
+where l.mai_number = p.mai_number
+  and l.assigned_mai_user_id is null;
 
 create table if not exists public.message_threads (
   id uuid primary key default gen_random_uuid(),

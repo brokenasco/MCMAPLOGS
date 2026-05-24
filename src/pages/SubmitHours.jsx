@@ -15,13 +15,14 @@ function buildInitialForm(beltUser, savedDraft) {
     techniqueId: requirements[0]?.id || '',
     hours: '',
     minutes: '',
+    maiSelection: '',
     maiNumber: '',
     ...(savedDraft || {})
   };
 }
 
 export default function SubmitHours() {
-  const { beltUser, submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft } = useApp();
+  const { beltUser, beltLogs, submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft } = useApp();
   const [form, setForm] = React.useState(() => buildInitialForm(beltUser, savedDraft));
   const [errors, setErrors] = React.useState({});
   const [submittedLog, setSubmittedLog] = React.useState(null);
@@ -30,7 +31,10 @@ export default function SubmitHours() {
   const targetBelt = getTargetBelt(beltUser.beltLevel);
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
-  const matchedMai = form.maiNumber ? findMaiByNumber(form.maiNumber) : null;
+  const previousMais = React.useMemo(() => getPreviousMais(beltLogs, findMaiByNumber), [beltLogs, findMaiByNumber]);
+  const isNewMaiEntry = form.maiSelection === 'new' || !previousMais.length;
+  const selectedMaiNumber = isNewMaiEntry ? form.maiNumber.trim().toUpperCase() : form.maiSelection;
+  const matchedMai = selectedMaiNumber ? findMaiByNumber(selectedMaiNumber) : null;
   const totalMinutes = getTotalMinutes(form.hours, form.minutes);
   const normalizedTime = formatMinutes(totalMinutes);
 
@@ -43,10 +47,21 @@ export default function SubmitHours() {
       return {
         ...current,
         targetBelt,
-        techniqueId: targetRequirements[0]?.id || ''
+        techniqueId: targetRequirements[0]?.id || '',
+        maiSelection: current.maiSelection || previousMais[0]?.maiNumber || 'new'
       };
     });
-  }, [targetBelt, targetRequirements]);
+  }, [targetBelt, targetRequirements, previousMais]);
+
+  React.useEffect(() => {
+    setForm((current) => {
+      if (current.maiSelection) return current;
+      return {
+        ...current,
+        maiSelection: previousMais[0]?.maiNumber || 'new'
+      };
+    });
+  }, [previousMais]);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -61,7 +76,11 @@ export default function SubmitHours() {
     if (!form.targetBelt) nextErrors.targetBelt = 'Target belt could not be calculated from your current belt.';
     if (!selectedTechnique) nextErrors.techniqueId = 'Choose a technique or tie-in.';
     if (totalMinutes <= 0) nextErrors.time = 'Enter training time greater than zero.';
-    if (!/^MAI-\d{4}$/i.test(form.maiNumber.trim())) nextErrors.maiNumber = 'Use the format MAI-1842.';
+    if (!selectedMaiNumber) nextErrors.maiNumber = 'Choose an MAI or enter a new MAI code.';
+    if (selectedMaiNumber && !/^MAI-\d{4}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842.';
+    if (selectedMaiNumber && /^MAI-\d{4}$/i.test(selectedMaiNumber) && !matchedMai) {
+      nextErrors.maiNumber = 'That MAI code does not match an active MAI account. Check the code and try again.';
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -83,7 +102,7 @@ export default function SubmitHours() {
         classCode: selectedTechnique.code,
         techniqueName: selectedTechnique.name,
         description: `${selectedTechnique.code}: ${selectedTechnique.name}`,
-        maiNumber: form.maiNumber.trim().toUpperCase()
+        maiNumber: selectedMaiNumber
       });
 
       setSubmittedLog(savedLog);
@@ -117,7 +136,7 @@ export default function SubmitHours() {
             <CheckCircle2 size={18} aria-hidden="true" />
             Submitted
           </p>
-          <h2 className="mt-3 text-2xl font-bold text-ink">Submitted to {submittedLog.maiNumber}</h2>
+          <h2 className="mt-3 text-2xl font-bold text-ink">Submitted to {formatMaiDisplay(submittedLog)}</h2>
           <p className="mt-2 text-sm leading-6 text-ink/70">
             Status: Pending. When an MAI verifies it, {formatMinutes(submittedLog.minutes || 0)} will be applied to {submittedLog.classCode}.
           </p>
@@ -221,15 +240,38 @@ export default function SubmitHours() {
             </div>
 
             <div className="md:col-span-2">
-              <Field
-                label="Verifying MAI number"
-                name="maiNumber"
-                value={form.maiNumber}
-                onChange={updateField}
-                placeholder="MAI-1842"
-                error={errors.maiNumber}
-                hint="Enter the MAI number for the instructor who will verify this log."
-              />
+              <label className="block">
+                <span className="text-sm font-bold text-ink">Verifying MAI</span>
+                <select
+                  name="maiSelection"
+                  value={form.maiSelection || previousMais[0]?.maiNumber || 'new'}
+                  onChange={updateField}
+                  className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base"
+                >
+                  {previousMais.map((mai) => (
+                    <option key={mai.maiNumber} value={mai.maiNumber}>
+                      {mai.maiNumber} {mai.name}
+                    </option>
+                  ))}
+                  <option value="new">Enter New MAI Code</option>
+                </select>
+                <p className="mt-2 text-sm leading-6 text-ink/60">
+                  Previously used MAIs come from your past submitted logs.
+                </p>
+              </label>
+              {isNewMaiEntry ? (
+                <Field
+                  label="New MAI code"
+                  name="maiNumber"
+                  value={form.maiNumber}
+                  onChange={updateField}
+                  placeholder="MAI-1842"
+                  error={errors.maiNumber}
+                  hint="Enter the MAI number for the instructor who will verify this log."
+                />
+              ) : (
+                <ErrorText message={errors.maiNumber} />
+              )}
               <div className="mt-4 rounded-md border border-coyote/35 bg-field p-4">
                 <p className="flex items-center gap-2 text-sm font-bold text-ink">
                   <Search size={17} aria-hidden="true" />
@@ -237,7 +279,7 @@ export default function SubmitHours() {
                 </p>
                 {matchedMai ? (
                   <p className="mt-2 text-sm leading-6 text-olive">
-                    This log will go to {matchedMai.name}, {matchedMai.unit}.
+                    This log will go to {matchedMai.maiNumber} {matchedMai.name}, {matchedMai.unit}.
                   </p>
                 ) : (
                   <p className="mt-2 text-sm leading-6 text-clay">
@@ -274,6 +316,31 @@ export default function SubmitHours() {
 
 function getTotalMinutes(hours, minutes) {
   return Math.round(Math.max(0, Number(hours || 0) * 60 + Number(minutes || 0)));
+}
+
+function getPreviousMais(logs, findMaiByNumber) {
+  const byNumber = new Map();
+
+  logs
+    .filter((log) => log.maiNumber)
+    .forEach((log) => {
+      const mai = findMaiByNumber(log.maiNumber);
+      if (mai) {
+        byNumber.set(mai.maiNumber, mai);
+      } else if (log.assignedMaiName) {
+        byNumber.set(log.maiNumber, {
+          maiNumber: log.maiNumber,
+          name: log.assignedMaiName,
+          unit: ''
+        });
+      }
+    });
+
+  return [...byNumber.values()];
+}
+
+function formatMaiDisplay(log) {
+  return `${log.maiNumber} ${log.assignedMaiName || ''}`.trim();
 }
 
 function Field({ label, error, hint, ...props }) {

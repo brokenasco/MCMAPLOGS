@@ -57,13 +57,13 @@ export default function VerifiedLogbook() {
 
   const exportCsv = () => {
     const rows = [
-      ['Marine', 'Date', 'Hours', 'Belt Level', 'MAI Number', 'Status', 'Signed By'],
+      ['Marine', 'Date', 'Hours', 'Belt Level', 'Sent To MAI', 'Status', 'Signed By'],
       ...filteredLogs.map((log) => [
         log.marine,
         log.date,
         log.hours,
         log.beltLevel,
-        log.maiNumber,
+        formatMaiDisplay(log),
         log.status,
         log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber}` : ''
       ])
@@ -419,7 +419,7 @@ function MaiPendingReview({
                   <StatusBadge status={log.status} />
                 </div>
                 <p className="mt-4 text-sm leading-6 text-ink/70">{log.description}</p>
-                <p className="mt-3 text-sm font-semibold text-ink/65">Submitted for verification by MAI number {log.maiNumber}</p>
+                <p className="mt-3 text-sm font-semibold text-ink/65">Sent to {formatMaiDisplay(log)}</p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -475,4 +475,8 @@ function MaiPendingReview({
       )}
     </section>
   );
+}
+
+function formatMaiDisplay(log) {
+  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
 }

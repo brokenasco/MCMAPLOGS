@@ -22,7 +22,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
               <HeaderCell>Class</HeaderCell>
               <HeaderCell>Hours</HeaderCell>
               <HeaderCell>Belt</HeaderCell>
-              <HeaderCell>MAI Number</HeaderCell>
+              <HeaderCell>Sent To MAI</HeaderCell>
               <HeaderCell>Status</HeaderCell>
             </tr>
           </thead>
@@ -45,7 +45,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
                     {log.beltLevel}
                   </span>
                 </BodyCell>
-                <BodyCell>{log.maiNumber}</BodyCell>
+                <BodyCell>{formatMaiDisplay(log)}</BodyCell>
                 <BodyCell>
                   <StatusBadge status={log.status} />
                 </BodyCell>
@@ -64,4 +64,8 @@ function HeaderCell({ children }) {
 
 function BodyCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
+}
+
+function formatMaiDisplay(log) {
+  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
 }

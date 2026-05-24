@@ -47,7 +47,7 @@ export default function LogDetailPanel({ log, onClose }) {
             </span>
           }
         />
-        <Detail label="MAI number" value={log.maiNumber} />
+        <Detail label="Sent to MAI" value={formatMaiDisplay(log)} />
         <Detail label="Submitted" value={log.submittedAt || 'Saved record'} />
         <Detail label="Signed by" value={log.verifiedBy ? `${log.verifiedBy} | ${log.verifiedByMaiNumber}` : 'Not signed yet'} />
       </dl>
@@ -79,4 +79,8 @@ function Detail({ label, value }) {
       <dd className="mt-1 text-sm font-semibold text-ink">{value}</dd>
     </div>
   );
+}
+
+function formatMaiDisplay(log) {
+  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
 }

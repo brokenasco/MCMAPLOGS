@@ -31,6 +31,7 @@ export const trainingLogs = [
     techniqueName: 'Execute bayonet techniques / Combat Readiness',
     description: 'MCCS-BRWN-2041: Execute bayonet techniques / Combat Readiness',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-05-12',
     status: 'Pending'
   },
@@ -46,6 +47,7 @@ export const trainingLogs = [
     techniqueName: 'Execute unarmed manipulation / Honor',
     description: 'MCCS-GRAY-2008: Execute unarmed manipulation / Honor',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-05-11',
     status: 'Pending'
   },
@@ -61,6 +63,7 @@ export const trainingLogs = [
     techniqueName: 'Free Sparring',
     description: 'Performance based: Free Sparring',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-05-08',
     verifiedAt: '2026-05-09',
     verifiedBy: 'Sgt Avery Morgan',
@@ -79,6 +82,7 @@ export const trainingLogs = [
     techniqueName: 'Free Sparring',
     description: 'Performance based: Free Sparring',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-05-05',
     verifiedAt: '2026-05-06',
     verifiedBy: 'Sgt Avery Morgan',
@@ -97,6 +101,7 @@ export const trainingLogs = [
     techniqueName: 'Execute counters to strikes / Force Protection',
     description: 'MCCS-GREEN-2025: Execute counters to strikes / Force Protection',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-05-02',
     status: 'Pending'
   },
@@ -112,6 +117,7 @@ export const trainingLogs = [
     techniqueName: 'Execute upper body strikes / Leadership Traits',
     description: 'MCCS-GRAY-2002: Execute upper body strikes / Leadership Traits',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-04-29',
     status: 'Pending'
   },
@@ -127,6 +133,7 @@ export const trainingLogs = [
     techniqueName: 'Execute knife techniques / Counseling Techniques',
     description: 'MCCS-BRWN-2047: Execute knife techniques / Counseling Techniques',
     maiNumber: 'MAI-1842',
+    assignedMaiName: 'Sgt Avery Morgan',
     submittedAt: '2026-04-25',
     returnedAt: '2026-04-26',
     returnedBy: 'Sgt Avery Morgan',

@@ -83,7 +83,7 @@ export default function SubmitMaiHours() {
             <CheckCircle2 size={18} aria-hidden="true" />
             Submitted
           </p>
-          <h2 className="mt-3 text-2xl font-bold text-ink">Sent to {submittedLog.maiNumber}</h2>
+          <h2 className="mt-3 text-2xl font-bold text-ink">Sent to {formatMaiDisplay(submittedLog)}</h2>
           <p className="mt-2 text-sm leading-6 text-ink/70">
             These hours are pending until the receiving MAI verifies them.
           </p>
@@ -163,6 +163,10 @@ export default function SubmitMaiHours() {
       )}
     </PageShell>
   );
+}
+
+function formatMaiDisplay(log) {
+  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'selected MAI';
 }
 
 function Field({ label, ...props }) {
