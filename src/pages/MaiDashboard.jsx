@@ -8,6 +8,7 @@ import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
+import { buildBeltProgress } from '../lib/mcmapProgress.js';
 
 export default function MaiDashboard() {
   const { maiUser, pendingLogs, verifiedLogs, returnedLogs, maiSubmittedLogs, verifyLog, returnLog } = useApp();
@@ -18,6 +19,15 @@ export default function MaiDashboard() {
   const [actionMessage, setActionMessage] = React.useState('');
   const pendingMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Pending').length;
   const verifiedMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Verified').length;
+  const pendingMaiMinutes = maiSubmittedLogs
+    .filter((log) => log.status === 'Pending')
+    .reduce((total, log) => total + getLogMinutes(log), 0);
+  const maiProgress = React.useMemo(() => buildBeltProgress({ beltUser: maiUser, logs: maiSubmittedLogs }), [maiSubmittedLogs, maiUser]);
+  const lastSubmittedMaiLog = React.useMemo(() => {
+    return maiSubmittedLogs
+      .slice()
+      .sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date))[0];
+  }, [maiSubmittedLogs]);
   const oldestPending = pendingLogs
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
@@ -42,17 +52,15 @@ export default function MaiDashboard() {
       description={`Unit: ${maiUser.unit}. Assigned MAI number: ${maiUser.maiNumber}.`}
       actions={<RoleBadge role="MAI" />}
     >
-      <section className="mb-8 rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm">
+      <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <p className="text-sm font-black uppercase tracking-wide text-brass">Today</p>
+            <p className="text-sm font-black uppercase tracking-wide text-brass">Logs</p>
             <h2 className="mt-1 text-2xl font-bold">
-              {pendingLogs.length ? `${pendingLogs.length} logs need review` : 'No logs need review'}
+              {pendingLogs.length ? `${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'} need review` : 'No logs need review'}
             </h2>
             <p className="mt-2 text-sm leading-6 text-paper/70">
-              {returnedLogs.length
-                ? `${returnedLogs.length} returned log is waiting for Belt User follow-up.`
-                : 'No urgent issues in the queue.'}
+              Verify submitted hours, return logs that need correction, and submit your own training hours from this dashboard.
             </p>
           </div>
           <Link
@@ -65,34 +73,15 @@ export default function MaiDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Pending logs" value={pendingLogs.length} detail="Need review" />
-        <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
-        <StatCard label="Returned logs" value={returnedLogs.length} detail="Need follow-up" />
-        <StatCard label="Assigned MAI number" value={maiUser.maiNumber} detail="Used to verify logbooks" />
-        <StatCard label="My submitted hours" value={maiSubmittedLogs.length} detail="Sent to other MAIs" />
-        <StatCard label="My pending MAI hours" value={pendingMaiSubmissions} detail="Awaiting verification" />
-        <StatCard label="My verified MAI hours" value={verifiedMaiSubmissions} detail="Approved by another MAI" />
-        <StatCard label="Awaiting my MAI review" value={pendingLogs.length} detail="Belt User or MAI submissions" />
-      </div>
-
-      <div id="pending-verification" className="mt-8 flex flex-col justify-between gap-4 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:flex-row sm:items-center">
+      <section id="pending-verification" className="mt-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
         <div>
-          <h2 className="text-xl font-bold">Pending verification</h2>
+          <p className="text-sm font-bold uppercase tracking-wide text-clay">Pending Logs</p>
+          <h2 className="mt-1 text-xl font-bold">Review submitted logs</h2>
           <p className="mt-1 text-sm text-ink/65">
-            New submissions appear here while they are Pending. After you sign them, they move to Verified.
+            New submissions appear here while they are Pending. Verify good logs or return anything that needs correction.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            to="/mai/submit"
-            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-          >
-            <PlusCircle size={18} aria-hidden="true" />
-            Submit my hours
-          </Link>
-        </div>
-      </div>
+      </section>
 
       {actionMessage ? (
         <div className="mt-5 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
@@ -147,7 +136,7 @@ export default function MaiDashboard() {
         </section>
       ) : null}
 
-      <div className="mt-8">
+      <div className="mt-5">
         {oldestPending ? (
           <div className="mb-4 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
             Oldest pending log: {oldestPending.marine}, submitted for {new Date(`${oldestPending.date}T12:00:00`).toLocaleDateString()}.
@@ -177,6 +166,48 @@ export default function MaiDashboard() {
           <EmptyState title="No logs need review right now" text="When Belt Users submit hours to your MAI number, they will appear here." />
         )}
       </div>
+
+      <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-clay">Submit My Hours</p>
+            <h2 className="mt-1 text-xl font-bold">Track your own MCMAP training</h2>
+            <p className="mt-2 text-sm leading-6 text-ink/65">
+              Submit your training hours to another MAI for verification. MAIs cannot verify their own hours.
+            </p>
+          </div>
+          <Link
+            to="/mai/submit"
+            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+          >
+            <PlusCircle size={18} aria-hidden="true" />
+            Submit Hours
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <MiniSummary label="Current target belt" value={maiProgress.targetBelt} />
+          <MiniSummary
+            label="Last submitted MAI log"
+            value={lastSubmittedMaiLog ? formatDate(lastSubmittedMaiLog.date) : 'None yet'}
+            detail={lastSubmittedMaiLog ? shortTechnique(lastSubmittedMaiLog) : 'Submit your first MAI training log'}
+          />
+          <MiniSummary label="Hours pending verification" value={formatMinutes(pendingMaiMinutes)} detail={`${pendingMaiSubmissions} pending ${pendingMaiSubmissions === 1 ? 'log' : 'logs'}`} />
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-3 text-xl font-bold">Other Statistics / Career Data</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard label="Pending logs" value={pendingLogs.length} detail="Need review" />
+          <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
+          <StatCard label="Returned logs" value={returnedLogs.length} detail="Need follow-up" />
+          <StatCard label="Assigned MAI number" value={maiUser.maiNumber} detail="Used to verify logbooks" />
+          <StatCard label="My submitted hours" value={maiSubmittedLogs.length} detail="Sent to other MAIs" />
+          <StatCard label="My pending MAI hours" value={pendingMaiSubmissions} detail="Awaiting verification" />
+          <StatCard label="My verified MAI hours" value={verifiedMaiSubmissions} detail="Approved by another MAI" />
+          <StatCard label="Awaiting my MAI review" value={pendingLogs.length} detail="Belt User or MAI submissions" />
+        </div>
+      </section>
     </PageShell>
   );
 }
@@ -235,10 +266,28 @@ function ReviewDetail({ label, value }) {
   );
 }
 
+function MiniSummary({ label, value, detail }) {
+  return (
+    <div className="rounded-md border border-coyote/30 bg-field p-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</p>
+      <p className="mt-1 text-lg font-black text-ink">{value}</p>
+      {detail ? <p className="mt-1 text-sm leading-5 text-ink/60">{detail}</p> : null}
+    </div>
+  );
+}
+
 function formatDate(date) {
   return new Date(`${date}T12:00:00`).toLocaleDateString();
 }
 
 function formatLogTime(log) {
-  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+  return formatMinutes(getLogMinutes(log));
+}
+
+function getLogMinutes(log) {
+  return Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
+}
+
+function shortTechnique(log) {
+  return log.techniqueName?.split('/')[0].trim() || log.description?.split(':').pop()?.trim() || 'Training log';
 }
