@@ -3,10 +3,10 @@ import { CheckCircle2, Lock, Save, Search, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { formatMinutes, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
+import { formatMinutes, getBeltRequirements, getTargetBelt, getTargetBeltOptions, isAdditionalMcmapTarget } from '../data/mcmapReference.js';
 
 function buildInitialForm(beltUser, savedDraft) {
-  const targetBelt = getTargetBelt(beltUser.beltLevel);
+  const targetBelt = getTargetBeltOptions(beltUser.beltLevel)[0] || getTargetBelt(beltUser.beltLevel);
   const requirements = getBeltRequirements(targetBelt);
 
   return {
@@ -28,7 +28,8 @@ export default function SubmitHours() {
   const [submittedLog, setSubmittedLog] = React.useState(null);
   const [draftMessage, setDraftMessage] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const targetBelt = getTargetBelt(beltUser.beltLevel);
+  const targetOptions = React.useMemo(() => getTargetBeltOptions(beltUser.beltLevel), [beltUser.beltLevel]);
+  const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : targetOptions[0] || getTargetBelt(beltUser.beltLevel);
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
   const previousMais = React.useMemo(() => getPreviousMais(beltLogs, findMaiByNumber), [beltLogs, findMaiByNumber]);
@@ -37,10 +38,11 @@ export default function SubmitHours() {
   const matchedMai = selectedMaiNumber ? findMaiByNumber(selectedMaiNumber) : null;
   const totalMinutes = getTotalMinutes(form.hours, form.minutes);
   const normalizedTime = formatMinutes(totalMinutes);
+  const showTargetSelect = targetOptions.length > 1 || isAdditionalMcmapTarget(targetBelt);
 
   React.useEffect(() => {
     setForm((current) => {
-      if (current.targetBelt === targetBelt && targetRequirements.some((technique) => technique.id === current.techniqueId)) {
+      if (targetOptions.includes(current.targetBelt) && targetRequirements.some((technique) => technique.id === current.techniqueId)) {
         return current;
       }
 
@@ -51,7 +53,7 @@ export default function SubmitHours() {
         maiSelection: current.maiSelection || previousMais[0]?.maiNumber || 'new'
       };
     });
-  }, [targetBelt, targetRequirements, previousMais]);
+  }, [targetBelt, targetOptions, targetRequirements, previousMais]);
 
   React.useEffect(() => {
     setForm((current) => {
@@ -177,10 +179,25 @@ export default function SubmitHours() {
               <span className="text-sm font-bold text-ink">Target Belt</span>
               <div className="mt-2 flex h-12 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-base font-bold text-ink">
                 <Lock size={17} aria-hidden="true" />
-                {targetBelt}
+                {showTargetSelect ? (
+                  <select
+                    name="targetBelt"
+                    value={targetBelt}
+                    onChange={updateField}
+                    className="focus-ring h-10 flex-1 rounded-md border border-ink/15 bg-paper px-3 text-base font-bold text-ink"
+                  >
+                    {targetOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  targetBelt
+                )}
               </div>
               <p className="mt-2 text-sm leading-6 text-ink/60">
-                Current belt: {beltUser.beltLevel}. This is locked one belt above your current rank.
+                Current belt: {beltUser.beltLevel}. {isAdditionalMcmapTarget(targetBelt) ? 'Additional verified hours count toward your total MCMAP hours.' : 'This is locked one belt above your current rank.'}
               </p>
               <ErrorText message={errors.targetBelt} />
             </label>
@@ -195,12 +212,13 @@ export default function SubmitHours() {
               >
                 {targetRequirements.map((technique) => (
                   <option key={technique.id} value={technique.id}>
-                    {technique.code} - {technique.name} ({formatMinutes(technique.requiredMinutes)})
+                    {technique.code} - {technique.name}
+                    {technique.requiredMinutes ? ` (${formatMinutes(technique.requiredMinutes)})` : ' (No progression requirement)'}
                   </option>
                 ))}
               </select>
               <p className="mt-2 text-sm leading-6 text-ink/60">
-                Only {targetBelt} requirements are available in this dropdown.
+                Only {targetBelt} options are available in this dropdown.
               </p>
               <ErrorText message={errors.techniqueId} />
             </label>
@@ -233,7 +251,7 @@ export default function SubmitHours() {
               {selectedTechnique ? (
                 <dl className="mt-3 grid gap-3 sm:grid-cols-3">
                   <Summary label="Class code" value={selectedTechnique.code} />
-                  <Summary label="Required" value={formatMinutes(selectedTechnique.requiredMinutes)} />
+                  <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
                   <Summary label="Logged now" value={normalizedTime} />
                 </dl>
               ) : null}

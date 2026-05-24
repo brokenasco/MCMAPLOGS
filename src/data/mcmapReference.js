@@ -1,4 +1,5 @@
 export const beltProgression = ['Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
+export const additionalMcmapHoursTarget = 'Additional MCMAP Hours';
 
 export const beltReference = {
   'Tan Belt': [
@@ -96,11 +97,31 @@ export const beltReference = {
 export function getTargetBelt(currentBelt) {
   const normalizedBelt = normalizeBeltName(currentBelt);
   const currentIndex = beltProgression.indexOf(normalizedBelt);
+  if (normalizedBelt === 'Black 1st Degree') return additionalMcmapHoursTarget;
   return beltProgression[Math.min(currentIndex + 1, beltProgression.length - 1)] || 'Gray Belt';
 }
 
+export function getTargetBeltOptions(currentBelt) {
+  const normalizedBelt = normalizeBeltName(currentBelt);
+  if (normalizedBelt === 'Black 1st Degree') return [additionalMcmapHoursTarget];
+  return [getTargetBelt(normalizedBelt)];
+}
+
 export function getBeltRequirements(targetBelt) {
+  if (targetBelt === additionalMcmapHoursTarget) {
+    return [
+      item('ADDL-MCMAP-0001', 'Additional MCMAP sustainment training', '0:00'),
+      item('ADDL-MCMAP-0002', 'Additional free sparring', '0:00'),
+      item('ADDL-MCMAP-0003', 'Additional combat conditioning', '0:00'),
+      item('ADDL-MCMAP-0004', 'Additional integration training', '0:00'),
+      item('ADDL-MCMAP-0005', 'Additional instructor development', '0:00')
+    ];
+  }
   return beltReference[targetBelt] || [];
+}
+
+export function isAdditionalMcmapTarget(targetBelt) {
+  return targetBelt === additionalMcmapHoursTarget;
 }
 
 export function formatMinutes(totalMinutes) {

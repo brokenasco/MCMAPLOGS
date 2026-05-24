@@ -1,4 +1,4 @@
-import { beltProgression, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
+import { additionalMcmapHoursTarget, beltProgression, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
 
 export function buildBeltProgress({ beltUser, logs }) {
   const currentBelt = normalizeBeltName(beltUser.beltLevel);
@@ -7,7 +7,7 @@ export function buildBeltProgress({ beltUser, logs }) {
   const completedByRequirement = new Map();
 
   logs
-    .filter((log) => log.status === 'Verified' && normalizeBeltName(log.targetBelt || log.beltLevel) === targetBelt)
+    .filter((log) => log.status === 'Verified' && matchesTargetBelt(log, targetBelt))
     .forEach((log) => {
       const key = getRequirementKey(log.classCode, log.techniqueName);
       const minutes = getLogMinutes(log);
@@ -16,13 +16,13 @@ export function buildBeltProgress({ beltUser, logs }) {
 
   const rows = requirements.map((requirement) => {
     const completedMinutes = completedByRequirement.get(getRequirementKey(requirement.code, requirement.name)) || 0;
-    const cappedMinutes = Math.min(completedMinutes, requirement.requiredMinutes);
+    const cappedMinutes = requirement.requiredMinutes ? Math.min(completedMinutes, requirement.requiredMinutes) : completedMinutes;
 
     return {
       ...requirement,
       completedMinutes,
-      remainingMinutes: Math.max(requirement.requiredMinutes - completedMinutes, 0),
-      isComplete: completedMinutes >= requirement.requiredMinutes,
+      remainingMinutes: requirement.requiredMinutes ? Math.max(requirement.requiredMinutes - completedMinutes, 0) : 0,
+      isComplete: requirement.requiredMinutes ? completedMinutes >= requirement.requiredMinutes : completedMinutes > 0,
       cappedMinutes
     };
   });
@@ -49,7 +49,7 @@ export function buildTotalMcmapHours({ beltUser, logs }) {
   const completedBelts = currentBeltIndex >= 0 ? beltProgression.slice(0, currentBeltIndex + 1) : [];
   const completedBeltMinutes = completedBelts.reduce((total, belt) => total + getRequiredMinutesForBelt(belt), 0);
   const targetBeltVerifiedMinutes = sumLogMinutes(
-    logs.filter((log) => log.status === 'Verified' && normalizeBeltName(log.targetBelt || log.beltLevel) === targetBelt)
+    logs.filter((log) => log.status === 'Verified' && matchesTargetBelt(log, targetBelt))
   );
 
   return {
@@ -94,6 +94,12 @@ function getRequiredMinutesForBelt(belt) {
 
 function getRequirementKey(code, name) {
   return `${code || ''}::${name || ''}`.toLowerCase();
+}
+
+function matchesTargetBelt(log, targetBelt) {
+  const loggedTarget = log.targetBelt || log.beltLevel;
+  if (targetBelt === additionalMcmapHoursTarget) return loggedTarget === additionalMcmapHoursTarget;
+  return normalizeBeltName(loggedTarget) === targetBelt;
 }
 
 function normalizeBeltName(beltName = '') {
