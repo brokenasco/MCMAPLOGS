@@ -12,7 +12,8 @@ export default function Profile() {
   const { activeRole, profile, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription, deleteAccount, updateAccount } = useApp();
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
-  const accountRoleLabel = profile?.account_type === 'Owner/Developer' ? 'Owner/Developer' : isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const isOwnerMai = displaySubscription.status === 'owner_free' || profile?.mai_number === 'MAI-0000' || profile?.account_type === 'Owner/Developer';
+  const accountRoleLabel = isOwnerMai ? 'Owner/Developer' : isMai ? 'Martial Arts Instructor' : 'Belt User';
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
   const [editMessage, setEditMessage] = React.useState('');

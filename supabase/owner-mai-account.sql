@@ -1,5 +1,5 @@
 -- Run this after creating the owner user in Supabase Authentication.
--- This marks the account as the free Owner/Developer MAI account.
+-- This marks the account as the free owner MAI account.
 
 alter table public.profiles
   drop constraint if exists profiles_account_type_check;
@@ -22,7 +22,7 @@ select
   id,
   'Keaton Permenter (OWNER)',
   email,
-  'Owner/Developer',
+  'MAI',
   'Black 1st Degree',
   'Owner / Developer',
   'MAI-0000',
@@ -33,7 +33,7 @@ on conflict (id) do update
 set
   full_name = excluded.full_name,
   email = excluded.email,
-  account_type = excluded.account_type,
+  account_type = 'MAI',
   belt_level = excluded.belt_level,
   unit = excluded.unit,
   mai_number = excluded.mai_number,
