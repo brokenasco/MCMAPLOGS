@@ -28,9 +28,6 @@ export default function MaiDashboard() {
       .slice()
       .sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date))[0];
   }, [maiSubmittedLogs]);
-  const oldestPending = pendingLogs
-    .slice()
-    .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   const handleVerify = async (log) => {
     await verifyLog(log.id);
@@ -118,11 +115,6 @@ export default function MaiDashboard() {
       ) : null}
 
       <div className="mt-5">
-        {oldestPending ? (
-          <div className="mb-4 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-            Oldest pending log: {oldestPending.marine}, submitted for {new Date(`${oldestPending.date}T12:00:00`).toLocaleDateString()}.
-          </div>
-        ) : null}
         {pendingLogs.length ? (
           <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
             <div className="grid gap-4">
@@ -148,7 +140,7 @@ export default function MaiDashboard() {
         )}
       </div>
 
-      <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+      <section className="mt-8">
         <div className="mb-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-clay">Submit My Hours</p>
