@@ -39,6 +39,7 @@ drop policy if exists "Users can read their message threads" on public.message_t
 drop policy if exists "Belt Users can create connected message threads" on public.message_threads;
 drop policy if exists "Users can read messages in their threads" on public.messages;
 drop policy if exists "Users can send messages in their threads" on public.messages;
+drop policy if exists "Users can mark messages read in their threads" on public.messages;
 
 create policy "Users can read their message threads"
   on public.message_threads
@@ -92,6 +93,42 @@ create policy "Users can send messages in their threads"
   with check (
     sender_id = auth.uid()
     and exists (
+      select 1
+      from public.message_threads t
+      where t.id = messages.thread_id
+        and (
+          t.belt_user_id = auth.uid()
+          or exists (
+            select 1
+            from public.profiles p
+            where p.id = auth.uid()
+              and p.mai_number = t.mai_number
+          )
+        )
+    )
+  );
+
+create policy "Users can mark messages read in their threads"
+  on public.messages
+  for update
+  using (
+    exists (
+      select 1
+      from public.message_threads t
+      where t.id = messages.thread_id
+        and (
+          t.belt_user_id = auth.uid()
+          or exists (
+            select 1
+            from public.profiles p
+            where p.id = auth.uid()
+              and p.mai_number = t.mai_number
+          )
+        )
+    )
+  )
+  with check (
+    exists (
       select 1
       from public.message_threads t
       where t.id = messages.thread_id

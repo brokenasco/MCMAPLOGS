@@ -67,6 +67,10 @@ export function AppProvider({ children }) {
   const isProductionBuild = import.meta.env.PROD;
   const currentUserId = session?.user?.id;
   const currentMessageKey = activeRole === 'MAI' ? maiUser.maiNumber : beltUser.email;
+  const currentReadKeys = React.useMemo(
+    () => [currentUserId, currentMessageKey].filter(Boolean),
+    [currentUserId, currentMessageKey]
+  );
   const beltLogs = currentUserId
     ? logs.filter((log) => log.beltUserId === currentUserId)
     : logs.filter((log) => log.marine === beltUser.name);
@@ -88,7 +92,13 @@ export function AppProvider({ children }) {
   const urgentCount = beltLogs.filter((log) => isReturnedOrRejected(log.status)).length;
   const visibleMessageThreads = getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads });
   const unreadMessageCount = visibleMessageThreads.reduce(
-    (total, thread) => total + thread.messages.filter((message) => !message.readBy?.includes(currentMessageKey)).length,
+    (total, thread) =>
+      total +
+      thread.messages.filter(
+        (message) =>
+          !isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) &&
+          !isMessageReadByCurrentUser(message, currentReadKeys)
+      ).length,
     0
   );
   const currentPlan = subscriptionPlans[activeRole] || subscriptionPlans['Belt User'];
@@ -919,10 +929,11 @@ export function AppProvider({ children }) {
     const message = {
       id: crypto.randomUUID?.() || `msg-${Date.now()}`,
       senderKey: currentMessageKey,
+      senderId: currentUserId,
       senderName: activeRole === 'MAI' ? maiUser.name : beltUser.name,
       body: cleanBody,
       createdAt: new Date().toISOString(),
-      readBy: [currentMessageKey]
+      readBy: currentReadKeys
     };
 
     if (!supabase || !currentUserId) {
@@ -971,7 +982,7 @@ export function AppProvider({ children }) {
         sender_key: currentMessageKey,
         sender_name: activeRole === 'MAI' ? maiUser.name : beltUser.name,
         body: cleanBody,
-        read_by: [currentMessageKey]
+        read_by: currentReadKeys
       })
       .select()
       .single();
@@ -1001,12 +1012,16 @@ export function AppProvider({ children }) {
     const thread = messageThreads.find((item) => item.id === threadId);
     if (!thread) return;
 
-    const unreadMessages = thread.messages.filter((message) => !message.readBy?.includes(currentMessageKey));
+    const unreadMessages = thread.messages.filter(
+      (message) =>
+        !isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) &&
+        !isMessageReadByCurrentUser(message, currentReadKeys)
+    );
     if (!unreadMessages.length) return;
 
     const updatedMessages = unreadMessages.map((message) => ({
       ...message,
-      readBy: [...(message.readBy || []), currentMessageKey]
+      readBy: mergeReadKeys(message.readBy, currentReadKeys)
     }));
 
     setMessageThreads((currentThreads) =>
@@ -1015,9 +1030,10 @@ export function AppProvider({ children }) {
           ? {
               ...currentThread,
               messages: currentThread.messages.map((message) =>
-                message.readBy?.includes(currentMessageKey)
+                isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) ||
+                isMessageReadByCurrentUser(message, currentReadKeys)
                   ? message
-                  : { ...message, readBy: [...(message.readBy || []), currentMessageKey] }
+                  : { ...message, readBy: mergeReadKeys(message.readBy, currentReadKeys) }
               )
             }
           : currentThread
@@ -1026,7 +1042,7 @@ export function AppProvider({ children }) {
 
     if (!supabase) return;
 
-    await Promise.all(
+    const results = await Promise.all(
       updatedMessages.map((message) =>
         supabase
           .from('messages')
@@ -1034,7 +1050,12 @@ export function AppProvider({ children }) {
           .eq('id', message.id)
       )
     );
-  }, [currentMessageKey, messageThreads, supabase]);
+
+    const updateError = results.find((result) => result.error)?.error;
+    if (updateError) {
+      setAuthMessage(updateError.message);
+    }
+  }, [currentMessageKey, currentReadKeys, currentUserId, messageThreads, supabase]);
 
   const refreshAccount = async () => {
     if (!supabase || !currentUserId) return null;
@@ -1208,12 +1229,28 @@ function mapThreadFromSupabase(row) {
 function mapMessageFromSupabase(row) {
   return {
     id: row.id,
+    senderId: row.sender_id,
     senderKey: row.sender_key,
     senderName: row.sender_name,
     body: row.body,
     createdAt: row.created_at,
     readBy: row.read_by || []
   };
+}
+
+function isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) {
+  return Boolean(
+    (currentUserId && message.senderId === currentUserId) ||
+    (currentMessageKey && message.senderKey === currentMessageKey)
+  );
+}
+
+function isMessageReadByCurrentUser(message, currentReadKeys) {
+  return currentReadKeys.some((key) => message.readBy?.includes(key));
+}
+
+function mergeReadKeys(existingKeys = [], nextKeys = []) {
+  return [...new Set([...existingKeys, ...nextKeys].filter(Boolean))];
 }
 
 function mergeMaiDirectory(directory) {

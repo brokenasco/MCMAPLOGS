@@ -5,7 +5,7 @@ import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Messages() {
-  const { activeRole, beltLogs, maiDirectory, messageThreads, sendMessage, markThreadRead } = useApp();
+  const { activeRole, beltLogs, maiDirectory, messageThreads, sendMessage, markThreadRead, session, beltUser, maiUser } = useApp();
   const [selectedThreadId, setSelectedThreadId] = React.useState(messageThreads[0]?.id || '');
   const [draft, setDraft] = React.useState('');
   const [newMaiNumber, setNewMaiNumber] = React.useState('');
@@ -75,7 +75,12 @@ export default function Messages() {
 
             <div className="mt-4 grid gap-2">
               {messageThreads.map((thread) => {
-                const unread = thread.messages.some((message) => !message.readBy?.includes(activeRole === 'MAI' ? thread.maiNumber : thread.beltUserEmail));
+                const unread = thread.messages.some((message) =>
+                  isUnreadForCurrentUser(message, {
+                    currentUserId: session?.user?.id,
+                    currentMessageKey: activeRole === 'MAI' ? maiUser.maiNumber : beltUser.email
+                  })
+                );
                 return (
                   <button
                     key={thread.id}
@@ -175,4 +180,13 @@ function getEligibleMais({ beltLogs, maiDirectory }) {
 
 function formatDateTime(date) {
   return new Date(date).toLocaleString();
+}
+
+function isUnreadForCurrentUser(message, { currentUserId, currentMessageKey }) {
+  const readKeys = [currentUserId, currentMessageKey].filter(Boolean);
+  const sentByCurrentUser =
+    (currentUserId && message.senderId === currentUserId) ||
+    (currentMessageKey && message.senderKey === currentMessageKey);
+
+  return !sentByCurrentUser && !readKeys.some((key) => message.readBy?.includes(key));
 }
