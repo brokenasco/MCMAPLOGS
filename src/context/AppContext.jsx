@@ -501,6 +501,68 @@ export function AppProvider({ children }) {
     return data;
   };
 
+  const updateAccount = async ({ email, unit }) => {
+    setAuthMessage('');
+
+    const trimmedEmail = email.trim();
+    const trimmedUnit = unit.trim();
+    const accountUpdate = {
+      email: trimmedEmail,
+      unit: trimmedUnit
+    };
+
+    if (!supabase || !currentUserId) {
+      if (activeRole === 'MAI') {
+        const updatedMai = { ...maiUser, ...accountUpdate };
+        setMaiUser(updatedMai);
+        return { emailConfirmationRequired: false };
+      }
+
+      const updatedBeltUser = { ...beltUser, ...accountUpdate };
+      setBeltUser(updatedBeltUser);
+      return { emailConfirmationRequired: false };
+    }
+
+    const currentEmail = profile?.email || session?.user?.email || '';
+    let emailConfirmationRequired = false;
+
+    if (trimmedEmail && trimmedEmail.toLowerCase() !== currentEmail.toLowerCase()) {
+      const { data, error } = await supabase.auth.updateUser(
+        { email: trimmedEmail },
+        { emailRedirectTo: `${window.location.origin}/profile` }
+      );
+
+      if (error) {
+        setAuthMessage(error.message);
+        throw error;
+      }
+
+      emailConfirmationRequired = Boolean(data.user?.new_email);
+    }
+
+    const updatedProfile = {
+      ...profile,
+      email: trimmedEmail,
+      unit: trimmedUnit
+    };
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        email: trimmedEmail,
+        unit: trimmedUnit
+      })
+      .eq('id', currentUserId);
+
+    if (profileError) {
+      setAuthMessage(profileError.message);
+      throw profileError;
+    }
+
+    applyProfile(updatedProfile);
+    return { emailConfirmationRequired };
+  };
+
   const createMockAccount = ({ role, name, email, beltLevel, maiNumber }) => {
     setActiveRole(role);
 
@@ -609,6 +671,7 @@ export function AppProvider({ children }) {
     updatePassword,
     signOut,
     deleteAccount,
+    updateAccount,
     refreshAccount,
     getFreshAccessToken
   };

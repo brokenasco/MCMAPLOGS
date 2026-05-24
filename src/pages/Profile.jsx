@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, CreditCard, Trash2 } from 'lucide-react';
+import { AlertTriangle, CreditCard, Pencil, Save, Trash2, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -8,13 +8,55 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { activeRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription, deleteAccount } = useApp();
+  const { activeRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription, deleteAccount, updateAccount } = useApp();
+  const isMai = activeRole === 'MAI';
+  const user = isMai ? maiUser : beltUser;
+  const accountRoleLabel = isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
+  const [editMessage, setEditMessage] = React.useState('');
+  const [isSaving, setIsSaving] = React.useState(false);
   const [deleteText, setDeleteText] = React.useState('');
   const [deleteMessage, setDeleteMessage] = React.useState('');
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const isMai = activeRole === 'MAI';
-  const user = isMai ? maiUser : beltUser;
   const canDelete = deleteText === 'DELETE';
+
+  React.useEffect(() => {
+    setEditForm({ email: user.email || '', unit: user.unit || '' });
+    setEditMessage('');
+    setIsEditing(false);
+  }, [user.email, user.unit]);
+
+  const updateEditField = (event) => {
+    setEditForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    setEditMessage('');
+  };
+
+  const handleSaveAccount = async (event) => {
+    event.preventDefault();
+
+    if (!editForm.email.trim() || !editForm.unit.trim()) {
+      setEditMessage('Email and unit are both required.');
+      return;
+    }
+
+    setIsSaving(true);
+    setEditMessage('');
+
+    try {
+      const result = await updateAccount(editForm);
+      setIsEditing(false);
+      setEditMessage(
+        result.emailConfirmationRequired
+          ? 'Saved. Check your email and confirm the change before using the new email to log in.'
+          : 'Account updated.'
+      );
+    } catch (error) {
+      setEditMessage(error.message || 'Account could not be updated. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     if (!canDelete) return;
@@ -37,7 +79,7 @@ export default function Profile() {
       eyebrow="Settings"
       title="Profile"
       description="Review your account details."
-      actions={<RoleBadge role={activeRole} />}
+      actions={<RoleBadge role={accountRoleLabel} />}
     >
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
         <section className="rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
@@ -45,7 +87,7 @@ export default function Profile() {
           <h2 className="mt-2 text-2xl font-bold text-ink">{user.name}</h2>
           <p className="mt-1 text-sm text-ink/60">{user.email}</p>
           <dl className="mt-6 space-y-4">
-            <Detail label="Account type" value={activeRole} />
+            <Detail label="Account role" value={accountRoleLabel} />
             <Detail label="Unit" value={user.unit || maiUser.unit} />
             <Detail label="Belt level" value={beltUser.beltLevel} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
@@ -74,8 +116,83 @@ export default function Profile() {
           <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
             <h2 className="text-xl font-bold">Account role</h2>
             <p className="mt-2 text-sm leading-6 text-ink/65">
-              Your role is controlled by your saved account profile. Belt Users submit logs. MAIs review and sign logs.
+              Your account role is {accountRoleLabel}. Belt Users submit logs. Martial Arts Instructors review and sign logs.
             </p>
+          </div>
+
+          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <div>
+                <h2 className="text-xl font-bold">Account details</h2>
+                <p className="mt-2 text-sm leading-6 text-ink/65">
+                  Update your unit or change the email tied to this account.
+                </p>
+              </div>
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
+                >
+                  <Pencil size={17} aria-hidden="true" />
+                  Edit account
+                </button>
+              ) : null}
+            </div>
+
+            {editMessage ? (
+              <div className="mt-4 rounded-md border border-coyote/35 bg-field p-4 text-sm font-semibold text-ink/75">
+                {editMessage}
+              </div>
+            ) : null}
+
+            {isEditing ? (
+              <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={handleSaveAccount}>
+                <label className="block">
+                  <span className="text-sm font-bold text-ink">Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    value={editForm.email}
+                    onChange={updateEditField}
+                    className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 px-3 text-sm"
+                    placeholder="name@example.mil"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold text-ink">Unit</span>
+                  <input
+                    name="unit"
+                    value={editForm.unit}
+                    onChange={updateEditField}
+                    className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 px-3 text-sm"
+                    placeholder="Unit or training section"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-3 sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save size={17} aria-hidden="true" />
+                    {isSaving ? 'Saving...' : 'Save changes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditForm({ email: user.email || '', unit: user.unit || '' });
+                      setEditMessage('');
+                      setIsEditing(false);
+                    }}
+                    className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+                  >
+                    <X size={17} aria-hidden="true" />
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : null}
           </div>
 
           <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
