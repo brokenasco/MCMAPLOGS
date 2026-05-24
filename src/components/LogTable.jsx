@@ -10,7 +10,7 @@ const beltStyles = {
   'Black 1st Degree': 'bg-[#111111] text-white'
 };
 
-export default function LogTable({ logs, showMarine = true, onSelectLog }) {
+export default function LogTable({ logs, showMarine = true, onSelectLog, renderActions }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="overflow-x-auto">
@@ -24,6 +24,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
               <HeaderCell>Belt</HeaderCell>
               <HeaderCell>Sent To MAI</HeaderCell>
               <HeaderCell>Status</HeaderCell>
+              {renderActions ? <HeaderCell>Action</HeaderCell> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-coyote/20">
@@ -49,6 +50,13 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
                 <BodyCell>
                   <StatusBadge status={log.status} />
                 </BodyCell>
+                {renderActions ? (
+                  <BodyCell>
+                    <div onClick={(event) => event.stopPropagation()}>
+                      {renderActions(log)}
+                    </div>
+                  </BodyCell>
+                ) : null}
               </tr>
             ))}
           </tbody>

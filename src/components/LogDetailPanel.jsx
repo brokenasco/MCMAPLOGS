@@ -49,6 +49,7 @@ export default function LogDetailPanel({ log, onClose }) {
         />
         <Detail label="Sent to MAI" value={formatMaiDisplay(log)} />
         <Detail label="Submitted" value={log.submittedAt || 'Saved record'} />
+        <Detail label="Resubmitted" value={log.resubmittedAt ? new Date(log.resubmittedAt).toLocaleDateString() : 'Not resubmitted'} />
         <Detail label="Signed by" value={log.verifiedBy ? `${log.verifiedBy} | ${log.verifiedByMaiNumber}` : 'Not signed yet'} />
       </dl>
 

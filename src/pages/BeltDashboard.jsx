@@ -1,8 +1,9 @@
 import React from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Eye, Lock, Medal, PlusCircle, RotateCcw, Target } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Eye, Lock, Medal, Pencil, PlusCircle, RotateCcw, Target, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
+import LogEditForm from '../components/LogEditForm.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { RoleBadge } from '../components/Header.jsx';
@@ -11,20 +12,56 @@ import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, buildTotalMcmapHours, getBeltTrail, sumLogMinutes } from '../lib/mcmapProgress.js';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, resubmitLog, savedDraft } = useApp();
+  const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, resubmitLog, savedDraft, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
-  const [correctionText, setCorrectionText] = React.useState('');
+  const [editingMode, setEditingMode] = React.useState('edit');
+  const [actionMessage, setActionMessage] = React.useState('');
   const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
   const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
   const beltTrail = React.useMemo(() => getBeltTrail(beltUser.beltLevel, progress.percent), [beltUser.beltLevel, progress.percent]);
   const totalSubmittedMinutes = sumLogMinutes(beltLogs);
   const verifiedCurrentBeltMinutes = mcmapHourSummary.targetBeltVerifiedMinutes;
   const pendingLogs = beltLogs.filter((log) => log.status === 'Pending');
-  const returnedLogs = beltLogs.filter((log) => isReturnedOrRejected(log.status));
+  const returnedLogs = beltLogs.filter((log) => log.status === 'Returned');
   const recentLogs = beltLogs.slice(0, 6);
   const nextRequirement = progress.rows.find((row) => !row.isComplete);
   const hasNoLogs = beltLogs.length === 0;
+
+  const openPendingEdit = (log) => {
+    setSelectedLog(log);
+    setEditingLog(log);
+    setEditingMode('edit');
+    setActionMessage('');
+  };
+
+  const openReturnedEdit = (log) => {
+    setSelectedLog(log);
+    setEditingLog(log);
+    setEditingMode('resubmit');
+    setActionMessage('');
+  };
+
+  const handleSaveLogEdit = async (updates) => {
+    if (editingMode === 'resubmit') {
+      await resubmitLog(editingLog.id, updates);
+      setActionMessage('Returned log corrected and resubmitted for MAI verification.');
+    } else {
+      await updatePendingLog(editingLog.id, updates);
+      setActionMessage('Pending log updated. It remains pending for MAI verification.');
+    }
+
+    setEditingLog(null);
+    setSelectedLog(null);
+  };
+
+  const handleCancelPendingLog = async (log) => {
+    const confirmed = window.confirm('Cancel this pending log? It will be removed from your logbook and the MAI verification queue.');
+    if (!confirmed) return;
+    await cancelPendingLog(log.id);
+    setSelectedLog(null);
+    setActionMessage('Pending log canceled.');
+  };
 
   return (
     <PageShell
@@ -85,7 +122,7 @@ export default function BeltDashboard() {
               </p>
               <h2 className="mt-2 text-2xl font-bold text-ink">{getNextHeadline({ returnedLogs, savedDraft, nextRequirement, progress })}</h2>
               <p className="mt-2 text-sm leading-6 text-ink/65">
-                {pendingLogs.length} logs pending MAI review. {returnedLogs.length} returned or rejected logs need correction.
+                {pendingLogs.length} logs pending MAI review. {returnedLogs.length} returned logs need correction.
               </p>
             </div>
             <Link
@@ -131,66 +168,50 @@ export default function BeltDashboard() {
 
       {returnedLogs.length ? (
         <section id="returned-logs" className="mt-8 rounded-md border border-clay/30 bg-clay/10 p-5">
-          <h2 className="text-xl font-bold text-ink">Returned or rejected logs need correction</h2>
+          <h2 className="text-xl font-bold text-ink">Returned logs need correction</h2>
           <p className="mt-1 text-sm text-ink/65">These do not count toward verified hours until corrected and approved.</p>
           <div className="mt-4 grid gap-3">
             {returnedLogs.map((log) => (
               <ReturnedLogCard
                 key={log.id}
                 log={log}
-                onCorrect={() => {
-                  setEditingLog(log);
-                  setCorrectionText(log.description);
-                }}
+                onCorrect={() => openReturnedEdit(log)}
               />
             ))}
           </div>
         </section>
       ) : null}
 
+      {actionMessage ? (
+        <div className="mt-8 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
+          {actionMessage}
+        </div>
+      ) : null}
+
       {editingLog ? (
-        <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-          <h2 className="text-xl font-bold">Correct returned log</h2>
-          <p className="mt-1 text-sm text-ink/65">{editingLog.returnMessage}</p>
-          <label className="mt-4 block">
-            <span className="text-sm font-bold text-ink">Updated training description</span>
-            <textarea
-              value={correctionText}
-              onChange={(event) => setCorrectionText(event.target.value)}
-              className="focus-ring mt-2 min-h-28 w-full rounded-md border border-ink/15 px-3 py-3 text-sm"
-            />
-          </label>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={async () => {
-                await resubmitLog(editingLog.id, { description: correctionText });
-                setEditingLog(null);
-                setCorrectionText('');
-              }}
-              className="focus-ring inline-flex h-10 items-center rounded-md bg-olive px-4 text-sm font-bold text-white"
-            >
-              Resubmit log
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditingLog(null)}
-              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
-            >
-              Cancel
-            </button>
-          </div>
-        </section>
+        <div className="mt-8">
+          <LogEditForm
+            beltUser={beltUser}
+            findMaiByNumber={findMaiByNumber}
+            log={editingLog}
+            mode={editingMode}
+            onCancel={() => setEditingLog(null)}
+            onSubmit={handleSaveLogEdit}
+          />
+        </div>
       ) : null}
 
       <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_380px]">
         <div>
           <h2 className="mb-3 text-xl font-bold">My Recent Logs</h2>
           {recentLogs.length ? (
-            <RecentLogs logs={recentLogs} onSelectLog={setSelectedLog} onCorrectLog={(log) => {
-              setEditingLog(log);
-              setCorrectionText(log.description);
-            }} />
+            <RecentLogs
+              logs={recentLogs}
+              onCancelPending={handleCancelPendingLog}
+              onEditPending={openPendingEdit}
+              onEditReturned={openReturnedEdit}
+              onSelectLog={setSelectedLog}
+            />
           ) : (
             <EmptyState
               title="Welcome to your MCMAP Logbook"
@@ -302,7 +323,7 @@ function DashboardMetric({ label, value, detail, urgent = false }) {
   );
 }
 
-function RecentLogs({ logs, onSelectLog, onCorrectLog }) {
+function RecentLogs({ logs, onCancelPending, onEditPending, onEditReturned, onSelectLog }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="hidden overflow-x-auto md:block">
@@ -324,16 +345,13 @@ function RecentLogs({ logs, onSelectLog, onCorrectLog }) {
                 <RecentCell>{log.targetBelt || log.beltLevel}</RecentCell>
                 <RecentCell><StatusBadge status={log.status} /></RecentCell>
                 <RecentCell>
-                  <button
-                    type="button"
-                    onClick={() => isReturnedOrRejected(log.status) ? onCorrectLog(log) : onSelectLog(log)}
-                    className={`focus-ring inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-bold ${
-                      isReturnedOrRejected(log.status) ? 'bg-clay text-white' : 'border border-ink/15 bg-field text-ink'
-                    }`}
-                  >
-                    {isReturnedOrRejected(log.status) ? <RotateCcw size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-                    {isReturnedOrRejected(log.status) ? 'Fix' : 'View'}
-                  </button>
+                  <RecentLogActions
+                    log={log}
+                    onCancelPending={onCancelPending}
+                    onEditPending={onEditPending}
+                    onEditReturned={onEditReturned}
+                    onSelectLog={onSelectLog}
+                  />
                 </RecentCell>
               </tr>
             ))}
@@ -351,20 +369,78 @@ function RecentLogs({ logs, onSelectLog, onCorrectLog }) {
               </div>
               <StatusBadge status={log.status} />
             </div>
-            <button
-              type="button"
-              onClick={() => isReturnedOrRejected(log.status) ? onCorrectLog(log) : onSelectLog(log)}
-              className={`focus-ring mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md px-3 text-sm font-bold ${
-                isReturnedOrRejected(log.status) ? 'bg-clay text-white' : 'border border-ink/15 bg-paper text-ink'
-              }`}
-            >
-              {isReturnedOrRejected(log.status) ? <RotateCcw size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-              {isReturnedOrRejected(log.status) ? 'Fix' : 'View'}
-            </button>
+            <div className="mt-4">
+              <RecentLogActions
+                log={log}
+                onCancelPending={onCancelPending}
+                onEditPending={onEditPending}
+                onEditReturned={onEditReturned}
+                onSelectLog={onSelectLog}
+              />
+            </div>
           </article>
         ))}
       </div>
     </div>
+  );
+}
+
+function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned, onSelectLog }) {
+  if (log.status === 'Pending') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onEditPending(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white"
+        >
+          <Pencil size={16} aria-hidden="true" />
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => onCancelPending(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-clay/30 bg-paper px-3 text-sm font-bold text-clay"
+        >
+          <Trash2 size={16} aria-hidden="true" />
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  if (log.status === 'Returned') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onSelectLog(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink"
+        >
+          <Eye size={16} aria-hidden="true" />
+          View Reason
+        </button>
+        <button
+          type="button"
+          onClick={() => onEditReturned(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-clay px-3 text-sm font-bold text-white"
+        >
+          <RotateCcw size={16} aria-hidden="true" />
+          Edit & Resubmit
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectLog(log)}
+      className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink"
+    >
+      <Eye size={16} aria-hidden="true" />
+      View
+    </button>
   );
 }
 
@@ -415,8 +491,4 @@ function formatDate(date) {
 
 function formatMinutesFromLog(log) {
   return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
-}
-
-function isReturnedOrRejected(status) {
-  return status === 'Returned' || status === 'Rejected';
 }

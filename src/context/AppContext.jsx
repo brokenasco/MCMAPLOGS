@@ -364,6 +364,95 @@ export function AppProvider({ children }) {
     return savedLog;
   };
 
+  const updatePendingLog = async (logId, updates) => {
+    const existingLog = logs.find((log) => log.id === logId);
+    if (!existingLog) throw new Error('This log could not be found.');
+    if (existingLog.status !== 'Pending') throw new Error('Only pending logs can be edited.');
+    if (currentUserId && existingLog.beltUserId !== currentUserId) throw new Error('You can only edit your own logs.');
+
+    const matchedMai = findMaiByNumber(updates.maiNumber);
+    if (!matchedMai?.id && supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
+    }
+    if (!matchedMai && !supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
+    }
+
+    const nextLog = {
+      ...existingLog,
+      ...updates,
+      status: 'Pending',
+      assignedMaiUserId: matchedMai?.id || null,
+      assignedMaiName: matchedMai?.name || '',
+      editHistory: [
+        ...(existingLog.editHistory || []),
+        buildLogHistoryEntry('pending_edit', existingLog, updates)
+      ]
+    };
+
+    if (!supabase || !currentUserId) {
+      setLogs((currentLogs) => currentLogs.map((log) => (log.id === logId ? nextLog : log)));
+      return nextLog;
+    }
+
+    const { data, error } = await supabase
+      .from('training_logs')
+      .update({
+        belt_level: updates.beltLevel,
+        target_belt: updates.targetBelt,
+        class_code: updates.classCode,
+        technique_name: updates.techniqueName,
+        hours: updates.hours,
+        minutes: updates.minutes,
+        description: updates.description,
+        mai_number: updates.maiNumber,
+        assigned_mai_user_id: matchedMai.id,
+        assigned_mai_name: matchedMai.name,
+        status: 'Pending',
+        edit_history: nextLog.editHistory
+      })
+      .eq('id', logId)
+      .eq('belt_user_id', currentUserId)
+      .eq('status', 'Pending')
+      .select()
+      .single();
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+
+    const savedLog = mapLogFromSupabase(data);
+    setLogs((currentLogs) => currentLogs.map((log) => (log.id === logId ? savedLog : log)));
+    return savedLog;
+  };
+
+  const cancelPendingLog = async (logId) => {
+    const existingLog = logs.find((log) => log.id === logId);
+    if (!existingLog) throw new Error('This log could not be found.');
+    if (existingLog.status !== 'Pending') throw new Error('Only pending logs can be canceled.');
+    if (currentUserId && existingLog.beltUserId !== currentUserId) throw new Error('You can only cancel your own logs.');
+
+    if (!supabase || !currentUserId) {
+      setLogs((currentLogs) => currentLogs.filter((log) => log.id !== logId));
+      return;
+    }
+
+    const { error } = await supabase
+      .from('training_logs')
+      .delete()
+      .eq('id', logId)
+      .eq('belt_user_id', currentUserId)
+      .eq('status', 'Pending');
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+
+    setLogs((currentLogs) => currentLogs.filter((log) => log.id !== logId));
+  };
+
   const verifyLog = async (logId) => {
     const logToVerify = logs.find((log) => log.id === logId);
     if (logToVerify?.submitterRole === 'MAI' && logToVerify?.beltUserId === currentUserId) {
@@ -480,43 +569,68 @@ export function AppProvider({ children }) {
   };
 
   const resubmitLog = async (logId, updates) => {
-    if (!supabase || !currentUserId) {
-      setLogs((currentLogs) =>
-        currentLogs.map((log) =>
-          log.id === logId
-            ? {
-                ...log,
-                ...updates,
-                status: 'Pending',
-                submittedAt: new Date().toISOString().slice(0, 10),
-                returnedAt: null,
-                returnedBy: null,
-                returnedByMaiNumber: null,
-                returnReason: null,
-                returnMessage: null
-              }
-            : log
-        )
-      );
-      return;
+    const existingLog = logs.find((log) => log.id === logId);
+    if (!existingLog) throw new Error('This log could not be found.');
+    if (existingLog.status !== 'Returned') throw new Error('Only returned logs can be resubmitted.');
+    if (currentUserId && existingLog.beltUserId !== currentUserId) throw new Error('You can only resubmit your own logs.');
+
+    const matchedMai = findMaiByNumber(updates.maiNumber || existingLog.maiNumber);
+    if (!matchedMai?.id && supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
+    }
+    if (!matchedMai && !supabase) {
+      throw new Error('That MAI code does not match an active MAI account. Check the code and try again.');
     }
 
-    const { error } = await supabase
+    const nextLog = {
+      ...existingLog,
+      ...updates,
+      status: 'Pending',
+      assignedMaiUserId: matchedMai?.id || null,
+      assignedMaiName: matchedMai?.name || '',
+      resubmittedAt: new Date().toISOString(),
+      editHistory: [
+        ...(existingLog.editHistory || []),
+        buildLogHistoryEntry('returned_resubmit', existingLog, updates)
+      ]
+    };
+
+    if (!supabase || !currentUserId) {
+      setLogs((currentLogs) => currentLogs.map((log) => (log.id === logId ? nextLog : log)));
+      return nextLog;
+    }
+
+    const { data, error } = await supabase
       .from('training_logs')
       .update({
+        belt_level: updates.beltLevel,
+        target_belt: updates.targetBelt,
+        class_code: updates.classCode,
+        technique_name: updates.techniqueName,
+        hours: updates.hours,
+        minutes: updates.minutes,
         description: updates.description,
+        mai_number: updates.maiNumber,
+        assigned_mai_user_id: matchedMai.id,
+        assigned_mai_name: matchedMai.name,
         status: 'Pending',
-        return_reason: null,
-        return_message: null
+        resubmitted_at: nextLog.resubmittedAt,
+        edit_history: nextLog.editHistory
       })
-      .eq('id', logId);
+      .eq('id', logId)
+      .eq('belt_user_id', currentUserId)
+      .eq('status', 'Returned')
+      .select()
+      .single();
 
     if (error) {
       setAuthMessage(error.message);
-      return;
+      throw error;
     }
 
-    await loadLogs();
+    const savedLog = mapLogFromSupabase(data);
+    setLogs((currentLogs) => currentLogs.map((log) => (log.id === logId ? savedLog : log)));
+    return savedLog;
   };
 
   const findMaiByNumber = (maiNumber = '') =>
@@ -966,6 +1080,8 @@ export function AppProvider({ children }) {
     verifyLog,
     returnLog,
     rejectLog,
+    updatePendingLog,
+    cancelPendingLog,
     resubmitLog,
     findMaiByNumber,
     saveDraft,
@@ -1005,10 +1121,40 @@ function mapLogFromSupabase(row) {
     status: row.status,
     returnReason: row.return_reason,
     returnMessage: row.return_message,
+    resubmittedAt: row.resubmitted_at,
+    editHistory: row.edit_history || [],
     submittedAt: row.created_at?.slice(0, 10),
     verifiedAt: row.verified_at?.slice(0, 10),
     verifiedBy: row.verified_by ? 'Verified MAI' : null,
     verifiedByMaiNumber: row.verified_by ? row.mai_number : null
+  };
+}
+
+function buildLogHistoryEntry(action, previousLog, updates) {
+  return {
+    action,
+    changedAt: new Date().toISOString(),
+    previous: {
+      targetBelt: previousLog.targetBelt,
+      beltLevel: previousLog.beltLevel,
+      classCode: previousLog.classCode,
+      techniqueName: previousLog.techniqueName,
+      hours: previousLog.hours,
+      minutes: previousLog.minutes,
+      maiNumber: previousLog.maiNumber,
+      assignedMaiUserId: previousLog.assignedMaiUserId,
+      assignedMaiName: previousLog.assignedMaiName,
+      status: previousLog.status
+    },
+    next: {
+      targetBelt: updates.targetBelt,
+      beltLevel: updates.beltLevel,
+      classCode: updates.classCode,
+      techniqueName: updates.techniqueName,
+      hours: updates.hours,
+      minutes: updates.minutes,
+      maiNumber: updates.maiNumber
+    }
   };
 }
 

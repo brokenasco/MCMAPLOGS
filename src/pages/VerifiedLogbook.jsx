@@ -1,7 +1,8 @@
 import React from 'react';
-import { CheckCircle2, Download, Medal, MessageSquare, Printer, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, Eye, Medal, MessageSquare, Pencil, Printer, RotateCcw, Trash2, XCircle } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
+import LogEditForm from '../components/LogEditForm.jsx';
 import LogTable from '../components/LogTable.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -13,9 +14,27 @@ import { buildBeltProgress, buildTotalMcmapHours, sumLogMinutes } from '../lib/m
 const filters = ['All', 'Pending', 'Verified', 'Returned', 'Rejected'];
 
 export default function VerifiedLogbook() {
-  const { activeRole, assignedMaiLogs, beltLogs, beltUser, maiSubmittedLogs, maiUser, pendingLogs, verifyLog, returnLog, rejectLog } = useApp();
+  const {
+    activeRole,
+    assignedMaiLogs,
+    beltLogs,
+    beltUser,
+    cancelPendingLog,
+    findMaiByNumber,
+    maiSubmittedLogs,
+    maiUser,
+    pendingLogs,
+    resubmitLog,
+    updatePendingLog,
+    verifyLog,
+    returnLog,
+    rejectLog
+  } = useApp();
   const [activeFilter, setActiveFilter] = React.useState(activeRole === 'MAI' ? 'Pending' : 'Verified');
   const [selectedLog, setSelectedLog] = React.useState(null);
+  const [editingLog, setEditingLog] = React.useState(null);
+  const [editingMode, setEditingMode] = React.useState('edit');
+  const [actionMessage, setActionMessage] = React.useState('');
   const [confirmationLog, setConfirmationLog] = React.useState(null);
   const [returningLog, setReturningLog] = React.useState(null);
   const [returnAction, setReturnAction] = React.useState('return');
@@ -32,6 +51,8 @@ export default function VerifiedLogbook() {
   React.useEffect(() => {
     setActiveFilter(activeRole === 'MAI' ? 'Pending' : 'Verified');
     setSelectedLog(null);
+    setEditingLog(null);
+    setActionMessage('');
   }, [activeRole]);
 
   const openConfirmation = (log) => {
@@ -81,6 +102,41 @@ export default function VerifiedLogbook() {
     window.print();
   };
 
+  const openPendingEdit = (log) => {
+    setSelectedLog(log);
+    setEditingLog(log);
+    setEditingMode('edit');
+    setActionMessage('');
+  };
+
+  const openReturnedEdit = (log) => {
+    setSelectedLog(log);
+    setEditingLog(log);
+    setEditingMode('resubmit');
+    setActionMessage('');
+  };
+
+  const handleSaveLogEdit = async (updates) => {
+    if (editingMode === 'resubmit') {
+      await resubmitLog(editingLog.id, updates);
+      setActionMessage('Returned log corrected and resubmitted for MAI verification.');
+    } else {
+      await updatePendingLog(editingLog.id, updates);
+      setActionMessage('Pending log updated. It remains pending for MAI verification.');
+    }
+
+    setEditingLog(null);
+    setSelectedLog(null);
+  };
+
+  const handleCancelPendingLog = async (log) => {
+    const confirmed = window.confirm('Cancel this pending log? It will be removed from your logbook and the MAI verification queue.');
+    if (!confirmed) return;
+    await cancelPendingLog(log.id);
+    setSelectedLog(null);
+    setActionMessage('Pending log canceled.');
+  };
+
   return (
     <PageShell
       eyebrow="Records"
@@ -118,6 +174,25 @@ export default function VerifiedLogbook() {
           setReturningLog={setReturningLog}
           setSelectedLog={setSelectedLog}
         />
+      ) : null}
+
+      {!isMai && actionMessage ? (
+        <div className="mb-5 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
+          {actionMessage}
+        </div>
+      ) : null}
+
+      {!isMai && editingLog ? (
+        <div className="mb-8">
+          <LogEditForm
+            beltUser={beltUser}
+            findMaiByNumber={findMaiByNumber}
+            log={editingLog}
+            mode={editingMode}
+            onCancel={() => setEditingLog(null)}
+            onSubmit={handleSaveLogEdit}
+          />
+        </div>
       ) : null}
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -162,7 +237,19 @@ export default function VerifiedLogbook() {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
         {filteredLogs.length ? (
-          <LogTable logs={filteredLogs} onSelectLog={setSelectedLog} />
+          <LogTable
+            logs={filteredLogs}
+            onSelectLog={setSelectedLog}
+            renderActions={!isMai ? (log) => (
+              <BeltLogActions
+                log={log}
+                onCancelPending={handleCancelPendingLog}
+                onEditPending={openPendingEdit}
+                onEditReturned={openReturnedEdit}
+                onView={setSelectedLog}
+              />
+            ) : null}
+          />
         ) : (
           <EmptyState title={`No ${activeFilter.toLowerCase()} logs`} text="Change the filter or submit a new log to see records here." />
         )}
@@ -199,6 +286,65 @@ function mergeLogs(...logGroups) {
   const byId = new Map();
   logGroups.flat().forEach((log) => byId.set(log.id, log));
   return [...byId.values()].sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function BeltLogActions({ log, onCancelPending, onEditPending, onEditReturned, onView }) {
+  if (log.status === 'Pending') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onEditPending(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-olive px-3 text-xs font-bold text-white"
+        >
+          <Pencil size={15} aria-hidden="true" />
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => onCancelPending(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-clay/30 bg-paper px-3 text-xs font-bold text-clay"
+        >
+          <Trash2 size={15} aria-hidden="true" />
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  if (log.status === 'Returned') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onView(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-xs font-bold text-ink"
+        >
+          <Eye size={15} aria-hidden="true" />
+          View Reason
+        </button>
+        <button
+          type="button"
+          onClick={() => onEditReturned(log)}
+          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-clay px-3 text-xs font-bold text-white"
+        >
+          <RotateCcw size={15} aria-hidden="true" />
+          Edit & Resubmit
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onView(log)}
+      className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-xs font-bold text-ink"
+    >
+      <Eye size={15} aria-hidden="true" />
+      View
+    </button>
+  );
 }
 
 function BeltProgressDashboard({ progress }) {
