@@ -23,12 +23,24 @@ const subscriptionPlans = {
 };
 
 const paidMaiAccessStatuses = ['active', 'trialing', 'owner_free'];
+const ownerMaiAccount = {
+  id: '8c5a14d7-5f97-4020-ade5-de534b315287',
+  name: 'Keaton Permenter (OWNER)',
+  email: 'keatonray99@gmail.com',
+  unit: 'Owner / Developer',
+  maiNumber: 'MAI-0000'
+};
+const fallbackMaiDirectory = [
+  ownerMaiAccount,
+  currentMai,
+  { name: 'SSgt Cameron Reed', maiNumber: 'MAI-2497', unit: 'Weapons Training Detachment' }
+];
 
 export function AppProvider({ children }) {
   const [activeRole, setActiveRole] = React.useState('Belt User');
   const [beltUser, setBeltUser] = React.useState(currentBeltUser);
   const [maiUser, setMaiUser] = React.useState(currentMai);
-  const [maiDirectory, setMaiDirectory] = React.useState([currentMai, { name: 'SSgt Cameron Reed', maiNumber: 'MAI-2497', unit: 'Weapons Training Detachment' }]);
+  const [maiDirectory, setMaiDirectory] = React.useState(fallbackMaiDirectory);
   const [profile, setProfile] = React.useState(null);
   const [session, setSession] = React.useState(null);
   const [logs, setLogs] = React.useState(trainingLogs);
@@ -120,6 +132,7 @@ export function AppProvider({ children }) {
       setLogs(trainingLogs);
       setMessageThreads(mockMessageThreads);
       setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
+      setMaiDirectory(fallbackMaiDirectory);
     }
     });
 
@@ -160,6 +173,7 @@ export function AppProvider({ children }) {
 
     if (error) {
       setAuthMessage(error.message);
+      setMaiDirectory(fallbackMaiDirectory);
       return;
     }
 
@@ -203,7 +217,7 @@ export function AppProvider({ children }) {
         maiNumber: item.mai_number
       }));
 
-    setMaiDirectory(directory.length ? directory : [currentMai]);
+    setMaiDirectory(mergeMaiDirectory(directory));
   }
 
   function applyProfile(profileData) {
@@ -648,6 +662,7 @@ export function AppProvider({ children }) {
     setMessageThreads(mockMessageThreads);
     setActiveRole('Belt User');
     setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
+    setMaiDirectory(fallbackMaiDirectory);
   };
 
   const deleteAccount = async () => {
@@ -1017,6 +1032,20 @@ function mapMessageFromSupabase(row) {
     createdAt: row.created_at,
     readBy: row.read_by || []
   };
+}
+
+function mergeMaiDirectory(directory) {
+  const byNumber = new Map();
+
+  [...fallbackMaiDirectory, ...directory].forEach((mai) => {
+    if (!mai?.maiNumber) return;
+    byNumber.set(mai.maiNumber.toLowerCase(), {
+      ...byNumber.get(mai.maiNumber.toLowerCase()),
+      ...mai
+    });
+  });
+
+  return [...byNumber.values()];
 }
 
 function getProfileSubscription(profileData) {
