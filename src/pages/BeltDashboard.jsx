@@ -8,6 +8,7 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { formatMinutes, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
 
 export default function BeltDashboard() {
   const { beltUser, beltLogs, resubmitLog, savedDraft } = useApp();
@@ -22,7 +23,8 @@ export default function BeltDashboard() {
     .filter((log) => log.status === 'Pending')
     .reduce((total, log) => total + Number(log.hours), 0);
   const returnedCount = beltLogs.filter((log) => log.status === 'Returned').length;
-  const progressPercent = Math.min(100, Math.round(((verifiedHours || beltUser.verifiedHours) / 40) * 100));
+  const targetBelt = getTargetBelt(beltUser.beltLevel);
+  const progress = React.useMemo(() => buildBeltProgress({ beltUser, beltLogs }), [beltLogs, beltUser]);
 
   return (
     <PageShell
@@ -67,12 +69,14 @@ export default function BeltDashboard() {
           <div>
             <h2 className="text-xl font-bold">Next goal</h2>
             <p className="mt-1 text-sm text-ink/65">
-              {beltUser.nextGoal}. Pending hours: {pendingHours || beltUser.pendingHours}.
+              Working toward {targetBelt}. Pending time waiting on MAI approval: {formatHoursAsTime(pendingHours || beltUser.pendingHours)}.
             </p>
             <div className="mt-4 h-3 overflow-hidden rounded-full bg-field">
-              <div className="h-full rounded-full bg-olive" style={{ width: `${progressPercent}%` }} />
+              <div className="h-full rounded-full bg-olive" style={{ width: `${progress.percent}%` }} />
             </div>
-            <p className="mt-2 text-xs font-semibold text-ink/55">{progressPercent}% toward the 40-hour demo goal</p>
+            <p className="mt-2 text-xs font-semibold text-ink/55">
+              {progress.percent}% toward {targetBelt} | {progress.completedCount}/{progress.totalCount} requirements complete
+            </p>
           </div>
           <Link
             to="/belt/submit"
@@ -176,4 +180,43 @@ export default function BeltDashboard() {
       </div>
     </PageShell>
   );
+}
+
+function buildBeltProgress({ beltUser, beltLogs }) {
+  const targetBelt = getTargetBelt(beltUser.beltLevel);
+  const requirements = getBeltRequirements(targetBelt);
+  const completedByRequirement = new Map();
+
+  beltLogs
+    .filter((log) => log.status === 'Verified' && (log.targetBelt || log.beltLevel) === targetBelt)
+    .forEach((log) => {
+      const key = getRequirementKey(log.classCode, log.techniqueName);
+      const minutes = Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
+      completedByRequirement.set(key, (completedByRequirement.get(key) || 0) + minutes);
+    });
+
+  const rows = requirements.map((requirement) => {
+    const completedMinutes = completedByRequirement.get(getRequirementKey(requirement.code, requirement.name)) || 0;
+    return {
+      completedMinutes: Math.min(completedMinutes, requirement.requiredMinutes),
+      isComplete: completedMinutes >= requirement.requiredMinutes,
+      requiredMinutes: requirement.requiredMinutes
+    };
+  });
+  const requiredMinutes = rows.reduce((total, row) => total + row.requiredMinutes, 0);
+  const completedMinutes = rows.reduce((total, row) => total + row.completedMinutes, 0);
+
+  return {
+    percent: requiredMinutes ? Math.round((completedMinutes / requiredMinutes) * 100) : 0,
+    completedCount: rows.filter((row) => row.isComplete).length,
+    totalCount: rows.length
+  };
+}
+
+function getRequirementKey(code, name) {
+  return `${code || ''}::${name || ''}`.toLowerCase();
+}
+
+function formatHoursAsTime(hours) {
+  return formatMinutes(Math.round(Number(hours || 0) * 60));
 }

@@ -6,7 +6,7 @@ export const currentBeltUser = {
   totalHours: 38.5,
   verifiedHours: 31,
   pendingHours: 7.5,
-  nextGoal: 'Brown Belt sustainment package'
+  nextGoal: 'Brown Belt'
 };
 
 export const currentMai = {
@@ -137,4 +137,4 @@ export const trainingLogs = [
   }
 ];
 
-export const beltLevels = ['Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black Belt'];
+export const beltLevels = ['Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
