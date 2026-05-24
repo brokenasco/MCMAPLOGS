@@ -15,11 +15,12 @@ export default function Subscription() {
   const isMai = activeRole === 'MAI';
   const isActiveMai = isMai && displaySubscription.status === 'active';
   const isTrialingMai = isMai && displaySubscription.status === 'trialing';
+  const isOwnerMai = isMai && displaySubscription.status === 'owner_free';
   const isCanceledMai = isMai && ['canceled', 'cancelled'].includes(displaySubscription.status);
-  const hasMaiAccess = isActiveMai || isTrialingMai;
+  const hasMaiAccess = isActiveMai || isTrialingMai || isOwnerMai;
   const isUpgradeFlow = activeRole === 'Belt User';
   const checkoutResult = searchParams.get('checkout');
-  const subscriptionStatusLabel = getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isCanceledMai });
+  const subscriptionStatusLabel = getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai });
 
   React.useEffect(() => {
     refreshAccount();
@@ -119,14 +120,16 @@ export default function Subscription() {
               <h2 className="text-3xl font-bold text-ink">{displaySubscription.planName}</h2>
               <p className="mt-2 text-sm leading-6 text-ink/65">
                 {isMai
-                  ? 'MAI accounts can review, return, and sign submitted MCMAP logbooks.'
+                  ? isOwnerMai
+                    ? 'Owner MAI access is unlocked without Stripe billing.'
+                    : 'MAI accounts can review, return, and sign submitted MCMAP logbooks.'
                   : 'Your Belt User account stays free. Upgrade this same account to MAI when you complete checkout.'}
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
               <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$7/mo' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
-                {isMai || isUpgradeFlow ? '$84.99 billed annually after 3-month trial' : 'no payment required'}
+                {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$84.99 billed annually after 3-month trial' : 'no payment required'}
               </p>
             </div>
           </div>
@@ -139,6 +142,8 @@ export default function Subscription() {
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
                 ? 'Start the 3-month MAI trial to convert this account to MAI after checkout. Belt User access remains free until you upgrade.'
+                : isOwnerMai
+                ? 'This owner MAI account can use verification tools for free. No checkout or Stripe billing is required.'
                 : isTrialingMai
                   ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year.`
                   : isActiveMai
@@ -161,7 +166,7 @@ export default function Subscription() {
                 {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Start 3-month free trial'}
               </button>
             ) : null}
-            {isMai && hasMaiAccess ? (
+            {isMai && hasMaiAccess && !isOwnerMai ? (
               <button
                 type="button"
                 onClick={openBillingPortal}
@@ -206,8 +211,9 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString();
 }
 
-function getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isCanceledMai }) {
+function getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai }) {
   if (!isMai) return 'Free Belt User account';
+  if (isOwnerMai) return 'Owner MAI access';
   if (isTrialingMai) return '3-month free trial active';
   if (isActiveMai && displaySubscription.cancelAtPeriodEnd) return 'Active until cancellation date';
   if (isActiveMai) return 'Paid annual subscription active';

@@ -94,7 +94,9 @@ export default function Profile() {
               label="Subscription Type"
               value={
                 activeRole === 'MAI'
-                  ? displaySubscription.status === 'trialing'
+                  ? displaySubscription.status === 'owner_free'
+                    ? 'Owner MAI account'
+                    : displaySubscription.status === 'trialing'
                     ? '3-month free trial active'
                     : displaySubscription.status === 'active'
                     ? '$84.99/year active'

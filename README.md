@@ -79,6 +79,12 @@ Register the Stripe webhook URL as `/api/stripe-webhook` and send these events:
 
 The webhook stores Stripe customer, subscription, and status fields on the MAI profile. MAI dashboard and verification routes open when the stored subscription status is `trialing` or `active`.
 
+## Owner MAI access
+
+The site supports one free owner MAI account by setting that profile's `subscription_status` to `owner_free`.
+Run `supabase/owner-mai-account.sql` in the Supabase SQL editor after replacing the email with the owner account email.
+Owner MAI accounts can use MAI verification tools without Stripe checkout.
+
 ## Account deletion notes
 
 The profile page includes an account deletion action. It requires `SUPABASE_SERVICE_ROLE_KEY` in Vercel because the server function must delete the authenticated Supabase user. For paid MAI accounts, the deletion endpoint also cancels the saved Stripe subscription before removing the profile.

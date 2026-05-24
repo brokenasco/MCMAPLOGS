@@ -22,7 +22,7 @@ const subscriptionPlans = {
   }
 };
 
-const paidMaiAccessStatuses = ['active', 'trialing'];
+const paidMaiAccessStatuses = ['active', 'trialing', 'owner_free'];
 
 export function AppProvider({ children }) {
   const [activeRole, setActiveRole] = React.useState('Belt User');
