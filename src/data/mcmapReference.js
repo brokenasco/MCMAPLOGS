@@ -125,9 +125,16 @@ export function isAdditionalMcmapTarget(targetBelt) {
 }
 
 export function formatMinutes(totalMinutes) {
-  const hours = Math.floor(Math.max(0, totalMinutes) / 60);
-  const minutes = Math.max(0, totalMinutes) % 60;
-  return `${hours}:${String(minutes).padStart(2, '0')}`;
+  const safeMinutes = Math.round(Math.max(0, Number(totalMinutes) || 0));
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  const hourText = hours === 1 ? '1 hour' : `${hours} hours`;
+  const minuteText = minutes === 1 ? '1 minute' : `${minutes} minutes`;
+
+  if (hours && minutes) return `${hourText} ${minuteText}`;
+  if (hours) return hourText;
+  if (minutes) return minuteText;
+  return '0 minutes';
 }
 
 function item(code, name, time) {

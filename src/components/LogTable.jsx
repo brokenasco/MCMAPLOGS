@@ -1,5 +1,6 @@
 import React from 'react';
 import StatusBadge from './StatusBadge.jsx';
+import { formatMinutes } from '../data/mcmapReference.js';
 
 const beltStyles = {
   'Tan Belt': 'bg-[#c2a878] text-ink',
@@ -40,7 +41,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog, renderA
                   <span className="font-semibold text-ink">{log.classCode || 'General'}</span>
                   {log.techniqueName ? <span className="mt-1 block max-w-72 text-xs leading-5 text-ink/55">{log.techniqueName}</span> : null}
                 </BodyCell>
-                <BodyCell>{log.hours}</BodyCell>
+                <BodyCell>{formatLogTime(log)}</BodyCell>
                 <BodyCell>
                   <span className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wide ${beltStyles[log.beltLevel] || 'bg-field text-ink'}`}>
                     {log.beltLevel}
@@ -76,4 +77,8 @@ function BodyCell({ children, className = '' }) {
 
 function formatMaiDisplay(log) {
   return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
+}
+
+function formatLogTime(log) {
+  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
 }

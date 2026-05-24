@@ -5,6 +5,7 @@ import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { formatMinutes } from '../data/mcmapReference.js';
 
 export default function PendingLogs() {
   const { maiUser, pendingLogs, verifyLog, returnLog } = useApp();
@@ -42,7 +43,7 @@ export default function PendingLogs() {
           <p className="text-sm font-bold uppercase tracking-wide text-clay">Confirm MAI signature</p>
           <h2 className="mt-2 text-2xl font-bold">{confirmationLog.marine}</h2>
           <p className="mt-2 text-sm leading-6 text-ink/70">
-            You are about to sign {confirmationLog.hours} hours of {confirmationLog.beltLevel} training using
+            You are about to sign {formatLogTime(confirmationLog)} of {confirmationLog.beltLevel} training using
             MAI number {maiUser.maiNumber}.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -121,7 +122,7 @@ export default function PendingLogs() {
                   <div>
                     <h2 className="text-xl font-bold">{log.marine}</h2>
                     <p className="mt-1 text-sm text-ink/60">
-                      {new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {log.hours} hours | {log.beltLevel}
+                      {new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {formatLogTime(log)} | {log.beltLevel}
                     </p>
                   </div>
                   <StatusBadge status={log.status} />
@@ -174,4 +175,8 @@ export default function PendingLogs() {
       )}
     </PageShell>
   );
+}
+
+function formatLogTime(log) {
+  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
 }

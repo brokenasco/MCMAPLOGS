@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import StatusBadge from './StatusBadge.jsx';
+import { formatMinutes } from '../data/mcmapReference.js';
 
 const beltStyles = {
   'Tan Belt': 'bg-[#c2a878] text-ink',
@@ -36,7 +37,7 @@ export default function LogDetailPanel({ log, onClose }) {
 
       <dl className="mt-5 grid gap-4 sm:grid-cols-2">
         <Detail label="Status" value={<StatusBadge status={log.status} />} />
-        <Detail label="Hours" value={log.hours} />
+        <Detail label="Hours" value={formatLogTime(log)} />
         <Detail label="Class code" value={log.classCode || 'General'} />
         <Detail label="Target belt" value={log.targetBelt || log.beltLevel} />
         <Detail
@@ -84,4 +85,8 @@ function Detail({ label, value }) {
 
 function formatMaiDisplay(log) {
   return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
+}
+
+function formatLogTime(log) {
+  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
 }

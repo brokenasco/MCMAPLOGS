@@ -86,7 +86,7 @@ export default function VerifiedLogbook() {
       ...filteredLogs.map((log) => [
         log.marine,
         log.date,
-        log.hours,
+        formatLogTime(log),
         log.beltLevel,
         formatMaiDisplay(log),
         log.status,
@@ -482,7 +482,7 @@ function MaiPendingReview({
           <p className="text-sm font-bold uppercase tracking-wide text-clay">Confirm MAI signature</p>
           <h3 className="mt-2 text-xl font-bold">{confirmationLog.marine}</h3>
           <p className="mt-2 text-sm leading-6 text-ink/70">
-            You are about to sign {confirmationLog.hours} hours of {confirmationLog.beltLevel} training using MAI number {maiUser.maiNumber}.
+            You are about to sign {formatLogTime(confirmationLog)} of {confirmationLog.beltLevel} training using MAI number {maiUser.maiNumber}.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <button
@@ -563,7 +563,7 @@ function MaiPendingReview({
                   <div>
                     <h3 className="text-xl font-bold">{log.marine}</h3>
                     <p className="mt-1 text-sm text-ink/60">
-                      {new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {log.hours} hours | {log.beltLevel}
+                      {new Date(`${log.date}T12:00:00`).toLocaleDateString()} | {formatLogTime(log)} | {log.beltLevel}
                     </p>
                   </div>
                   <StatusBadge status={log.status} />
@@ -629,4 +629,8 @@ function MaiPendingReview({
 
 function formatMaiDisplay(log) {
   return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
+}
+
+function formatLogTime(log) {
+  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
 }

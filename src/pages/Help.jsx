@@ -70,7 +70,7 @@ const examples = [
   },
   {
     label: 'Good entry',
-    text: '1.5 hours Tan Belt fundamentals: basic warrior stance, movement drills, and break falls.'
+    text: '1 hour 30 minutes Tan Belt fundamentals: basic warrior stance, movement drills, and break falls.'
   },
   {
     label: 'Too vague',

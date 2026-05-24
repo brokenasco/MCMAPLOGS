@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, ClipboardCheck, Dumbbell, ShieldCheck, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatMinutes } from '../data/mcmapReference.js';
 
 const features = [
   {
@@ -63,7 +64,7 @@ export default function Landing() {
                 {['Green Belt sustainment', 'Tan Belt fundamentals', 'Gray Belt chokes'].map((item, index) => (
                   <div key={item} className="rounded-md border border-paper/10 bg-paper/10 p-3">
                     <p className="font-semibold">{item}</p>
-                    <p className="mt-1 text-sm text-paper/60">{index + 1.5} hours awaiting MAI verification</p>
+                    <p className="mt-1 text-sm text-paper/60">{formatMinutes((index + 1.5) * 60)} awaiting MAI verification</p>
                   </div>
                 ))}
               </div>
