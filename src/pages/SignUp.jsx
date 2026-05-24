@@ -3,6 +3,7 @@ import { UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
+import PasswordField from '../components/PasswordField.jsx';
 import RoleCard from '../components/RoleCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { beltLevels } from '../data/mockData.js';
@@ -79,7 +80,7 @@ export default function SignUp() {
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Full name" name="name" value={form.name} onChange={updateField} placeholder="LCpl Jordan Hayes" />
             <Field label="Email" name="email" value={form.email} onChange={updateField} type="email" placeholder="name@example.mil" />
-            <Field label="Password" name="password" value={form.password} onChange={updateField} type="password" placeholder="Create password" />
+            <PasswordField name="password" value={form.password} onChange={updateField} placeholder="Create password" />
             <label className="block">
               <span className="text-sm font-bold text-ink">Current belt level</span>
               <select

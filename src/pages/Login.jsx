@@ -2,6 +2,7 @@ import React from 'react';
 import { LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
+import PasswordField from '../components/PasswordField.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Login() {
@@ -40,7 +41,7 @@ export default function Login() {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-5">
             <Field label="Email" name="email" value={form.email} onChange={updateField} type="email" placeholder="name@example.mil" />
-            <Field label="Password" name="password" value={form.password} onChange={updateField} type="password" placeholder="Enter password" />
+            <PasswordField name="password" value={form.password} onChange={updateField} placeholder="Enter password" />
           </div>
 
           <div className="text-right">
