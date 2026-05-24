@@ -22,7 +22,7 @@ export default function Login() {
 
     try {
       const signedInProfile = await signIn({ email: form.email, password: form.password });
-      navigate(signedInProfile.account_type === 'MAI' ? '/mai/dashboard' : '/belt/dashboard');
+      navigate(['MAI', 'Owner/Developer'].includes(signedInProfile.account_type) ? '/mai/dashboard' : '/belt/dashboard');
     } catch (error) {
       setStatusMessage(error.message || 'Login failed. Check your email and password.');
     } finally {

@@ -113,7 +113,7 @@ function RequireRole({ role, children }) {
     return <Navigate to="/login" replace />;
   }
 
-  const accountRole = profile?.account_type || activeRole;
+  const accountRole = getEffectiveAccountRole(profile?.account_type || activeRole);
 
   if (accountRole !== role) {
     return <Navigate to={accountRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard'} replace />;
@@ -124,6 +124,10 @@ function RequireRole({ role, children }) {
   }
 
   return children;
+}
+
+function getEffectiveAccountRole(accountType) {
+  return accountType === 'Owner/Developer' ? 'MAI' : accountType;
 }
 
 function RouteLoading() {

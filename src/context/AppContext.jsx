@@ -163,11 +163,12 @@ export function AppProvider({ children }) {
   }
 
   function applyProfile(profileData) {
+    const accountRole = getEffectiveAccountRole(profileData.account_type);
     setProfile(profileData);
-    setActiveRole(profileData.account_type);
+    setActiveRole(accountRole);
     setSubscription(getProfileSubscription(profileData));
 
-    if (profileData.account_type === 'MAI') {
+    if (accountRole === 'MAI') {
       setMaiUser({
         ...currentMai,
         name: profileData.full_name,
@@ -751,12 +752,18 @@ function mapLogFromSupabase(row) {
 }
 
 function getProfileSubscription(profileData) {
+  const accountRole = getEffectiveAccountRole(profileData.account_type);
+
   return {
-    status: profileData.account_type === 'MAI' ? profileData.subscription_status || 'unpaid' : 'free',
+    status: accountRole === 'MAI' ? profileData.subscription_status || (profileData.account_type === 'Owner/Developer' ? 'owner_free' : 'unpaid') : 'free',
     currentPeriodEnd: profileData.subscription_current_period_end,
     cancelAtPeriodEnd: Boolean(profileData.subscription_cancel_at_period_end),
     paymentMethod: null
   };
+}
+
+function getEffectiveAccountRole(accountType) {
+  return accountType === 'Owner/Developer' ? 'MAI' : accountType;
 }
 
 function isReturnedOrRejected(status) {

@@ -8,10 +8,10 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { activeRole, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription, deleteAccount, updateAccount } = useApp();
+  const { activeRole, profile, beltUser, maiUser, beltLogs, pendingLogs, verifiedLogs, displaySubscription, deleteAccount, updateAccount } = useApp();
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
-  const accountRoleLabel = isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const accountRoleLabel = profile?.account_type === 'Owner/Developer' ? 'Owner/Developer' : isMai ? 'Martial Arts Instructor' : 'Belt User';
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
   const [editMessage, setEditMessage] = React.useState('');

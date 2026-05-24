@@ -81,7 +81,7 @@ The webhook stores Stripe customer, subscription, and status fields on the MAI p
 
 ## Owner MAI access
 
-The site supports one free owner MAI account by setting that profile's `subscription_status` to `owner_free`.
+The site supports one free owner MAI account by setting that profile's `account_type` to `Owner/Developer` and `subscription_status` to `owner_free`.
 Run `supabase/owner-mai-account.sql` in the Supabase SQL editor after replacing the email with the owner account email.
 Owner MAI accounts can use MAI verification tools without Stripe checkout.
 

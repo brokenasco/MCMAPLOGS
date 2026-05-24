@@ -1,9 +1,33 @@
--- Replace the email below with the owner MAI email before running.
--- This marks that account as a free owner MAI account without Stripe billing.
+-- Create the user first in Supabase Authentication.
+-- Then run this SQL to mark that login as the free Owner/Developer MAI account.
 
-update public.profiles
+insert into public.profiles (
+  id,
+  full_name,
+  email,
+  account_type,
+  belt_level,
+  unit,
+  mai_number,
+  subscription_status
+)
+select
+  id,
+  'Keaton Permenter',
+  email,
+  'Owner/Developer',
+  'Black 1st Degree',
+  'Owner / Developer',
+  'MAI-0000',
+  'owner_free'
+from auth.users
+where lower(email) = lower('keatonray99@gmail.com')
+on conflict (id) do update
 set
-  account_type = 'MAI',
-  subscription_status = 'owner_free',
-  mai_number = coalesce(mai_number, 'MAI-0001')
-where lower(email) = lower('keatonray99@gmail.com');
+  full_name = excluded.full_name,
+  email = excluded.email,
+  account_type = excluded.account_type,
+  belt_level = excluded.belt_level,
+  unit = excluded.unit,
+  mai_number = excluded.mai_number,
+  subscription_status = excluded.subscription_status;

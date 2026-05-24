@@ -6,7 +6,7 @@ import StatCard from '../components/StatCard.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Subscription() {
-  const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, refreshAccount, getFreshAccessToken } = useApp();
+  const { activeRole, profile, beltUser, maiUser, displaySubscription, subscriptionPlans, refreshAccount, getFreshAccessToken } = useApp();
   const [searchParams] = useSearchParams();
   const [isRedirecting, setIsRedirecting] = React.useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = React.useState(false);
@@ -15,7 +15,7 @@ export default function Subscription() {
   const isMai = activeRole === 'MAI';
   const isActiveMai = isMai && displaySubscription.status === 'active';
   const isTrialingMai = isMai && displaySubscription.status === 'trialing';
-  const isOwnerMai = isMai && displaySubscription.status === 'owner_free';
+  const isOwnerMai = isMai && (displaySubscription.status === 'owner_free' || profile?.account_type === 'Owner/Developer');
   const isCanceledMai = isMai && ['canceled', 'cancelled'].includes(displaySubscription.status);
   const hasMaiAccess = isActiveMai || isTrialingMai || isOwnerMai;
   const isUpgradeFlow = activeRole === 'Belt User';
