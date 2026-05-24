@@ -88,7 +88,7 @@ export default function Profile() {
           <p className="mt-1 text-sm text-ink/60">{user.email}</p>
           <dl className="mt-6 space-y-4">
             <Detail label="Unit" value={user.unit || maiUser.unit} />
-            <Detail label="Belt level" value={beltUser.beltLevel} />
+            <Detail label="Belt level" value={profile?.belt_level || beltUser.beltLevel} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
             <Detail
               label="Subscription Type"

@@ -1,5 +1,12 @@
--- Create the user first in Supabase Authentication.
--- Then run this SQL to mark that login as the free Owner/Developer MAI account.
+-- Run this after creating the owner user in Supabase Authentication.
+-- This marks the account as the free Owner/Developer MAI account.
+
+alter table public.profiles
+  drop constraint if exists profiles_account_type_check;
+
+alter table public.profiles
+  add constraint profiles_account_type_check
+  check (account_type in ('Belt User', 'MAI', 'Owner/Developer'));
 
 insert into public.profiles (
   id,
@@ -13,7 +20,7 @@ insert into public.profiles (
 )
 select
   id,
-  'Keaton Permenter',
+  'Keaton Permenter (OWNER)',
   email,
   'Owner/Developer',
   'Black 1st Degree',
@@ -21,7 +28,7 @@ select
   'MAI-0000',
   'owner_free'
 from auth.users
-where lower(email) = lower('keatonray99@gmail.com')
+where id = '8c5a14d7-5f97-4020-ade5-de534b315287'
 on conflict (id) do update
 set
   full_name = excluded.full_name,
