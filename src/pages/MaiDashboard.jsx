@@ -61,7 +61,7 @@ export default function MaiDashboard() {
         <div>
           <h2 className="text-xl font-bold">Pending verification</h2>
           <p className="mt-1 text-sm text-ink/65">
-            Your MAI number is your verification identifier when you sign submitted logbooks.
+            New submissions appear here while they are Pending. After you sign them, they move to Verified.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

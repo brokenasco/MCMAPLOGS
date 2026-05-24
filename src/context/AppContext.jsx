@@ -177,7 +177,21 @@ export function AppProvider({ children }) {
       return;
     }
 
-    setLogs(data.map(mapLogFromSupabase));
+    let loadedLogs = data.map(mapLogFromSupabase);
+
+    if (getEffectiveAccountRole(profileData.account_type) === 'MAI' && profileData.mai_number) {
+      const { data: assignedData, error: assignedError } = await supabase
+        .from('training_logs')
+        .select('*')
+        .or(`assigned_mai_user_id.eq.${profileData.id},mai_number.eq.${profileData.mai_number}`)
+        .order('created_at', { ascending: false });
+
+      if (!assignedError && assignedData) {
+        loadedLogs = mergeLogsById(loadedLogs, assignedData.map(mapLogFromSupabase));
+      }
+    }
+
+    setLogs(loadedLogs);
   }
 
   async function loadMessages(profileData = profile) {
@@ -1192,6 +1206,12 @@ function mergeMaiDirectory(directory) {
   });
 
   return [...byNumber.values()];
+}
+
+function mergeLogsById(...logGroups) {
+  const byId = new Map();
+  logGroups.flat().forEach((log) => byId.set(log.id, log));
+  return [...byId.values()].sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date));
 }
 
 function getProfileSubscription(profileData) {

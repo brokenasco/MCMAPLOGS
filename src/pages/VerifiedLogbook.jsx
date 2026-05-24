@@ -43,8 +43,12 @@ export default function VerifiedLogbook() {
   const visibleLogs = activeRole === 'MAI' ? mergeLogs(assignedMaiLogs, maiSubmittedLogs) : beltLogs;
   const filteredLogs = activeFilter === 'All' ? visibleLogs : visibleLogs.filter((log) => log.status === activeFilter);
   const verifiedLogs = visibleLogs.filter((log) => log.status === 'Verified');
-  const verifiedMinutes = sumLogMinutes(verifiedLogs);
   const isMai = activeRole === 'MAI';
+  const emptyTitle = isMai && activeFilter === 'Verified' ? 'No verified logs yet' : `No ${activeFilter.toLowerCase()} logs`;
+  const emptyText = isMai && activeFilter === 'Verified'
+    ? 'New Belt User submissions appear under Pending first. Once you sign and verify them, they move here.'
+    : 'Change the filter or submit a new log to see records here.';
+  const verifiedMinutes = sumLogMinutes(verifiedLogs);
   const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
   const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
 
@@ -251,7 +255,7 @@ export default function VerifiedLogbook() {
             ) : null}
           />
         ) : (
-          <EmptyState title={`No ${activeFilter.toLowerCase()} logs`} text="Change the filter or submit a new log to see records here." />
+          <EmptyState title={emptyTitle} text={emptyText} />
         )}
         <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
       </div>
