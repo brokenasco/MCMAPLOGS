@@ -15,6 +15,7 @@ export default function Subscription() {
   const isActiveMai = isMai && displaySubscription.status === 'active';
   const isTrialingMai = isMai && displaySubscription.status === 'trialing';
   const hasMaiAccess = isActiveMai || isTrialingMai;
+  const isUpgradeFlow = activeRole === 'Belt User';
   const checkoutResult = searchParams.get('checkout');
 
   React.useEffect(() => {
@@ -46,7 +47,7 @@ export default function Subscription() {
           Authorization: `Bearer ${accessToken}`
         },
         body: JSON.stringify({
-          role: activeRole,
+          role: 'MAI',
           email: billingEmail
         })
       });
@@ -66,8 +67,12 @@ export default function Subscription() {
   return (
     <PageShell
       eyebrow="Profile"
-      title="Manage Subscription"
-      description="Belt User accounts are free. MAIs use the annual plan for verification and logbook signing."
+      title={isUpgradeFlow ? 'Upgrade to MAI' : 'Manage Subscription'}
+      description={
+        isUpgradeFlow
+          ? 'Keep the same account and upgrade to MAI when you are ready to verify and sign logbooks.'
+          : 'Belt User accounts are free. MAIs use the annual plan for verification and logbook signing.'
+      }
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
@@ -78,13 +83,13 @@ export default function Subscription() {
               <p className="mt-2 text-sm leading-6 text-ink/65">
                 {isMai
                   ? 'MAI accounts can review, return, and sign submitted MCMAP logbooks.'
-                  : 'Belt Users can create a free account and submit training logs.'}
+                  : 'Your Belt User account stays free. Upgrade this same account to MAI when you complete checkout.'}
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">{displaySubscription.monthlyDisplay}</p>
+              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$7/mo' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
-                {isMai ? '$84.99 billed annually' : 'no payment required'}
+                {isMai || isUpgradeFlow ? '$84.99 billed annually after trial' : 'no payment required'}
               </p>
             </div>
           </div>
@@ -102,7 +107,7 @@ export default function Subscription() {
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
-                ? 'Belt Users can create accounts and submit logs without a subscription charge.'
+                ? 'Start the 3-month MAI trial to convert this account to MAI after checkout. Belt User access remains free until you upgrade.'
                 : isTrialingMai
                   ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year.`
                   : isActiveMai
@@ -111,7 +116,7 @@ export default function Subscription() {
             </p>
           </div>
 
-          {isMai && !hasMaiAccess ? (
+          {(isUpgradeFlow || (isMai && !hasMaiAccess)) ? (
             <div className="mt-6">
               <button
                 type="button"
@@ -120,7 +125,7 @@ export default function Subscription() {
                 className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
               >
                 <CreditCard size={17} aria-hidden="true" />
-                {isRedirecting ? 'Opening Stripe...' : 'Start 3-month free trial'}
+                {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Start 3-month free trial'}
               </button>
             </div>
           ) : null}
@@ -147,8 +152,7 @@ export default function Subscription() {
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout starts a 3-month MAI free trial. The Stripe webhook unlocks MAI access while the subscription is trialing or active.
-        Belt User accounts stay free.
+        Stripe Checkout starts a 3-month MAI free trial. When Stripe confirms checkout, this account becomes an MAI account and MAI tools unlock while the subscription is trialing or active.
       </div>
     </PageShell>
   );

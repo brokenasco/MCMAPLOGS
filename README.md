@@ -58,6 +58,7 @@ Run `supabase/mai-subscriptions.sql` in the Supabase SQL editor before enabling 
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 3-month free trial, then bills $84.99/year.
+Belt Users can upgrade the same account to MAI from Profile > Upgrade to MAI. After Stripe confirms checkout, the webhook changes that profile to `MAI` and assigns an MAI number if one does not already exist.
 
 The deployed billing flow needs these Vercel environment variables:
 

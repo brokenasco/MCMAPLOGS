@@ -42,7 +42,14 @@ async function handleCheckoutCompleted(session) {
   if (!userId || !session.subscription) return;
 
   const subscription = await getStripeSubscription(session.subscription);
-  await updateProfileByUserId(userId, mapSubscriptionUpdate(subscription, session.customer));
+  const profile = await getProfileByUserId(userId);
+  const update = {
+    ...mapSubscriptionUpdate(subscription, session.customer),
+    account_type: 'MAI',
+    mai_number: profile?.mai_number || generateMaiNumber()
+  };
+
+  await updateProfileByUserId(userId, update);
 }
 
 async function handleSubscriptionChanged(subscription) {
@@ -84,6 +91,32 @@ async function getStripeSubscription(subscriptionId) {
 
 async function updateProfileByUserId(userId, update) {
   return updateProfiles(`id=eq.${encodeURIComponent(userId)}`, update);
+}
+
+async function getProfileByUserId(userId) {
+  const supabaseUrl = normalizeUrl(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
+
+  if (!supabaseUrl || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase service role settings are missing in Vercel.');
+  }
+
+  const supabaseResponse = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,mai_number`,
+    {
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    }
+  );
+
+  if (!supabaseResponse.ok) {
+    const error = await supabaseResponse.text();
+    throw new Error(error || 'Unable to load Supabase profile.');
+  }
+
+  const profiles = await supabaseResponse.json();
+  return profiles[0] || null;
 }
 
 async function updateProfileBySubscriptionId(subscriptionId, update) {
@@ -156,4 +189,8 @@ function normalizeUrl(rawUrl) {
   } catch {
     return '';
   }
+}
+
+function generateMaiNumber() {
+  return `MAI-${Math.floor(2000 + Math.random() * 7000)}`;
 }

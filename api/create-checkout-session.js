@@ -17,7 +17,7 @@ export default async function handler(request, response) {
     }
 
     if (!accessToken) {
-      return response.status(401).json({ error: 'Log in as an MAI before starting checkout.' });
+      return response.status(401).json({ error: 'Log in before starting MAI checkout.' });
     }
 
     const priceId = priceIds[role];
@@ -42,8 +42,8 @@ export default async function handler(request, response) {
 
     const profile = await getProfile(signedInUser.id);
 
-    if (profile?.account_type !== 'MAI') {
-      return response.status(403).json({ error: 'Only MAI accounts need a paid checkout.' });
+    if (!['Belt User', 'MAI'].includes(profile?.account_type)) {
+      return response.status(403).json({ error: 'This account cannot start MAI checkout.' });
     }
 
     const origin = request.headers.origin || `https://${request.headers.host}`;
@@ -53,8 +53,10 @@ export default async function handler(request, response) {
       'line_items[0][quantity]': '1',
       'subscription_data[trial_period_days]': '90',
       'subscription_data[metadata][account_role]': role,
+      'subscription_data[metadata][source_account_type]': profile.account_type,
       'subscription_data[metadata][user_id]': signedInUser.id,
       'metadata[account_role]': role,
+      'metadata[source_account_type]': profile.account_type,
       'metadata[user_id]': signedInUser.id,
       client_reference_id: signedInUser.id,
       success_url: `${origin}/profile/subscription?checkout=success`,
