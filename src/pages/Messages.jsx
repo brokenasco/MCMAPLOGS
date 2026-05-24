@@ -13,8 +13,10 @@ export default function Messages() {
   const eligibleMais = React.useMemo(() => getEligibleMais({ beltLogs, maiDirectory }), [beltLogs, maiDirectory]);
 
   React.useEffect(() => {
-    if (selectedThread?.id) markThreadRead(selectedThread.id);
-  }, [selectedThread?.id]);
+    if (selectedThread?.id) {
+      markThreadRead(selectedThread.id);
+    }
+  }, [selectedThread?.id, markThreadRead]);
 
   React.useEffect(() => {
     if (!selectedThreadId && messageThreads[0]?.id) {
@@ -73,7 +75,6 @@ export default function Messages() {
 
             <div className="mt-4 grid gap-2">
               {messageThreads.map((thread) => {
-                const lastMessage = thread.messages.at(-1);
                 const unread = thread.messages.some((message) => !message.readBy?.includes(activeRole === 'MAI' ? thread.maiNumber : thread.beltUserEmail));
                 return (
                   <button
@@ -91,7 +92,6 @@ export default function Messages() {
                       <span className="text-sm font-bold text-ink">{activeRole === 'MAI' ? thread.beltUserName : thread.maiName}</span>
                       {unread ? <span className="h-2.5 w-2.5 rounded-full bg-clay" /> : null}
                     </span>
-                    <span className="mt-1 block truncate text-xs text-ink/60">{lastMessage?.body || 'No messages yet'}</span>
                   </button>
                 );
               })}

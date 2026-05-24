@@ -182,6 +182,18 @@ export default function BeltDashboard() {
         </section>
       ) : null}
 
+      {pendingLogs.length ? (
+        <section className="mt-8 rounded-md border border-brass/30 bg-brass/10 p-5">
+          <h2 className="text-xl font-bold text-ink">Pending verification</h2>
+          <p className="mt-1 text-sm text-ink/65">These logs are waiting for the assigned MAI to verify them.</p>
+          <div className="mt-4 grid gap-3">
+            {pendingLogs.map((log) => (
+              <PendingVerificationCard key={log.id} log={log} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {actionMessage ? (
         <div className="mt-8 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
           {actionMessage}
@@ -385,6 +397,26 @@ function RecentLogs({ logs, onCancelPending, onEditPending, onEditReturned, onSe
   );
 }
 
+function PendingVerificationCard({ log }) {
+  return (
+    <article className="rounded-md bg-paper p-4 shadow-sm">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+        <div>
+          <p className="font-bold">{shortTechnique(log)}</p>
+          <p className="mt-1 text-sm text-ink/60">{formatDate(log.date)} | {formatMinutesFromLog(log)}</p>
+        </div>
+        <StatusBadge status="Pending" />
+      </div>
+      <div className="mt-4 rounded-md border border-coyote/30 bg-field p-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-ink/50">Waiting on verification from:</p>
+        <p className={`mt-1 text-sm font-black ${getMaiDisplay(log) === 'MAI verifier not assigned' ? 'text-clay' : 'text-ink'}`}>
+          {getMaiDisplay(log)}
+        </p>
+      </div>
+    </article>
+  );
+}
+
 function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned, onSelectLog }) {
   if (log.status === 'Pending') {
     return (
@@ -491,4 +523,9 @@ function formatDate(date) {
 
 function formatMinutesFromLog(log) {
   return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function getMaiDisplay(log) {
+  if (!log.maiNumber && !log.assignedMaiName) return 'MAI verifier not assigned';
+  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim();
 }

@@ -997,22 +997,44 @@ export function AppProvider({ children }) {
     return { message: savedMessage, threadId: savedThread.id };
   };
 
-  const markThreadRead = (threadId) => {
+  const markThreadRead = React.useCallback(async (threadId) => {
+    const thread = messageThreads.find((item) => item.id === threadId);
+    if (!thread) return;
+
+    const unreadMessages = thread.messages.filter((message) => !message.readBy?.includes(currentMessageKey));
+    if (!unreadMessages.length) return;
+
+    const updatedMessages = unreadMessages.map((message) => ({
+      ...message,
+      readBy: [...(message.readBy || []), currentMessageKey]
+    }));
+
     setMessageThreads((currentThreads) =>
-      currentThreads.map((thread) =>
-        thread.id === threadId
+      currentThreads.map((currentThread) =>
+        currentThread.id === threadId
           ? {
-              ...thread,
-              messages: thread.messages.map((message) =>
+              ...currentThread,
+              messages: currentThread.messages.map((message) =>
                 message.readBy?.includes(currentMessageKey)
                   ? message
                   : { ...message, readBy: [...(message.readBy || []), currentMessageKey] }
               )
             }
-          : thread
+          : currentThread
       )
     );
-  };
+
+    if (!supabase) return;
+
+    await Promise.all(
+      updatedMessages.map((message) =>
+        supabase
+          .from('messages')
+          .update({ read_by: message.readBy })
+          .eq('id', message.id)
+      )
+    );
+  }, [currentMessageKey, messageThreads, supabase]);
 
   const refreshAccount = async () => {
     if (!supabase || !currentUserId) return null;
