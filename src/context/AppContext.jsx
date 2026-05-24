@@ -55,10 +55,17 @@ export function AppProvider({ children }) {
   const beltLogs = currentUserId
     ? logs.filter((log) => log.beltUserId === currentUserId)
     : logs.filter((log) => log.marine === beltUser.name);
-  const pendingLogs = logs.filter((log) => log.status === 'Pending');
-  const verifiedLogs = logs.filter((log) => log.status === 'Verified');
-  const returnedLogs = logs.filter((log) => log.status === 'Returned');
-  const urgentCount = beltLogs.filter((log) => log.status === 'Returned').length;
+  const assignedMaiLogs = logs.filter((log) => log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase());
+  const pendingLogs = activeRole === 'MAI'
+    ? assignedMaiLogs.filter((log) => log.status === 'Pending')
+    : beltLogs.filter((log) => log.status === 'Pending');
+  const verifiedLogs = activeRole === 'MAI'
+    ? assignedMaiLogs.filter((log) => log.status === 'Verified')
+    : beltLogs.filter((log) => log.status === 'Verified');
+  const returnedLogs = activeRole === 'MAI'
+    ? assignedMaiLogs.filter((log) => isReturnedOrRejected(log.status))
+    : beltLogs.filter((log) => isReturnedOrRejected(log.status));
+  const urgentCount = beltLogs.filter((log) => isReturnedOrRejected(log.status)).length;
   const maiDirectory = [
     {
       name: maiUser.name,
@@ -282,6 +289,43 @@ export function AppProvider({ children }) {
       .from('training_logs')
       .update({
         status: 'Returned',
+        return_reason: reason,
+        return_message: message
+      })
+      .eq('id', logId);
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    await loadLogs();
+  };
+
+  const rejectLog = async (logId, reason = 'Rejected', message = 'This log was rejected by the MAI. Review the note before submitting a new log.') => {
+    if (!supabase || !currentUserId) {
+      setLogs((currentLogs) =>
+        currentLogs.map((log) =>
+          log.id === logId
+            ? {
+                ...log,
+                status: 'Rejected',
+                returnedAt: new Date().toISOString().slice(0, 10),
+                returnedBy: maiUser.name,
+                returnedByMaiNumber: maiUser.maiNumber,
+                returnReason: reason,
+                returnMessage: message
+              }
+            : log
+        )
+      );
+      return;
+    }
+
+    const { error } = await supabase
+      .from('training_logs')
+      .update({
+        status: 'Rejected',
         return_reason: reason,
         return_message: message
       })
@@ -662,6 +706,7 @@ export function AppProvider({ children }) {
     submitLog,
     verifyLog,
     returnLog,
+    rejectLog,
     resubmitLog,
     findMaiByNumber,
     saveDraft,
@@ -712,6 +757,10 @@ function getProfileSubscription(profileData) {
     cancelAtPeriodEnd: Boolean(profileData.subscription_cancel_at_period_end),
     paymentMethod: null
   };
+}
+
+function isReturnedOrRejected(status) {
+  return status === 'Returned' || status === 'Rejected';
 }
 
 export function useApp() {

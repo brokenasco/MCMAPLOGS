@@ -8,7 +8,8 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { beltProgression, formatMinutes, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
+import { formatMinutes, getTargetBelt } from '../data/mcmapReference.js';
+import { buildBeltProgress, buildTotalMcmapHours, sumLogMinutes } from '../lib/mcmapProgress.js';
 
 export default function BeltDashboard() {
   const { beltUser, beltLogs, resubmitLog, savedDraft } = useApp();
@@ -18,10 +19,10 @@ export default function BeltDashboard() {
   const totalSubmittedMinutes = sumLogMinutes(beltLogs);
   const verifiedMinutes = sumLogMinutes(beltLogs.filter((log) => log.status === 'Verified'));
   const pendingMinutes = sumLogMinutes(beltLogs.filter((log) => log.status === 'Pending'));
-  const returnedCount = beltLogs.filter((log) => log.status === 'Returned').length;
+  const returnedCount = beltLogs.filter((log) => isReturnedOrRejected(log.status)).length;
   const targetBelt = getTargetBelt(beltUser.beltLevel);
-  const progress = React.useMemo(() => buildBeltProgress({ beltUser, beltLogs }), [beltLogs, beltUser]);
-  const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, beltLogs }), [beltLogs, beltUser]);
+  const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
+  const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
 
   return (
     <PageShell
@@ -104,13 +105,13 @@ export default function BeltDashboard() {
         </div>
       </div>
 
-      {beltLogs.some((log) => log.status === 'Returned') ? (
+      {beltLogs.some((log) => isReturnedOrRejected(log.status)) ? (
         <section className="mt-8 rounded-md border border-clay/20 bg-clay/10 p-5">
-          <h2 className="text-xl font-bold text-ink">Returned logs need correction</h2>
-          <p className="mt-1 text-sm text-ink/65">Fix the note from your MAI and resubmit the log for review.</p>
+          <h2 className="text-xl font-bold text-ink">Returned or rejected logs need correction</h2>
+          <p className="mt-1 text-sm text-ink/65">Read the note from your MAI before correcting or submitting a new log.</p>
           <div className="mt-4 grid gap-3">
             {beltLogs
-              .filter((log) => log.status === 'Returned')
+              .filter((log) => isReturnedOrRejected(log.status))
               .map((log) => (
                 <article key={log.id} className="rounded-md bg-paper p-4 shadow-sm">
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -181,14 +182,6 @@ export default function BeltDashboard() {
             <EmptyState
               title="No logs submitted yet"
               text="Submit your first MCMAP training log and it will appear here while waiting for MAI verification."
-              action={
-                <Link
-                  to="/belt/submit"
-                  className="focus-ring inline-flex h-10 items-center rounded-md bg-olive px-4 text-sm font-bold text-white"
-                >
-                  Submit hours
-                </Link>
-              }
             />
           )}
         </div>
@@ -198,81 +191,6 @@ export default function BeltDashboard() {
   );
 }
 
-function buildBeltProgress({ beltUser, beltLogs }) {
-  const targetBelt = getTargetBelt(beltUser.beltLevel);
-  const requirements = getBeltRequirements(targetBelt);
-  const completedByRequirement = new Map();
-
-  beltLogs
-    .filter((log) => log.status === 'Verified' && (log.targetBelt || log.beltLevel) === targetBelt)
-    .forEach((log) => {
-      const key = getRequirementKey(log.classCode, log.techniqueName);
-      const minutes = Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
-      completedByRequirement.set(key, (completedByRequirement.get(key) || 0) + minutes);
-    });
-
-  const rows = requirements.map((requirement) => {
-    const completedMinutes = completedByRequirement.get(getRequirementKey(requirement.code, requirement.name)) || 0;
-    return {
-      completedMinutes: Math.min(completedMinutes, requirement.requiredMinutes),
-      isComplete: completedMinutes >= requirement.requiredMinutes,
-      requiredMinutes: requirement.requiredMinutes
-    };
-  });
-  const requiredMinutes = rows.reduce((total, row) => total + row.requiredMinutes, 0);
-  const completedMinutes = rows.reduce((total, row) => total + row.completedMinutes, 0);
-
-  return {
-    percent: requiredMinutes ? Math.round((completedMinutes / requiredMinutes) * 100) : 0,
-    completedCount: rows.filter((row) => row.isComplete).length,
-    totalCount: rows.length
-  };
-}
-
-function buildTotalMcmapHours({ beltUser, beltLogs }) {
-  const currentBelt = normalizeBeltName(beltUser.beltLevel);
-  const targetBelt = getTargetBelt(currentBelt);
-  const currentBeltIndex = beltProgression.indexOf(currentBelt);
-  const completedBelts = currentBeltIndex >= 0 ? beltProgression.slice(0, currentBeltIndex + 1) : [];
-  const completedBeltMinutes = completedBelts.reduce((total, belt) => total + getRequiredMinutesForBelt(belt), 0);
-  const targetBeltVerifiedMinutes = sumLogMinutes(
-    beltLogs.filter((log) => log.status === 'Verified' && (log.targetBelt || log.beltLevel) === targetBelt)
-  );
-
-  return {
-    targetBelt,
-    completedBeltMinutes,
-    targetBeltVerifiedMinutes,
-    totalMinutes: completedBeltMinutes + targetBeltVerifiedMinutes
-  };
-}
-
-function getRequiredMinutesForBelt(belt) {
-  return getBeltRequirements(belt).reduce((total, requirement) => total + requirement.requiredMinutes, 0);
-}
-
-function sumLogMinutes(logs) {
-  return logs.reduce((total, log) => total + getLogMinutes(log), 0);
-}
-
-function getLogMinutes(log) {
-  return Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
-}
-
-function normalizeBeltName(beltName = '') {
-  const normalized = beltName.toLowerCase();
-  if (normalized.includes('tan')) return 'Tan Belt';
-  if (normalized.includes('gray') || normalized.includes('grey')) return 'Gray Belt';
-  if (normalized.includes('green')) return 'Green Belt';
-  if (normalized.includes('brown')) return 'Brown Belt';
-  if (normalized.includes('black')) return 'Black 1st Degree';
-  return 'Tan Belt';
-}
-
-function getRequirementKey(code, name) {
-  return `${code || ''}::${name || ''}`.toLowerCase();
-}
-
 function DashboardMetric({ label, value }) {
   return (
     <div>
@@ -280,4 +198,8 @@ function DashboardMetric({ label, value }) {
       <p className="mt-1 text-lg font-black text-ink">{value}</p>
     </div>
   );
+}
+
+function isReturnedOrRejected(status) {
+  return status === 'Returned' || status === 'Rejected';
 }

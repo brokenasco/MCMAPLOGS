@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Download, MessageSquare, Printer, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, Medal, MessageSquare, Printer, XCircle } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import LogTable from '../components/LogTable.jsx';
@@ -7,24 +7,27 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { formatMinutes, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
+import { formatMinutes } from '../data/mcmapReference.js';
+import { buildBeltProgress, buildTotalMcmapHours, sumLogMinutes } from '../lib/mcmapProgress.js';
 
-const filters = ['All', 'Pending', 'Verified', 'Returned'];
+const filters = ['All', 'Pending', 'Verified', 'Returned', 'Rejected'];
 
 export default function VerifiedLogbook() {
-  const { activeRole, beltLogs, beltUser, logs, maiUser, pendingLogs, verifyLog, returnLog } = useApp();
+  const { activeRole, beltLogs, beltUser, logs, maiUser, pendingLogs, verifyLog, returnLog, rejectLog } = useApp();
   const [activeFilter, setActiveFilter] = React.useState(activeRole === 'MAI' ? 'Pending' : 'Verified');
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [confirmationLog, setConfirmationLog] = React.useState(null);
   const [returningLog, setReturningLog] = React.useState(null);
+  const [returnAction, setReturnAction] = React.useState('return');
   const [returnReason, setReturnReason] = React.useState('Missing detail');
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
   const visibleLogs = activeRole === 'MAI' ? logs : beltLogs;
   const filteredLogs = activeFilter === 'All' ? visibleLogs : visibleLogs.filter((log) => log.status === activeFilter);
   const verifiedLogs = visibleLogs.filter((log) => log.status === 'Verified');
-  const verifiedHours = verifiedLogs.reduce((total, log) => total + Number(log.hours), 0);
+  const verifiedMinutes = sumLogMinutes(verifiedLogs);
   const isMai = activeRole === 'MAI';
   const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
+  const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
 
   React.useEffect(() => {
     setActiveFilter(activeRole === 'MAI' ? 'Pending' : 'Verified');
@@ -43,7 +46,11 @@ export default function VerifiedLogbook() {
   };
 
   const handleReturn = async () => {
-    await returnLog(returningLog.id, returnReason, returnMessage);
+    if (returnAction === 'reject') {
+      await rejectLog(returningLog.id, returnReason || 'Rejected', returnMessage);
+    } else {
+      await returnLog(returningLog.id, returnReason, returnMessage);
+    }
     setReturningLog(null);
     setSelectedLog(null);
   };
@@ -83,9 +90,11 @@ export default function VerifiedLogbook() {
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         {isMai ? <StatCard label="Pending review" value={pendingLogs.length} detail="Awaiting MAI signature" /> : null}
         <StatCard label="Verified entries" value={verifiedLogs.length} detail="Signed records" />
-        <StatCard label="Verified hours" value={formatDecimalHours(verifiedHours)} detail="Total approved hours" />
-        <StatCard label="All records" value={logs.length} detail="Across every status" />
+        <StatCard label="Verified hours" value={formatMinutes(verifiedMinutes)} detail="Total approved hours" />
+        <StatCard label="All records" value={visibleLogs.length} detail="Across every status" />
       </div>
+
+      {!isMai ? <TotalMcmapHoursPanel summary={mcmapHourSummary} /> : null}
 
       {!isMai ? <BeltProgressDashboard progress={progress} /> : null}
 
@@ -98,11 +107,13 @@ export default function VerifiedLogbook() {
           openConfirmation={openConfirmation}
           pendingLogs={pendingLogs}
           returnMessage={returnMessage}
+          returnAction={returnAction}
           returnReason={returnReason}
           returningLog={returningLog}
           selectedLog={selectedLog}
           setConfirmationLog={setConfirmationLog}
           setReturnMessage={setReturnMessage}
+          setReturnAction={setReturnAction}
           setReturnReason={setReturnReason}
           setReturningLog={setReturningLog}
           setSelectedLog={setSelectedLog}
@@ -158,6 +169,29 @@ export default function VerifiedLogbook() {
         <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
       </div>
     </PageShell>
+  );
+}
+
+function TotalMcmapHoursPanel({ summary }) {
+  return (
+    <section className="mb-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-clay">
+            <Medal size={17} aria-hidden="true" />
+            Total MCMAP Hours
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-ink">{formatMinutes(summary.totalMinutes)}</h2>
+          <p className="mt-2 text-sm leading-6 text-ink/65">
+            Completed belt hours plus verified {summary.targetBelt} hours. Pending and returned logs are not included.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-right">
+          <ProgressBreakdown label="Completed belts" value={formatMinutes(summary.completedBeltMinutes)} />
+          <ProgressBreakdown label={`${summary.targetBelt} verified`} value={formatMinutes(summary.targetBeltVerifiedMinutes)} />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -229,58 +263,20 @@ function BeltProgressDashboard({ progress }) {
   );
 }
 
-function buildBeltProgress({ beltUser, logs }) {
-  const currentBelt = beltUser.beltLevel || 'Tan Belt';
-  const targetBelt = getTargetBelt(currentBelt);
-  const requirements = getBeltRequirements(targetBelt);
-  const completedByRequirement = new Map();
-
-  logs
-    .filter((log) => log.status === 'Verified' && (log.targetBelt || log.beltLevel) === targetBelt)
-    .forEach((log) => {
-      const key = getRequirementKey(log.classCode, log.techniqueName);
-      const minutes = Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
-      completedByRequirement.set(key, (completedByRequirement.get(key) || 0) + minutes);
-    });
-
-  const rows = requirements.map((requirement) => {
-    const completedMinutes = completedByRequirement.get(getRequirementKey(requirement.code, requirement.name)) || 0;
-    const cappedMinutes = Math.min(completedMinutes, requirement.requiredMinutes);
-
-    return {
-      ...requirement,
-      completedMinutes,
-      remainingMinutes: Math.max(requirement.requiredMinutes - completedMinutes, 0),
-      isComplete: completedMinutes >= requirement.requiredMinutes,
-      cappedMinutes
-    };
-  });
-
-  const requiredMinutes = rows.reduce((total, row) => total + row.requiredMinutes, 0);
-  const completedMinutes = rows.reduce((total, row) => total + row.cappedMinutes, 0);
-  const percent = requiredMinutes ? Math.round((completedMinutes / requiredMinutes) * 100) : 0;
-
-  return {
-    currentBelt,
-    targetBelt,
-    rows,
-    requiredMinutes,
-    completedMinutes,
-    completedCount: rows.filter((row) => row.isComplete).length,
-    totalCount: rows.length,
-    percent
-  };
-}
-
-function getRequirementKey(code, name) {
-  return `${code || ''}::${name || ''}`.toLowerCase();
-}
-
 function ProgressMetric({ label, value }) {
   return (
     <div>
       <p className="text-xs font-bold uppercase tracking-wide text-paper/50">{label}</p>
       <p className="mt-1 text-lg font-black text-paper">{value}</p>
+    </div>
+  );
+}
+
+function ProgressBreakdown({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</p>
+      <p className="mt-1 text-lg font-black text-ink">{value}</p>
     </div>
   );
 }
@@ -293,10 +289,6 @@ function ProgressCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
 }
 
-function formatDecimalHours(hours) {
-  return Number.isInteger(hours) ? hours : hours.toFixed(2);
-}
-
 function MaiPendingReview({
   confirmationLog,
   handleReturn,
@@ -305,11 +297,13 @@ function MaiPendingReview({
   openConfirmation,
   pendingLogs,
   returnMessage,
+  returnAction,
   returnReason,
   returningLog,
   selectedLog,
   setConfirmationLog,
   setReturnMessage,
+  setReturnAction,
   setReturnReason,
   setReturningLog,
   setSelectedLog
@@ -356,7 +350,9 @@ function MaiPendingReview({
 
       {returningLog ? (
         <div className="mb-6 rounded-md border border-clay/20 bg-clay/10 p-5">
-          <p className="text-sm font-bold uppercase tracking-wide text-clay">Return for correction</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-clay">
+            {returnAction === 'reject' ? 'Reject log' : 'Return for correction'}
+          </p>
           <h3 className="mt-2 text-xl font-bold">{returningLog.marine}</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block">
@@ -370,6 +366,7 @@ function MaiPendingReview({
                 <option>Incorrect hours</option>
                 <option>Wrong MAI number</option>
                 <option>Needs correction</option>
+                <option>Rejected</option>
               </select>
             </label>
             <label className="block sm:col-span-2">
@@ -388,7 +385,7 @@ function MaiPendingReview({
               className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white"
             >
               <MessageSquare size={17} aria-hidden="true" />
-              Send correction message
+              {returnAction === 'reject' ? 'Reject log' : 'Send correction message'}
             </button>
             <button
               type="button"
@@ -431,11 +428,28 @@ function MaiPendingReview({
                     onClick={() => {
                       setReturningLog(log);
                       setSelectedLog(log);
+                      setReturnAction('return');
+                      setReturnReason('Missing detail');
+                      setReturnMessage('Add the techniques trained, who supervised the period, and resubmit.');
                     }}
                     className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink hover:bg-field"
                   >
                     <XCircle size={17} aria-hidden="true" />
                     Return with note
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReturningLog(log);
+                      setSelectedLog(log);
+                      setReturnAction('reject');
+                      setReturnReason('Rejected');
+                      setReturnMessage('This log was rejected. Review the note and submit a new corrected log if needed.');
+                    }}
+                    className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-clay/30 bg-paper px-4 text-sm font-bold text-clay hover:bg-clay/10"
+                  >
+                    <XCircle size={17} aria-hidden="true" />
+                    Reject
                   </button>
                   <button
                     type="button"

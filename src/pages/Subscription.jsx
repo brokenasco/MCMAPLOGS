@@ -9,14 +9,21 @@ export default function Subscription() {
   const { activeRole, beltUser, maiUser, displaySubscription, subscriptionPlans, refreshAccount, getFreshAccessToken } = useApp();
   const [searchParams] = useSearchParams();
   const [isRedirecting, setIsRedirecting] = React.useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = React.useState(false);
   const [billingMessage, setBillingMessage] = React.useState('');
   const billingEmail = activeRole === 'MAI' ? maiUser.email : beltUser.email;
   const isMai = activeRole === 'MAI';
   const isActiveMai = isMai && displaySubscription.status === 'active';
   const isTrialingMai = isMai && displaySubscription.status === 'trialing';
+  const isCanceledMai = isMai && ['canceled', 'cancelled'].includes(displaySubscription.status);
   const hasMaiAccess = isActiveMai || isTrialingMai;
   const isUpgradeFlow = activeRole === 'Belt User';
   const checkoutResult = searchParams.get('checkout');
+  const subscriptionStatusLabel = getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isCanceledMai });
+
+  React.useEffect(() => {
+    refreshAccount();
+  }, []);
 
   React.useEffect(() => {
     if (checkoutResult === 'success') {
@@ -64,6 +71,36 @@ export default function Subscription() {
     }
   };
 
+  const openBillingPortal = async () => {
+    setIsOpeningPortal(true);
+    setBillingMessage('');
+
+    try {
+      const accessToken = await getFreshAccessToken();
+
+      if (!accessToken) {
+        throw new Error('Log in again before opening billing settings.');
+      }
+
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to open Stripe billing settings.');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      setBillingMessage(error.message);
+      setIsOpeningPortal(false);
+    }
+  };
+
   return (
     <PageShell
       eyebrow="Profile"
@@ -89,7 +126,7 @@ export default function Subscription() {
             <div className="rounded-md bg-field px-4 py-3 text-right">
               <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$7/mo' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
-                {isMai || isUpgradeFlow ? '$84.99 billed annually after trial' : 'no payment required'}
+                {isMai || isUpgradeFlow ? '$84.99 billed annually after 3-month trial' : 'no payment required'}
               </p>
             </div>
           </div>
@@ -97,13 +134,7 @@ export default function Subscription() {
           <div className="mt-6 rounded-md border border-olive/20 bg-olive/10 p-4">
             <p className="flex items-center gap-2 text-sm font-bold text-olive">
               <CheckCircle2 size={17} aria-hidden="true" />
-              {!isMai
-                ? 'Free Belt User account'
-                : isTrialingMai
-                  ? '3-month free trial active'
-                  : isActiveMai
-                    ? 'Paid annual subscription active'
-                    : 'MAI billing required'}
+              {subscriptionStatusLabel}
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
@@ -111,13 +142,15 @@ export default function Subscription() {
                 : isTrialingMai
                   ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year.`
                   : isActiveMai
-                  ? `Your annual MAI plan is active${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
+                  ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your annual MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
+                  : isCanceledMai
+                  ? 'This MAI subscription is canceled. Start checkout again to unlock verification tools.'
                   : 'Start the 3-month free trial to unlock MAI verification and signing tools. Annual billing is $84.99 after the trial.'}
             </p>
           </div>
 
-          {(isUpgradeFlow || (isMai && !hasMaiAccess)) ? (
-            <div className="mt-6">
+          <div className="mt-6 flex flex-wrap gap-3">
+            {(isUpgradeFlow || (isMai && !hasMaiAccess)) ? (
               <button
                 type="button"
                 onClick={startStripeCheckout}
@@ -127,8 +160,19 @@ export default function Subscription() {
                 <CreditCard size={17} aria-hidden="true" />
                 {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Start 3-month free trial'}
               </button>
-            </div>
-          ) : null}
+            ) : null}
+            {isMai && hasMaiAccess ? (
+              <button
+                type="button"
+                onClick={openBillingPortal}
+                disabled={isOpeningPortal}
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
+              >
+                <CreditCard size={17} aria-hidden="true" />
+                {isOpeningPortal ? 'Opening billing...' : 'Manage billing in Stripe'}
+              </button>
+            ) : null}
+          </div>
           {billingMessage ? (
             <div className="mt-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
               {billingMessage}
@@ -143,9 +187,9 @@ export default function Subscription() {
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
             <StatCard
-              label="MAI status"
+              label="Subscription status"
               value={hasMaiAccess ? 'Unlocked' : 'Locked'}
-              detail={isTrialingMai ? 'Trial active' : isActiveMai ? 'Stripe confirmed' : 'Checkout required'}
+              detail={subscriptionStatusLabel}
             />
           ) : null}
         </aside>
@@ -160,4 +204,14 @@ export default function Subscription() {
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString();
+}
+
+function getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isCanceledMai }) {
+  if (!isMai) return 'Free Belt User account';
+  if (isTrialingMai) return '3-month free trial active';
+  if (isActiveMai && displaySubscription.cancelAtPeriodEnd) return 'Active until cancellation date';
+  if (isActiveMai) return 'Paid annual subscription active';
+  if (isCanceledMai) return 'MAI subscription canceled';
+  if (displaySubscription.status === 'past_due') return 'Payment past due';
+  return 'MAI billing required';
 }

@@ -87,12 +87,11 @@ export default function Profile() {
           <h2 className="mt-2 text-2xl font-bold text-ink">{user.name}</h2>
           <p className="mt-1 text-sm text-ink/60">{user.email}</p>
           <dl className="mt-6 space-y-4">
-            <Detail label="Account role" value={accountRoleLabel} />
             <Detail label="Unit" value={user.unit || maiUser.unit} />
             <Detail label="Belt level" value={beltUser.beltLevel} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
             <Detail
-              label="Subscription"
+              label="Subscription Type"
               value={
                 activeRole === 'MAI'
                   ? displaySubscription.status === 'trialing'
@@ -104,41 +103,18 @@ export default function Profile() {
               }
             />
           </dl>
-        </section>
 
-        <section>
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard label="My logs" value={beltLogs.length} detail="Belt User submissions" />
-            <StatCard label="Pending queue" value={pendingLogs.length} detail="MAI review" />
-            <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
-          </div>
-
-          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-            <h2 className="text-xl font-bold">Account role</h2>
-            <p className="mt-2 text-sm leading-6 text-ink/65">
-              Your account role is {accountRoleLabel}. Belt Users submit logs. Martial Arts Instructors review and sign logs.
-            </p>
-          </div>
-
-          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-              <div>
-                <h2 className="text-xl font-bold">Account details</h2>
-                <p className="mt-2 text-sm leading-6 text-ink/65">
-                  Update your unit or change the email tied to this account.
-                </p>
-              </div>
-              {!isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
-                >
-                  <Pencil size={17} aria-hidden="true" />
-                  Edit account
-                </button>
-              ) : null}
-            </div>
+          <div className="mt-6 border-t border-coyote/25 pt-5">
+            {!isEditing ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
+              >
+                <Pencil size={17} aria-hidden="true" />
+                Edit account details
+              </button>
+            ) : null}
 
             {editMessage ? (
               <div className="mt-4 rounded-md border border-coyote/35 bg-field p-4 text-sm font-semibold text-ink/75">
@@ -147,7 +123,7 @@ export default function Profile() {
             ) : null}
 
             {isEditing ? (
-              <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={handleSaveAccount}>
+              <form className="mt-4 grid gap-4" onSubmit={handleSaveAccount}>
                 <label className="block">
                   <span className="text-sm font-bold text-ink">Email</span>
                   <input
@@ -169,7 +145,7 @@ export default function Profile() {
                     placeholder="Unit or training section"
                   />
                 </label>
-                <div className="flex flex-wrap gap-3 sm:col-span-2">
+                <div className="flex flex-wrap gap-3">
                   <button
                     type="submit"
                     disabled={isSaving}
@@ -191,8 +167,56 @@ export default function Profile() {
                     Cancel
                   </button>
                 </div>
+
+                <div className="mt-2 rounded-md border border-clay/30 bg-clay/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-1 text-clay">
+                      <AlertTriangle size={18} aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h3 className="font-bold text-ink">Delete account</h3>
+                      <p className="mt-1 text-sm leading-6 text-ink/70">
+                        This removes your login, profile, and submitted training logs. Paid MAI subscriptions are canceled during deletion.
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="mt-4 block">
+                    <span className="text-sm font-bold text-ink">Type DELETE to confirm</span>
+                    <input
+                      value={deleteText}
+                      onChange={(event) => setDeleteText(event.target.value)}
+                      className="focus-ring mt-2 h-11 w-full rounded-md border border-clay/30 bg-paper px-3 text-sm"
+                      placeholder="DELETE"
+                    />
+                  </label>
+
+                  {deleteMessage ? (
+                    <div className="mt-4 rounded-md border border-clay/20 bg-paper p-4 text-sm font-semibold text-clay">
+                      {deleteMessage}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={!canDelete || isDeleting}
+                    className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Trash2 size={17} aria-hidden="true" />
+                    {isDeleting ? 'Deleting account...' : 'Delete my account'}
+                  </button>
+                </div>
               </form>
             ) : null}
+          </div>
+        </section>
+
+        <section>
+          <div className="grid gap-4 md:grid-cols-3">
+            <StatCard label="My logs" value={beltLogs.length} detail="Belt User submissions" />
+            <StatCard label="Pending queue" value={pendingLogs.length} detail="MAI review" />
+            <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
           </div>
 
           <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
@@ -211,46 +235,6 @@ export default function Profile() {
             </Link>
           </div>
 
-          <div className="mt-5 rounded-md border border-clay/30 bg-clay/10 p-5 shadow-sm">
-            <div className="flex items-start gap-3">
-              <span className="mt-1 text-clay">
-                <AlertTriangle size={20} aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="text-xl font-bold text-ink">Delete account</h2>
-                <p className="mt-2 text-sm leading-6 text-ink/70">
-                  This removes your login, profile, and submitted training logs. If this is a paid MAI account,
-                  the connected Stripe subscription is canceled during deletion.
-                </p>
-              </div>
-            </div>
-
-            <label className="mt-4 block">
-              <span className="text-sm font-bold text-ink">Type DELETE to confirm</span>
-              <input
-                value={deleteText}
-                onChange={(event) => setDeleteText(event.target.value)}
-                className="focus-ring mt-2 h-11 w-full rounded-md border border-clay/30 bg-paper px-3 text-sm"
-                placeholder="DELETE"
-              />
-            </label>
-
-            {deleteMessage ? (
-              <div className="mt-4 rounded-md border border-clay/20 bg-paper p-4 text-sm font-semibold text-clay">
-                {deleteMessage}
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={handleDeleteAccount}
-              disabled={!canDelete || isDeleting}
-              className="focus-ring mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Trash2 size={17} aria-hidden="true" />
-              {isDeleting ? 'Deleting account...' : 'Delete my account'}
-            </button>
-          </div>
         </section>
       </div>
     </PageShell>
