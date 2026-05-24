@@ -13,7 +13,7 @@ import { buildBeltProgress, buildTotalMcmapHours, sumLogMinutes } from '../lib/m
 const filters = ['All', 'Pending', 'Verified', 'Returned', 'Rejected'];
 
 export default function VerifiedLogbook() {
-  const { activeRole, beltLogs, beltUser, logs, maiUser, pendingLogs, verifyLog, returnLog, rejectLog } = useApp();
+  const { activeRole, assignedMaiLogs, beltLogs, beltUser, maiSubmittedLogs, maiUser, pendingLogs, verifyLog, returnLog, rejectLog } = useApp();
   const [activeFilter, setActiveFilter] = React.useState(activeRole === 'MAI' ? 'Pending' : 'Verified');
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [confirmationLog, setConfirmationLog] = React.useState(null);
@@ -21,7 +21,7 @@ export default function VerifiedLogbook() {
   const [returnAction, setReturnAction] = React.useState('return');
   const [returnReason, setReturnReason] = React.useState('Missing detail');
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
-  const visibleLogs = activeRole === 'MAI' ? logs : beltLogs;
+  const visibleLogs = activeRole === 'MAI' ? mergeLogs(assignedMaiLogs, maiSubmittedLogs) : beltLogs;
   const filteredLogs = activeFilter === 'All' ? visibleLogs : visibleLogs.filter((log) => log.status === activeFilter);
   const verifiedLogs = visibleLogs.filter((log) => log.status === 'Verified');
   const verifiedMinutes = sumLogMinutes(verifiedLogs);
@@ -193,6 +193,12 @@ function TotalMcmapHoursPanel({ summary }) {
       </div>
     </section>
   );
+}
+
+function mergeLogs(...logGroups) {
+  const byId = new Map();
+  logGroups.flat().forEach((log) => byId.set(log.id, log));
+  return [...byId.values()].sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 function BeltProgressDashboard({ progress }) {

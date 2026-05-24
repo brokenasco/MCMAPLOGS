@@ -7,9 +7,11 @@ import Help from './pages/Help.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import MaiDashboard from './pages/MaiDashboard.jsx';
+import Messages from './pages/Messages.jsx';
 import Profile from './pages/Profile.jsx';
 import SignUp from './pages/SignUp.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
+import SubmitMaiHours from './pages/SubmitMaiHours.jsx';
 import SubmitHours from './pages/SubmitHours.jsx';
 import Subscription from './pages/Subscription.jsx';
 import VerifiedLogbook from './pages/VerifiedLogbook.jsx';
@@ -49,11 +51,27 @@ export default function App() {
           }
         />
         <Route
+          path="mai/submit"
+          element={
+            <RequireRole role="MAI">
+              <SubmitMaiHours />
+            </RequireRole>
+          }
+        />
+        <Route
           path="mai/pending"
           element={
             <RequireRole role="MAI">
               <Navigate to="/logbook/verified" replace />
             </RequireRole>
+          }
+        />
+        <Route
+          path="messages"
+          element={
+            <RequireAccount>
+              <Messages />
+            </RequireAccount>
           }
         />
         <Route

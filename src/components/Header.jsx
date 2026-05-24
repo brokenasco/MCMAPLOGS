@@ -7,19 +7,22 @@ const roleLinks = {
   'Belt User': [
     { label: 'Dashboard', to: '/belt/dashboard' },
     { label: 'Logbook', to: '/logbook/verified' },
+    { label: 'Messages', to: '/messages' },
     { label: 'Profile', to: '/profile' },
     { label: 'Help', to: '/help' }
   ],
   MAI: [
     { label: 'Dashboard', to: '/mai/dashboard' },
+    { label: 'Submit Hours', to: '/mai/submit' },
     { label: 'Logbook', to: '/logbook/verified' },
+    { label: 'Messages', to: '/messages' },
     { label: 'Profile', to: '/profile' },
     { label: 'Help', to: '/help' }
   ]
 };
 
 export default function Header() {
-  const { activeRole, session, signOut } = useApp();
+  const { activeRole, session, signOut, unreadMessageCount } = useApp();
   const navLinks = roleLinks[activeRole];
 
   return (
@@ -49,7 +52,7 @@ export default function Header() {
                   }`
                 }
               >
-                {link.label}
+                <NavLabel label={link.label} unread={link.label === 'Messages' ? unreadMessageCount : 0} />
               </NavLink>
             ))}
           </nav>
@@ -106,13 +109,26 @@ export default function Header() {
                 }`
               }
             >
-              {link.label}
+              <NavLabel label={link.label} unread={link.label === 'Messages' ? unreadMessageCount : 0} />
             </NavLink>
           ))}
         </div>
       </div>
       ) : null}
     </header>
+  );
+}
+
+function NavLabel({ label, unread }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      {label}
+      {unread ? (
+        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-clay px-1.5 text-xs font-black text-white">
+          {unread}
+        </span>
+      ) : null}
+    </span>
   );
 }
 

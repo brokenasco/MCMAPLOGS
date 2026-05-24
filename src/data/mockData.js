@@ -138,3 +138,31 @@ export const trainingLogs = [
 ];
 
 export const beltLevels = ['Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
+
+export const messageThreads = [
+  {
+    id: 'thread-jordan-mai-1842',
+    beltUserName: 'LCpl Jordan Hayes',
+    beltUserEmail: 'jordan.hayes@example.mil',
+    maiName: 'Sgt Avery Morgan',
+    maiNumber: 'MAI-1842',
+    messages: [
+      {
+        id: 'msg-1',
+        senderKey: 'jordan.hayes@example.mil',
+        senderName: 'LCpl Jordan Hayes',
+        body: 'Sgt, can you confirm if my free sparring log has enough detail?',
+        createdAt: '2026-05-15T14:30:00',
+        readBy: ['jordan.hayes@example.mil']
+      },
+      {
+        id: 'msg-2',
+        senderKey: 'MAI-1842',
+        senderName: 'Sgt Avery Morgan',
+        body: 'Yes. Include the drills covered and who supervised the period next time.',
+        createdAt: '2026-05-15T16:10:00',
+        readBy: ['MAI-1842']
+      }
+    ]
+  }
+];

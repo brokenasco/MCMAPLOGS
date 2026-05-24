@@ -1,5 +1,5 @@
 import React from 'react';
-import { currentBeltUser, currentMai, trainingLogs } from '../data/mockData.js';
+import { currentBeltUser, currentMai, messageThreads as mockMessageThreads, trainingLogs } from '../data/mockData.js';
 import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
@@ -31,6 +31,7 @@ export function AppProvider({ children }) {
   const [profile, setProfile] = React.useState(null);
   const [session, setSession] = React.useState(null);
   const [logs, setLogs] = React.useState(trainingLogs);
+  const [messageThreads, setMessageThreads] = React.useState(mockMessageThreads);
   const [loading, setLoading] = React.useState(Boolean(supabase));
   const [authMessage, setAuthMessage] = React.useState('');
   const [savedDraft, setSavedDraft] = React.useState(() => {
@@ -52,10 +53,14 @@ export function AppProvider({ children }) {
   const isSupabaseEnabled = Boolean(supabase);
   const isProductionBuild = import.meta.env.PROD;
   const currentUserId = session?.user?.id;
+  const currentMessageKey = activeRole === 'MAI' ? maiUser.maiNumber : beltUser.email;
   const beltLogs = currentUserId
     ? logs.filter((log) => log.beltUserId === currentUserId)
     : logs.filter((log) => log.marine === beltUser.name);
   const assignedMaiLogs = logs.filter((log) => log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase());
+  const maiSubmittedLogs = logs.filter((log) =>
+    (currentUserId ? log.beltUserId === currentUserId : log.marine === maiUser.name) && log.submitterRole === 'MAI'
+  );
   const pendingLogs = activeRole === 'MAI'
     ? assignedMaiLogs.filter((log) => log.status === 'Pending')
     : beltLogs.filter((log) => log.status === 'Pending');
@@ -66,6 +71,11 @@ export function AppProvider({ children }) {
     ? assignedMaiLogs.filter((log) => isReturnedOrRejected(log.status))
     : beltLogs.filter((log) => isReturnedOrRejected(log.status));
   const urgentCount = beltLogs.filter((log) => isReturnedOrRejected(log.status)).length;
+  const visibleMessageThreads = getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads });
+  const unreadMessageCount = visibleMessageThreads.reduce(
+    (total, thread) => total + thread.messages.filter((message) => !message.readBy?.includes(currentMessageKey)).length,
+    0
+  );
   const maiDirectory = [
     {
       name: maiUser.name,
@@ -117,6 +127,7 @@ export function AppProvider({ children }) {
     } else {
       setProfile(null);
       setLogs(trainingLogs);
+      setMessageThreads(mockMessageThreads);
       setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
     }
     });
@@ -143,6 +154,7 @@ export function AppProvider({ children }) {
 
     applyProfile(profileData);
     await loadLogs(profileData);
+    await loadMessages(profileData);
     return profileData;
   }
 
@@ -160,6 +172,21 @@ export function AppProvider({ children }) {
     }
 
     setLogs(data.map(mapLogFromSupabase));
+  }
+
+  async function loadMessages(profileData = profile) {
+    if (!supabase || !profileData) return;
+
+    const { data, error } = await supabase
+      .from('message_threads')
+      .select('*, messages(*)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return;
+    }
+
+    setMessageThreads(data.map(mapThreadFromSupabase));
   }
 
   function applyProfile(profileData) {
@@ -214,6 +241,57 @@ export function AppProvider({ children }) {
         target_belt: log.targetBelt,
         class_code: log.classCode,
         technique_name: log.techniqueName,
+        submitter_role: log.submitterRole || activeRole,
+        description: log.description,
+        mai_number: log.maiNumber,
+        status: 'Pending'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+
+    const savedLog = mapLogFromSupabase(data);
+    setLogs((currentLogs) => [savedLog, ...currentLogs]);
+    return savedLog;
+  };
+
+  const submitMaiLog = async (log) => {
+    if (log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()) {
+      throw new Error('Choose another MAI for verification. MAIs cannot verify their own hours.');
+    }
+
+    const newLog = {
+      id: crypto.randomUUID?.() || Date.now(),
+      beltUserId: currentUserId,
+      marine: maiUser.name,
+      submittedAt: new Date().toISOString().slice(0, 10),
+      status: 'Pending',
+      submitterRole: 'MAI',
+      ...log
+    };
+
+    if (!supabase || !currentUserId) {
+      setLogs((currentLogs) => [newLog, ...currentLogs]);
+      return newLog;
+    }
+
+    const { data, error } = await supabase
+      .from('training_logs')
+      .insert({
+        belt_user_id: currentUserId,
+        marine_name: maiUser.name,
+        date: log.date,
+        hours: log.hours,
+        minutes: log.minutes,
+        belt_level: log.beltLevel,
+        target_belt: log.targetBelt,
+        class_code: log.classCode,
+        technique_name: log.techniqueName,
+        submitter_role: 'MAI',
         description: log.description,
         mai_number: log.maiNumber,
         status: 'Pending'
@@ -232,6 +310,12 @@ export function AppProvider({ children }) {
   };
 
   const verifyLog = async (logId) => {
+    const logToVerify = logs.find((log) => log.id === logId);
+    if (logToVerify?.submitterRole === 'MAI' && logToVerify?.beltUserId === currentUserId) {
+      setAuthMessage('MAIs cannot verify their own submitted hours.');
+      throw new Error('MAIs cannot verify their own submitted hours.');
+    }
+
     if (!supabase || !currentUserId) {
       setLogs((currentLogs) =>
         currentLogs.map((log) =>
@@ -520,6 +604,7 @@ export function AppProvider({ children }) {
     setSession(null);
     setProfile(null);
     setLogs(trainingLogs);
+    setMessageThreads(mockMessageThreads);
     setActiveRole('Belt User');
     setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
   };
@@ -635,6 +720,116 @@ export function AppProvider({ children }) {
     return updatedBeltUser;
   };
 
+  const sendMessage = async ({ threadId, body, targetMaiNumber }) => {
+    const cleanBody = body.trim();
+    if (!cleanBody) return null;
+
+    const thread = threadId
+      ? messageThreads.find((item) => item.id === threadId)
+      : buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs });
+
+    if (!thread) {
+      throw new Error('You can only message MAIs connected to your submitted logs.');
+    }
+
+    const message = {
+      id: crypto.randomUUID?.() || `msg-${Date.now()}`,
+      senderKey: currentMessageKey,
+      senderName: activeRole === 'MAI' ? maiUser.name : beltUser.name,
+      body: cleanBody,
+      createdAt: new Date().toISOString(),
+      readBy: [currentMessageKey]
+    };
+
+    if (!supabase || !currentUserId) {
+      setMessageThreads((currentThreads) => {
+        const existingThread = currentThreads.find((item) => item.id === thread.id);
+        if (existingThread) {
+          return currentThreads.map((item) =>
+            item.id === thread.id ? { ...item, messages: [...item.messages, message] } : item
+          );
+        }
+
+        return [{ ...thread, messages: [message] }, ...currentThreads];
+      });
+
+      return { message, threadId: thread.id };
+    }
+
+    let savedThread = thread;
+
+    if (!threadId) {
+      const { data: threadData, error: threadError } = await supabase
+        .from('message_threads')
+        .insert({
+          belt_user_id: currentUserId,
+          belt_user_name: beltUser.name,
+          belt_user_email: beltUser.email,
+          mai_number: thread.maiNumber,
+          mai_name: thread.maiName
+        })
+        .select()
+        .single();
+
+      if (threadError) {
+        setAuthMessage(threadError.message);
+        throw threadError;
+      }
+
+      savedThread = mapThreadFromSupabase({ ...threadData, messages: [] });
+    }
+
+    const { data: messageData, error: messageError } = await supabase
+      .from('messages')
+      .insert({
+        thread_id: savedThread.id,
+        sender_id: currentUserId,
+        sender_key: currentMessageKey,
+        sender_name: activeRole === 'MAI' ? maiUser.name : beltUser.name,
+        body: cleanBody,
+        read_by: [currentMessageKey]
+      })
+      .select()
+      .single();
+
+    if (messageError) {
+      setAuthMessage(messageError.message);
+      throw messageError;
+    }
+
+    const savedMessage = mapMessageFromSupabase(messageData);
+
+    setMessageThreads((currentThreads) => {
+      const existingThread = currentThreads.find((item) => item.id === thread.id);
+      if (existingThread) {
+        return currentThreads.map((item) =>
+          item.id === thread.id ? { ...item, messages: [...item.messages, savedMessage] } : item
+        );
+      }
+
+      return [{ ...savedThread, messages: [savedMessage] }, ...currentThreads];
+    });
+
+    return { message: savedMessage, threadId: savedThread.id };
+  };
+
+  const markThreadRead = (threadId) => {
+    setMessageThreads((currentThreads) =>
+      currentThreads.map((thread) =>
+        thread.id === threadId
+          ? {
+              ...thread,
+              messages: thread.messages.map((message) =>
+                message.readBy?.includes(currentMessageKey)
+                  ? message
+                  : { ...message, readBy: [...(message.readBy || []), currentMessageKey] }
+              )
+            }
+          : thread
+      )
+    );
+  };
+
   const refreshAccount = async () => {
     if (!supabase || !currentUserId) return null;
     return loadProfileAndLogs(currentUserId);
@@ -694,6 +889,10 @@ export function AppProvider({ children }) {
     supabaseConfigStatus,
     logs,
     beltLogs,
+    assignedMaiLogs,
+    maiSubmittedLogs,
+    messageThreads: visibleMessageThreads,
+    unreadMessageCount,
     pendingLogs,
     verifiedLogs,
     returnedLogs,
@@ -705,6 +904,9 @@ export function AppProvider({ children }) {
     hasPaidMaiAccess,
     subscriptionPlans,
     submitLog,
+    submitMaiLog,
+    sendMessage,
+    markThreadRead,
     verifyLog,
     returnLog,
     rejectLog,
@@ -739,6 +941,7 @@ function mapLogFromSupabase(row) {
     targetBelt: row.target_belt || row.belt_level,
     classCode: row.class_code,
     techniqueName: row.technique_name,
+    submitterRole: row.submitter_role || 'Belt User',
     description: row.description,
     maiNumber: row.mai_number,
     status: row.status,
@@ -748,6 +951,28 @@ function mapLogFromSupabase(row) {
     verifiedAt: row.verified_at?.slice(0, 10),
     verifiedBy: row.verified_by ? 'Verified MAI' : null,
     verifiedByMaiNumber: row.verified_by ? row.mai_number : null
+  };
+}
+
+function mapThreadFromSupabase(row) {
+  return {
+    id: row.id,
+    beltUserName: row.belt_user_name,
+    beltUserEmail: row.belt_user_email,
+    maiName: row.mai_name,
+    maiNumber: row.mai_number,
+    messages: (row.messages || []).map(mapMessageFromSupabase).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  };
+}
+
+function mapMessageFromSupabase(row) {
+  return {
+    id: row.id,
+    senderKey: row.sender_key,
+    senderName: row.sender_name,
+    body: row.body,
+    createdAt: row.created_at,
+    readBy: row.read_by || []
   };
 }
 
@@ -768,6 +993,31 @@ function getEffectiveAccountRole(accountType) {
 
 function isReturnedOrRejected(status) {
   return status === 'Returned' || status === 'Rejected';
+}
+
+function getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads }) {
+  if (activeRole === 'MAI') {
+    return messageThreads.filter((thread) => thread.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase());
+  }
+
+  return messageThreads.filter((thread) => thread.beltUserEmail?.toLowerCase() === beltUser.email?.toLowerCase());
+}
+
+function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs }) {
+  const canMessageMai = beltLogs.some((log) => log.maiNumber?.toLowerCase() === targetMaiNumber?.toLowerCase());
+  if (!canMessageMai) return null;
+
+  const mai = maiDirectory.find((item) => item.maiNumber?.toLowerCase() === targetMaiNumber?.toLowerCase());
+  if (!mai) return null;
+
+  return {
+    id: `thread-${beltUser.email}-${targetMaiNumber}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    beltUserName: beltUser.name,
+    beltUserEmail: beltUser.email,
+    maiName: mai.name,
+    maiNumber: mai.maiNumber,
+    messages: []
+  };
 }
 
 export function useApp() {

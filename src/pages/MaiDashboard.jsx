@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, ClipboardList } from 'lucide-react';
+import { AlertTriangle, ClipboardList, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogTable from '../components/LogTable.jsx';
@@ -9,7 +9,9 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function MaiDashboard() {
-  const { maiUser, pendingLogs, verifiedLogs, returnedLogs } = useApp();
+  const { maiUser, pendingLogs, verifiedLogs, returnedLogs, maiSubmittedLogs } = useApp();
+  const pendingMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Pending').length;
+  const verifiedMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Verified').length;
   const oldestPending = pendingLogs
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
@@ -49,6 +51,10 @@ export default function MaiDashboard() {
         <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
         <StatCard label="Returned logs" value={returnedLogs.length} detail="Need follow-up" />
         <StatCard label="Assigned MAI number" value={maiUser.maiNumber} detail="Used to verify logbooks" />
+        <StatCard label="My submitted hours" value={maiSubmittedLogs.length} detail="Sent to other MAIs" />
+        <StatCard label="My pending MAI hours" value={pendingMaiSubmissions} detail="Awaiting verification" />
+        <StatCard label="My verified MAI hours" value={verifiedMaiSubmissions} detail="Approved by another MAI" />
+        <StatCard label="Awaiting my MAI review" value={pendingLogs.length} detail="Belt User or MAI submissions" />
       </div>
 
       <div className="mt-8 flex flex-col justify-between gap-4 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:flex-row sm:items-center">
@@ -58,13 +64,22 @@ export default function MaiDashboard() {
             Your MAI number is your verification identifier when you sign submitted logbooks.
           </p>
         </div>
-        <Link
-          to="/logbook/verified"
-          className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90"
-        >
-          <ClipboardList size={18} aria-hidden="true" />
-          Open pending logs
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/mai/submit"
+            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+          >
+            <PlusCircle size={18} aria-hidden="true" />
+            Submit my hours
+          </Link>
+          <Link
+            to="/logbook/verified"
+            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90"
+          >
+            <ClipboardList size={18} aria-hidden="true" />
+            Open pending logs
+          </Link>
+        </div>
       </div>
 
       <div className="mt-8">
