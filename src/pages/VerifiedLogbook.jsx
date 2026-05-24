@@ -7,21 +7,24 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { formatMinutes, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
 
 const filters = ['All', 'Pending', 'Verified', 'Returned'];
 
 export default function VerifiedLogbook() {
-  const { activeRole, logs, maiUser, pendingLogs, verifyLog, returnLog } = useApp();
+  const { activeRole, beltLogs, beltUser, logs, maiUser, pendingLogs, verifyLog, returnLog } = useApp();
   const [activeFilter, setActiveFilter] = React.useState(activeRole === 'MAI' ? 'Pending' : 'Verified');
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [confirmationLog, setConfirmationLog] = React.useState(null);
   const [returningLog, setReturningLog] = React.useState(null);
   const [returnReason, setReturnReason] = React.useState('Missing detail');
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
-  const filteredLogs = activeFilter === 'All' ? logs : logs.filter((log) => log.status === activeFilter);
-  const verifiedLogs = logs.filter((log) => log.status === 'Verified');
+  const visibleLogs = activeRole === 'MAI' ? logs : beltLogs;
+  const filteredLogs = activeFilter === 'All' ? visibleLogs : visibleLogs.filter((log) => log.status === activeFilter);
+  const verifiedLogs = visibleLogs.filter((log) => log.status === 'Verified');
   const verifiedHours = verifiedLogs.reduce((total, log) => total + Number(log.hours), 0);
   const isMai = activeRole === 'MAI';
+  const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
 
   React.useEffect(() => {
     setActiveFilter(activeRole === 'MAI' ? 'Pending' : 'Verified');
@@ -80,9 +83,11 @@ export default function VerifiedLogbook() {
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         {isMai ? <StatCard label="Pending review" value={pendingLogs.length} detail="Awaiting MAI signature" /> : null}
         <StatCard label="Verified entries" value={verifiedLogs.length} detail="Signed records" />
-        <StatCard label="Verified hours" value={verifiedHours} detail="Total approved hours" />
+        <StatCard label="Verified hours" value={formatDecimalHours(verifiedHours)} detail="Total approved hours" />
         <StatCard label="All records" value={logs.length} detail="Across every status" />
       </div>
+
+      {!isMai ? <BeltProgressDashboard progress={progress} /> : null}
 
       {isMai ? (
         <MaiPendingReview
@@ -154,6 +159,142 @@ export default function VerifiedLogbook() {
       </div>
     </PageShell>
   );
+}
+
+function BeltProgressDashboard({ progress }) {
+  return (
+    <section className="mb-8 overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
+      <div className="border-b border-coyote/25 bg-charcoal p-5 text-paper">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-brass">Target belt progress</p>
+            <h2 className="mt-1 text-2xl font-bold">{progress.targetBelt}</h2>
+            <p className="mt-2 text-sm leading-6 text-paper/65">
+              Current belt: {progress.currentBelt}. Only verified logs count toward this progress.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-3">
+            <ProgressMetric label="Complete" value={`${progress.completedCount}/${progress.totalCount}`} />
+            <ProgressMetric label="Logged" value={formatMinutes(progress.completedMinutes)} />
+            <ProgressMetric label="Required" value={formatMinutes(progress.requiredMinutes)} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-paper/65">
+            <span>Overall belt progress</span>
+            <span>{progress.percent}%</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-paper/15">
+            <div className="h-full rounded-full bg-brass" style={{ width: `${progress.percent}%` }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-coyote/25">
+          <thead className="bg-field">
+            <tr>
+              <ProgressHeader>Technique / Tie-In</ProgressHeader>
+              <ProgressHeader>Class Code</ProgressHeader>
+              <ProgressHeader>Completed</ProgressHeader>
+              <ProgressHeader>Remaining</ProgressHeader>
+              <ProgressHeader>Required</ProgressHeader>
+              <ProgressHeader>Status</ProgressHeader>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-coyote/20">
+            {progress.rows.map((row) => (
+              <tr key={row.id} className={row.isComplete ? 'bg-olive/10' : 'bg-paper'}>
+                <ProgressCell className="min-w-72 font-semibold text-ink">{row.name}</ProgressCell>
+                <ProgressCell>{row.code}</ProgressCell>
+                <ProgressCell>{formatMinutes(row.completedMinutes)}</ProgressCell>
+                <ProgressCell>{formatMinutes(row.remainingMinutes)}</ProgressCell>
+                <ProgressCell>{formatMinutes(row.requiredMinutes)}</ProgressCell>
+                <ProgressCell>
+                  <span
+                    className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wide ${
+                      row.isComplete ? 'bg-olive text-white' : 'bg-field text-ink/70'
+                    }`}
+                  >
+                    {row.isComplete ? 'Complete' : 'In progress'}
+                  </span>
+                </ProgressCell>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function buildBeltProgress({ beltUser, logs }) {
+  const currentBelt = beltUser.beltLevel || 'Tan Belt';
+  const targetBelt = getTargetBelt(currentBelt);
+  const requirements = getBeltRequirements(targetBelt);
+  const completedByRequirement = new Map();
+
+  logs
+    .filter((log) => log.status === 'Verified' && (log.targetBelt || log.beltLevel) === targetBelt)
+    .forEach((log) => {
+      const key = getRequirementKey(log.classCode, log.techniqueName);
+      const minutes = Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
+      completedByRequirement.set(key, (completedByRequirement.get(key) || 0) + minutes);
+    });
+
+  const rows = requirements.map((requirement) => {
+    const completedMinutes = completedByRequirement.get(getRequirementKey(requirement.code, requirement.name)) || 0;
+    const cappedMinutes = Math.min(completedMinutes, requirement.requiredMinutes);
+
+    return {
+      ...requirement,
+      completedMinutes,
+      remainingMinutes: Math.max(requirement.requiredMinutes - completedMinutes, 0),
+      isComplete: completedMinutes >= requirement.requiredMinutes,
+      cappedMinutes
+    };
+  });
+
+  const requiredMinutes = rows.reduce((total, row) => total + row.requiredMinutes, 0);
+  const completedMinutes = rows.reduce((total, row) => total + row.cappedMinutes, 0);
+  const percent = requiredMinutes ? Math.round((completedMinutes / requiredMinutes) * 100) : 0;
+
+  return {
+    currentBelt,
+    targetBelt,
+    rows,
+    requiredMinutes,
+    completedMinutes,
+    completedCount: rows.filter((row) => row.isComplete).length,
+    totalCount: rows.length,
+    percent
+  };
+}
+
+function getRequirementKey(code, name) {
+  return `${code || ''}::${name || ''}`.toLowerCase();
+}
+
+function ProgressMetric({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-paper/50">{label}</p>
+      <p className="mt-1 text-lg font-black text-paper">{value}</p>
+    </div>
+  );
+}
+
+function ProgressHeader({ children }) {
+  return <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-ink/55">{children}</th>;
+}
+
+function ProgressCell({ children, className = '' }) {
+  return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
+}
+
+function formatDecimalHours(hours) {
+  return Number.isInteger(hours) ? hours : hours.toFixed(2);
 }
 
 function MaiPendingReview({

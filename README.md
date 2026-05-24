@@ -55,6 +55,8 @@ VITE_SUPABASE_ANON_KEY=...
 
 Run `supabase/mai-subscriptions.sql` in the Supabase SQL editor before enabling MAI billing enforcement. It adds the Stripe subscription fields on `profiles`, marks existing Belt Users as free, and marks existing MAIs as unpaid until Stripe confirms a subscription.
 
+Run `supabase/structured-mcmap-logs.sql` in the Supabase SQL editor before using the structured Belt User logbook. It adds the target belt, class code, technique/tie-in name, and minute tracking fields to `training_logs`.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 3-month free trial, then bills $84.99/year.

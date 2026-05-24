@@ -7,7 +7,8 @@ const beltStyles = {
   'Gray Belt': 'bg-[#7a7d7d] text-white',
   'Green Belt': 'bg-[#3f5f3b] text-white',
   'Brown Belt': 'bg-[#6b4226] text-white',
-  'Black Belt': 'bg-[#111111] text-white'
+  'Black Belt': 'bg-[#111111] text-white',
+  'Black 1st Degree': 'bg-[#111111] text-white'
 };
 
 export default function LogDetailPanel({ log, onClose }) {
@@ -36,6 +37,8 @@ export default function LogDetailPanel({ log, onClose }) {
       <dl className="mt-5 grid gap-4 sm:grid-cols-2">
         <Detail label="Status" value={<StatusBadge status={log.status} />} />
         <Detail label="Hours" value={log.hours} />
+        <Detail label="Class code" value={log.classCode || 'General'} />
+        <Detail label="Target belt" value={log.targetBelt || log.beltLevel} />
         <Detail
           label="Belt level"
           value={
@@ -50,8 +53,11 @@ export default function LogDetailPanel({ log, onClose }) {
       </dl>
 
       <div className="mt-5 rounded-md bg-field p-4">
-        <p className="text-sm font-bold text-ink">Training description</p>
-        <p className="mt-2 text-sm leading-6 text-ink/70">{log.description}</p>
+        <p className="text-sm font-bold text-ink">Technique / Tie-In</p>
+        <p className="mt-2 text-sm leading-6 text-ink/70">{log.techniqueName || log.description}</p>
+        {log.description && log.description !== log.techniqueName ? (
+          <p className="mt-3 text-sm leading-6 text-ink/60">{log.description}</p>
+        ) : null}
       </div>
 
       {log.status === 'Returned' ? (

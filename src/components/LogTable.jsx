@@ -6,7 +6,8 @@ const beltStyles = {
   'Gray Belt': 'bg-[#7a7d7d] text-white',
   'Green Belt': 'bg-[#3f5f3b] text-white',
   'Brown Belt': 'bg-[#6b4226] text-white',
-  'Black Belt': 'bg-[#111111] text-white'
+  'Black Belt': 'bg-[#111111] text-white',
+  'Black 1st Degree': 'bg-[#111111] text-white'
 };
 
 export default function LogTable({ logs, showMarine = true, onSelectLog }) {
@@ -18,6 +19,7 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
             <tr>
               {showMarine ? <HeaderCell>Marine</HeaderCell> : null}
               <HeaderCell>Date</HeaderCell>
+              <HeaderCell>Class</HeaderCell>
               <HeaderCell>Hours</HeaderCell>
               <HeaderCell>Belt</HeaderCell>
               <HeaderCell>MAI Number</HeaderCell>
@@ -33,6 +35,10 @@ export default function LogTable({ logs, showMarine = true, onSelectLog }) {
               >
                 {showMarine ? <BodyCell className="font-semibold text-ink">{log.marine}</BodyCell> : null}
                 <BodyCell>{new Date(`${log.date}T12:00:00`).toLocaleDateString()}</BodyCell>
+                <BodyCell>
+                  <span className="font-semibold text-ink">{log.classCode || 'General'}</span>
+                  {log.techniqueName ? <span className="mt-1 block max-w-72 text-xs leading-5 text-ink/55">{log.techniqueName}</span> : null}
+                </BodyCell>
                 <BodyCell>{log.hours}</BodyCell>
                 <BodyCell>
                   <span className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wide ${beltStyles[log.beltLevel] || 'bg-field text-ink'}`}>
