@@ -2,6 +2,7 @@ import React from 'react';
 import { KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
+import PasswordField from '../components/PasswordField.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function ResetPassword() {
@@ -54,20 +55,18 @@ export default function ResetPassword() {
       <div className="mx-auto max-w-xl rounded-md border border-coyote/35 bg-paper p-6 shadow-sm">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-5">
-            <Field
+            <PasswordField
               label="New password"
               name="password"
               value={form.password}
               onChange={updateField}
-              type="password"
               placeholder="At least 8 characters"
             />
-            <Field
+            <PasswordField
               label="Confirm new password"
               name="confirmPassword"
               value={form.confirmPassword}
               onChange={updateField}
-              type="password"
               placeholder="Re-enter password"
             />
           </div>
@@ -96,14 +95,5 @@ export default function ResetPassword() {
         </p>
       </div>
     </PageShell>
-  );
-}
-
-function Field({ label, ...props }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-bold text-ink">{label}</span>
-      <input className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 px-3 text-sm" {...props} />
-    </label>
   );
 }
