@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle2, Clock3, Eye, Lock, Medal, Pencil, PlusCircle, RotateCcw, Target, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock3, Eye, Lock, Pencil, PlusCircle, RotateCcw, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
@@ -9,23 +9,17 @@ import StatusBadge from '../components/StatusBadge.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
-import { buildBeltProgress, buildTotalMcmapHours, getBeltTrail, sumLogMinutes } from '../lib/mcmapProgress.js';
+import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, resubmitLog, savedDraft, updatePendingLog } = useApp();
+  const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, resubmitLog, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
   const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
-  const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
   const beltTrail = React.useMemo(() => getBeltTrail(beltUser.beltLevel, progress.percent), [beltUser.beltLevel, progress.percent]);
-  const totalSubmittedMinutes = sumLogMinutes(beltLogs);
-  const verifiedCurrentBeltMinutes = mcmapHourSummary.targetBeltVerifiedMinutes;
-  const pendingLogs = beltLogs.filter((log) => log.status === 'Pending');
-  const returnedLogs = beltLogs.filter((log) => log.status === 'Returned');
   const recentLogs = beltLogs.slice(0, 6);
-  const nextRequirement = progress.rows.find((row) => !row.isComplete);
   const hasNoLogs = beltLogs.length === 0;
 
   const openPendingEdit = (log) => {
@@ -67,7 +61,7 @@ export default function BeltDashboard() {
     <PageShell
       eyebrow="Belt User"
       title={`Welcome, ${beltUser.name}`}
-      description="Track what matters next: current belt progress, action items, and your MCMAP record."
+      description="Track your current belt progress and recent MCMAP training records."
       actions={<RoleBadge role="Belt User" />}
     >
       {hasNoLogs ? <NewUserStart beltUser={beltUser} targetBelt={progress.targetBelt} /> : null}
@@ -112,99 +106,6 @@ export default function BeltDashboard() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-clay">
-                <Target size={17} aria-hidden="true" />
-                What&apos;s Next?
-              </p>
-              <h2 className="mt-2 text-2xl font-bold text-ink">{getNextHeadline({ returnedLogs, savedDraft, nextRequirement, progress })}</h2>
-              <p className="mt-2 text-sm leading-6 text-ink/65">
-                {pendingLogs.length} logs pending MAI review. {returnedLogs.length} returned logs need correction.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/belt/submit"
-                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-              >
-                <PlusCircle size={17} aria-hidden="true" />
-                Log Hours
-              </Link>
-              {returnedLogs.length ? (
-                <a
-                  href="#returned-logs"
-                  className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90"
-                >
-                  <RotateCcw size={17} aria-hidden="true" />
-                  Fix Returned Log
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <ActionStats pendingCount={pendingLogs.length} returnedCount={returnedLogs.length} />
-      </section>
-
-      <section className="mt-6 grid gap-4 lg:grid-cols-3">
-        <GroupedStat
-          title="Progress Stats"
-          items={[
-            ['Verified Hours', formatMinutes(verifiedCurrentBeltMinutes), `For ${progress.targetBelt}`],
-            ['Hours Remaining', formatMinutes(progress.requiredMinutes - progress.completedMinutes), 'Until target belt is complete'],
-            ['Belt Completion', `${progress.percent}%`, `${progress.completedCount}/${progress.totalCount} requirements complete`]
-          ]}
-        />
-        <GroupedStat
-          title="Career Stats"
-          items={[
-            ['Total MCMAP Hours', formatMinutes(mcmapHourSummary.totalMinutes), 'Completed belts plus current verified time'],
-            ['Completed Belts', mcmapHourSummary.completedBelts.length, mcmapHourSummary.completedBelts.join(', ') || 'None yet'],
-            ['Lifetime Verified Logs', beltLogs.filter((log) => log.status === 'Verified').length, 'Approved records']
-          ]}
-        />
-        <GroupedStat
-          title="Action Stats"
-          items={[
-            ['Logs Pending Verification', pendingLogs.length, `${formatMinutes(sumLogMinutes(pendingLogs))} waiting on MAI review`],
-            ['Returned Logs', returnedLogs.length, returnedLogs.length ? 'Action required' : 'No corrections needed'],
-            ['Total Submitted', formatMinutes(totalSubmittedMinutes), 'All submitted account logs']
-          ]}
-          urgent={returnedLogs.length > 0}
-        />
-      </section>
-
-      {returnedLogs.length ? (
-        <section id="returned-logs" className="mt-8 rounded-md border border-clay/30 bg-clay/10 p-5">
-          <h2 className="text-xl font-bold text-ink">Returned logs need correction</h2>
-          <p className="mt-1 text-sm text-ink/65">These do not count toward verified hours until corrected and approved.</p>
-          <div className="mt-4 grid gap-3">
-            {returnedLogs.map((log) => (
-              <ReturnedLogCard
-                key={log.id}
-                log={log}
-                onCorrect={() => openReturnedEdit(log)}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {pendingLogs.length ? (
-        <section className="mt-8 rounded-md border border-brass/30 bg-brass/10 p-5">
-          <h2 className="text-xl font-bold text-ink">Pending verification</h2>
-          <p className="mt-1 text-sm text-ink/65">These logs are waiting for the assigned MAI to verify them.</p>
-          <div className="mt-4 grid gap-3">
-            {pendingLogs.map((log) => (
-              <PendingVerificationCard key={log.id} log={log} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {actionMessage ? (
         <div className="mt-8 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
           {actionMessage}
@@ -224,7 +125,7 @@ export default function BeltDashboard() {
         </div>
       ) : null}
 
-      <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_380px]">
+      <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_380px]">
         <div>
           <h2 className="mb-3 text-xl font-bold">My Recent Logs</h2>
           {recentLogs.length ? (
@@ -303,49 +204,6 @@ function BeltTrailItem({ item }) {
   );
 }
 
-function ActionStats({ pendingCount, returnedCount }) {
-  return (
-    <div className={`rounded-md border p-5 shadow-sm ${returnedCount ? 'border-clay/40 bg-clay/10' : 'border-coyote/35 bg-paper'}`}>
-      <p className="text-sm font-bold uppercase tracking-wide text-clay">Action Required</p>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <DashboardMetric label="Pending" value={pendingCount} />
-        <DashboardMetric label="Returned" value={returnedCount} urgent={returnedCount > 0} />
-      </div>
-      {returnedCount ? (
-        <a href="#returned-logs" className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white">
-          <AlertTriangle size={17} aria-hidden="true" />
-          Fix returned logs
-        </a>
-      ) : (
-        <p className="mt-4 text-sm leading-6 text-ink/65">No returned logs need correction right now.</p>
-      )}
-    </div>
-  );
-}
-
-function GroupedStat({ title, items, urgent = false }) {
-  return (
-    <section className={`rounded-md border p-5 shadow-sm ${urgent ? 'border-clay/35 bg-clay/10' : 'border-coyote/35 bg-paper'}`}>
-      <h2 className="text-lg font-bold text-ink">{title}</h2>
-      <div className="mt-4 grid gap-4">
-        {items.map(([label, value, detail]) => (
-          <DashboardMetric key={label} label={label} value={value} detail={detail} urgent={urgent && label === 'Returned Logs'} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function DashboardMetric({ label, value, detail, urgent = false }) {
-  return (
-    <div>
-      <p className={`text-xs font-bold uppercase tracking-wide ${urgent ? 'text-clay' : 'text-ink/50'}`}>{label}</p>
-      <p className={`mt-1 text-2xl font-black ${urgent ? 'text-clay' : 'text-ink'}`}>{value}</p>
-      {detail ? <p className="mt-1 text-sm leading-5 text-ink/60">{detail}</p> : null}
-    </div>
-  );
-}
-
 function RecentLogs({ logs, onCancelPending, onEditPending, onEditReturned, onSelectLog }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
@@ -408,26 +266,6 @@ function RecentLogs({ logs, onCancelPending, onEditPending, onEditReturned, onSe
   );
 }
 
-function PendingVerificationCard({ log }) {
-  return (
-    <article className="rounded-md bg-paper p-4 shadow-sm">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-        <div>
-          <p className="font-bold">{shortTechnique(log)}</p>
-          <p className="mt-1 text-sm text-ink/60">{formatDate(log.date)} | {formatMinutesFromLog(log)}</p>
-        </div>
-        <StatusBadge status="Pending" />
-      </div>
-      <div className="mt-4 rounded-md border border-coyote/30 bg-field p-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-ink/50">Waiting on verification from:</p>
-        <p className={`mt-1 text-sm font-black ${getMaiDisplay(log) === 'MAI verifier not assigned' ? 'text-clay' : 'text-ink'}`}>
-          {getMaiDisplay(log)}
-        </p>
-      </div>
-    </article>
-  );
-}
-
 function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned, onSelectLog }) {
   if (log.status === 'Pending') {
     return (
@@ -487,28 +325,6 @@ function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned,
   );
 }
 
-function ReturnedLogCard({ log, onCorrect }) {
-  return (
-    <article className="rounded-md bg-paper p-4 shadow-sm">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-        <div>
-          <p className="font-bold">{formatDate(log.date)} | {formatMinutesFromLog(log)}</p>
-          <p className="mt-1 text-sm font-semibold text-clay">{log.returnReason || log.status}</p>
-          <p className="mt-1 text-sm leading-6 text-ink/65">{log.returnMessage}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onCorrect}
-          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white"
-        >
-          <RotateCcw size={17} aria-hidden="true" />
-          Fix
-        </button>
-      </div>
-    </article>
-  );
-}
-
 function RecentHeader({ children }) {
   return <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-paper/70">{children}</th>;
 }
@@ -517,26 +333,10 @@ function RecentCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
 }
 
-function getNextHeadline({ returnedLogs, savedDraft, nextRequirement, progress }) {
-  if (returnedLogs.length) return `${returnedLogs.length} log${returnedLogs.length === 1 ? '' : 's'} need correction`;
-  if (savedDraft) return 'Finish your saved training draft';
-  if (nextRequirement) return `Complete ${nextRequirement.name} (${formatMinutes(nextRequirement.remainingMinutes)} left)`;
-  return `${progress.targetBelt} requirements complete`;
-}
-
 function shortTechnique(log) {
   return log.techniqueName?.split('/')[0].trim() || log.description?.split(':').pop()?.trim() || 'Training log';
 }
 
 function formatDate(date) {
   return new Date(`${date}T12:00:00`).toLocaleDateString();
-}
-
-function formatMinutesFromLog(log) {
-  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
-}
-
-function getMaiDisplay(log) {
-  if (!log.maiNumber && !log.assignedMaiName) return 'MAI verifier not assigned';
-  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim();
 }
