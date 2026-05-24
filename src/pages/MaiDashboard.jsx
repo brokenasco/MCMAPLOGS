@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Eye, MessageSquare, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Eye, MessageSquare, PlusCircle, XCircle } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
@@ -17,6 +17,7 @@ export default function MaiDashboard() {
   const [returnReason, setReturnReason] = React.useState('Missing detail');
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
   const [actionMessage, setActionMessage] = React.useState('');
+  const [showPendingLogs, setShowPendingLogs] = React.useState(false);
   const pendingMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Pending').length;
   const verifiedMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Verified').length;
   const pendingMaiMinutes = maiSubmittedLogs
@@ -42,6 +43,10 @@ export default function MaiDashboard() {
     setSelectedLog(null);
   };
 
+  const openSubmitMyHours = () => {
+    document.getElementById('submit-my-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <PageShell
       eyebrow="MAI"
@@ -49,15 +54,46 @@ export default function MaiDashboard() {
       description={`Unit: ${maiUser.unit}. Assigned MAI number: ${maiUser.maiNumber}.`}
       actions={<RoleBadge role="MAI" />}
     >
-      <section id="pending-verification" className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm">
-        <div>
-          <p className="text-sm font-black uppercase tracking-wide text-brass">Pending Verification</p>
-          <h2 className="mt-1 text-2xl font-bold">
-            {pendingLogs.length ? `${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'} need review` : 'No logs need review'}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-paper/70">
-            Verify submitted hours or return logs that need correction. This is your main MAI action queue.
-          </p>
+      <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px] lg:items-center">
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-brass">Command Center</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <CommandDetail label="Current Belt" value={maiProgress.currentBelt} />
+              <CommandDetail label="Working Toward" value={maiProgress.targetBelt} />
+              <button
+                type="button"
+                onClick={() => setShowPendingLogs((current) => !current)}
+                className="focus-ring rounded-md border border-paper/10 bg-paper/10 p-4 text-left hover:bg-paper/15"
+              >
+                <p className="text-xs font-bold uppercase tracking-wide text-paper/55">Logs Pending Verification</p>
+                <p className="mt-1 text-2xl font-black text-paper">{pendingLogs.length}</p>
+                <p className="mt-1 text-xs font-bold text-brass">
+                  {showPendingLogs ? 'Hide pending logs' : 'Click to review'}
+                </p>
+              </button>
+            </div>
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-paper/60">
+                <span>Overall belt progress</span>
+                <span>{maiProgress.percent}% complete</span>
+              </div>
+              <div className="h-4 overflow-hidden rounded-full bg-paper/15">
+                <div className="h-full rounded-full bg-brass" style={{ width: `${maiProgress.percent}%` }} />
+              </div>
+              <p className="mt-3 text-sm leading-6 text-paper/70">
+                {formatMinutes(Math.max(maiProgress.requiredMinutes - maiProgress.completedMinutes, 0))} remaining. {Math.max(maiProgress.totalCount - maiProgress.completedCount, 0)} of {maiProgress.totalCount} techniques left.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={openSubmitMyHours}
+            className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-md bg-brass px-5 text-sm font-black text-ink shadow-sm hover:bg-brass/90"
+          >
+            <PlusCircle size={19} aria-hidden="true" />
+            Log My Hours
+          </button>
         </div>
       </section>
 
@@ -114,33 +150,39 @@ export default function MaiDashboard() {
         </section>
       ) : null}
 
-      <div className="mt-5">
-        {pendingLogs.length ? (
-          <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
-            <div className="grid gap-4">
-              {pendingLogs.map((log) => (
-                <PendingReviewCard
-                  key={log.id}
-                  log={log}
-                  onReturn={() => {
-                    setReturningLog(log);
-                    setSelectedLog(log);
-                    setReturnReason('Missing detail');
-                    setReturnMessage('Add the techniques trained, who supervised the period, and resubmit.');
-                  }}
-                  onVerify={() => handleVerify(log)}
-                  onView={() => setSelectedLog(log)}
-                />
-              ))}
-            </div>
-            <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
+      {showPendingLogs ? (
+        <section id="pending-verification" className="mt-5">
+          <div className="mb-3 flex items-center gap-2">
+            <ClipboardList size={20} className="text-clay" aria-hidden="true" />
+            <h2 className="text-xl font-bold">Pending Logs</h2>
           </div>
-        ) : (
-          <EmptyState title="No logs need review right now" text="When Belt Users submit hours to your MAI number, they will appear here." />
-        )}
-      </div>
+          {pendingLogs.length ? (
+            <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
+              <div className="grid gap-4">
+                {pendingLogs.map((log) => (
+                  <PendingReviewCard
+                    key={log.id}
+                    log={log}
+                    onReturn={() => {
+                      setReturningLog(log);
+                      setSelectedLog(log);
+                      setReturnReason('Missing detail');
+                      setReturnMessage('Add the techniques trained, who supervised the period, and resubmit.');
+                    }}
+                    onVerify={() => handleVerify(log)}
+                    onView={() => setSelectedLog(log)}
+                  />
+                ))}
+              </div>
+              <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
+            </div>
+          ) : (
+            <EmptyState title="No logs need review right now" text="When Belt Users submit hours to your MAI number, they will appear here." />
+          )}
+        </section>
+      ) : null}
 
-      <section className="mt-8">
+      <section id="submit-my-hours" className="mt-8 scroll-mt-24">
         <div className="mb-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-clay">Submit My Hours</p>
@@ -245,6 +287,15 @@ function PendingReviewCard({ log, onReturn, onVerify, onView }) {
         </div>
       </div>
     </article>
+  );
+}
+
+function CommandDetail({ label, value }) {
+  return (
+    <div className="rounded-md border border-paper/10 bg-paper/10 p-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-paper/55">{label}</p>
+      <p className="mt-1 text-2xl font-black text-paper">{value}</p>
+    </div>
   );
 }
 
