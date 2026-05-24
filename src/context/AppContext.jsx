@@ -52,7 +52,9 @@ export function AppProvider({ children }) {
   const isSupabaseEnabled = Boolean(supabase);
   const isProductionBuild = import.meta.env.PROD;
   const currentUserId = session?.user?.id;
-  const beltLogs = logs.filter((log) => log.beltUserId === currentUserId || log.marine === beltUser.name);
+  const beltLogs = currentUserId
+    ? logs.filter((log) => log.beltUserId === currentUserId)
+    : logs.filter((log) => log.marine === beltUser.name);
   const pendingLogs = logs.filter((log) => log.status === 'Pending');
   const verifiedLogs = logs.filter((log) => log.status === 'Verified');
   const returnedLogs = logs.filter((log) => log.status === 'Returned');
