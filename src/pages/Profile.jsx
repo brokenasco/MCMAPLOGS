@@ -6,6 +6,7 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { getTargetBelt } from '../data/mcmapReference.js';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function Profile() {
   const user = isMai ? maiUser : beltUser;
   const isOwnerMai = displaySubscription.status === 'owner_free' || profile?.mai_number === 'MAI-0000' || profile?.account_type === 'Owner/Developer';
   const accountRoleLabel = isOwnerMai ? 'Owner/Developer' : isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const currentBelt = profile?.belt_level || user.beltLevel || beltUser.beltLevel;
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
   const [editMessage, setEditMessage] = React.useState('');
@@ -94,7 +96,8 @@ export default function Profile() {
           <p className="mt-1 text-sm text-ink/60">{user.email}</p>
           <dl className="mt-6 space-y-4">
             <Detail label="Unit" value={user.unit || maiUser.unit} />
-            <Detail label="Belt level" value={profile?.belt_level || beltUser.beltLevel} />
+            <Detail label="Belt level" value={currentBelt} />
+            <Detail label="Current target" value={getTargetBelt(currentBelt)} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
             <Detail
               label="Subscription Type"

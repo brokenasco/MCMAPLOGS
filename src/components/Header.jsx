@@ -13,7 +13,6 @@ const roleLinks = {
   ],
   MAI: [
     { label: 'Dashboard', to: '/mai/dashboard' },
-    { label: 'Submit Hours', to: '/mai/submit' },
     { label: 'Logbook', to: '/logbook/verified' },
     { label: 'Messages', to: '/messages' },
     { label: 'Profile', to: '/profile' },

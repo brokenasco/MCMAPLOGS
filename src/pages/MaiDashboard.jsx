@@ -1,6 +1,5 @@
 import React from 'react';
-import { CheckCircle2, ClipboardList, Eye, MessageSquare, PlusCircle, XCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CheckCircle2, Eye, MessageSquare, XCircle } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
@@ -9,6 +8,7 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress } from '../lib/mcmapProgress.js';
+import { SubmitMaiHoursForm } from './SubmitMaiHours.jsx';
 
 export default function MaiDashboard() {
   const { maiUser, pendingLogs, verifiedLogs, returnedLogs, maiSubmittedLogs, verifyLog, returnLog } = useApp();
@@ -52,33 +52,14 @@ export default function MaiDashboard() {
       description={`Unit: ${maiUser.unit}. Assigned MAI number: ${maiUser.maiNumber}.`}
       actions={<RoleBadge role="MAI" />}
     >
-      <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-brass">Logs</p>
-            <h2 className="mt-1 text-2xl font-bold">
-              {pendingLogs.length ? `${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'} need review` : 'No logs need review'}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-paper/70">
-              Verify submitted hours, return logs that need correction, and submit your own training hours from this dashboard.
-            </p>
-          </div>
-          <Link
-            to="#pending-verification"
-            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-brass px-4 text-sm font-bold text-ink"
-          >
-            <ClipboardList size={18} aria-hidden="true" />
-            Review pending logs
-          </Link>
-        </div>
-      </section>
-
-      <section id="pending-verification" className="mt-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+      <section id="pending-verification" className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm">
         <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-clay">Pending Logs</p>
-          <h2 className="mt-1 text-xl font-bold">Review submitted logs</h2>
-          <p className="mt-1 text-sm text-ink/65">
-            New submissions appear here while they are Pending. Verify good logs or return anything that needs correction.
+          <p className="text-sm font-black uppercase tracking-wide text-brass">Pending Verification</p>
+          <h2 className="mt-1 text-2xl font-bold">
+            {pendingLogs.length ? `${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'} need review` : 'No logs need review'}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-paper/70">
+            Verify submitted hours or return logs that need correction. This is your main MAI action queue.
           </p>
         </div>
       </section>
@@ -168,7 +149,7 @@ export default function MaiDashboard() {
       </div>
 
       <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+        <div className="mb-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-clay">Submit My Hours</p>
             <h2 className="mt-1 text-xl font-bold">Track your own MCMAP training</h2>
@@ -176,14 +157,8 @@ export default function MaiDashboard() {
               Submit your training hours to another MAI for verification. MAIs cannot verify their own hours.
             </p>
           </div>
-          <Link
-            to="/mai/submit"
-            className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-          >
-            <PlusCircle size={18} aria-hidden="true" />
-            Submit Hours
-          </Link>
         </div>
+        <SubmitMaiHoursForm embedded />
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <MiniSummary label="Current target belt" value={maiProgress.targetBelt} />
           <MiniSummary
@@ -206,6 +181,30 @@ export default function MaiDashboard() {
           <StatCard label="My pending MAI hours" value={pendingMaiSubmissions} detail="Awaiting verification" />
           <StatCard label="My verified MAI hours" value={verifiedMaiSubmissions} detail="Approved by another MAI" />
           <StatCard label="Awaiting my MAI review" value={pendingLogs.length} detail="Belt User or MAI submissions" />
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+        <p className="text-sm font-bold uppercase tracking-wide text-clay">Recent Activity</p>
+        <h2 className="mt-1 text-xl font-bold">Latest MAI log activity</h2>
+        <div className="mt-4 grid gap-3">
+          {getRecentActivity([...pendingLogs, ...verifiedLogs, ...returnedLogs, ...maiSubmittedLogs]).length ? (
+            getRecentActivity([...pendingLogs, ...verifiedLogs, ...returnedLogs, ...maiSubmittedLogs]).map((log) => (
+              <div key={`${log.id}-${log.status}`} className="rounded-md border border-coyote/30 bg-field p-4">
+                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="font-bold text-ink">{log.marine || log.submitterName || 'Training log'}</p>
+                    <p className="mt-1 text-sm text-ink/60">
+                      {shortTechnique(log)} | {log.targetBelt || log.beltLevel} | {formatLogTime(log)}
+                    </p>
+                  </div>
+                  <p className="text-sm font-black text-ink">{log.status}</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm leading-6 text-ink/65">No recent activity yet.</p>
+          )}
         </div>
       </section>
     </PageShell>
@@ -290,4 +289,12 @@ function getLogMinutes(log) {
 
 function shortTechnique(log) {
   return log.techniqueName?.split('/')[0].trim() || log.description?.split(':').pop()?.trim() || 'Training log';
+}
+
+function getRecentActivity(logs) {
+  return logs
+    .filter(Boolean)
+    .slice()
+    .sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date))
+    .slice(0, 5);
 }

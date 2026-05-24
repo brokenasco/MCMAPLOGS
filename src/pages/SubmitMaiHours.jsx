@@ -20,6 +20,18 @@ function buildInitialForm(currentBelt) {
 }
 
 export default function SubmitMaiHours() {
+  return (
+    <PageShell
+      eyebrow="MAI"
+      title="Submit MCMAP Hours"
+      description="Select the technique or tie-in you trained. Your hours must be verified by another MAI before they count."
+    >
+      <SubmitMaiHoursForm />
+    </PageShell>
+  );
+}
+
+export function SubmitMaiHoursForm({ embedded = false }) {
   const { maiUser, profile, maiDirectory, submitMaiLog } = useApp();
   const currentBelt = profile?.belt_level || maiUser?.beltLevel || 'Black 1st Degree';
   const targetOptions = React.useMemo(() => getTargetBeltOptions(currentBelt), [currentBelt]);
@@ -109,14 +121,17 @@ export default function SubmitMaiHours() {
     }
   };
 
+  const formClassName = embedded
+    ? 'rounded-md border border-coyote/35 bg-field p-5 sm:p-6'
+    : 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6';
+  const successClassName = embedded
+    ? 'rounded-md border border-olive/20 bg-olive/10 p-5'
+    : 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm';
+
   return (
-    <PageShell
-      eyebrow="MAI"
-      title="Submit MCMAP Hours"
-      description="Select the technique or tie-in you trained. Your hours must be verified by another MAI before they count."
-    >
+    <>
       {submittedLog ? (
-        <section className="mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm">
+        <section className={successClassName}>
           <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-olive">
             <CheckCircle2 size={18} aria-hidden="true" />
             Submitted
@@ -148,7 +163,7 @@ export default function SubmitMaiHours() {
           </div>
         </section>
       ) : (
-        <form className="mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6" onSubmit={submit}>
+        <form className={formClassName} onSubmit={submit}>
           {errors.form ? (
             <div className="mb-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
               {errors.form}
@@ -290,7 +305,7 @@ export default function SubmitMaiHours() {
           </div>
         </form>
       )}
-    </PageShell>
+    </>
   );
 }
 
