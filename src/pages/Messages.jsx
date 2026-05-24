@@ -184,9 +184,9 @@ function formatDateTime(date) {
 
 function isUnreadForCurrentUser(message, { currentUserId, currentMessageKey }) {
   const readKeys = [currentUserId, currentMessageKey].filter(Boolean);
-  const sentByCurrentUser =
-    (currentUserId && message.senderId === currentUserId) ||
-    (currentMessageKey && message.senderKey === currentMessageKey);
+  const recipientIsCurrentUser =
+    (currentUserId && message.recipientId === currentUserId) ||
+    (currentMessageKey && message.recipientKey === currentMessageKey);
 
-  return !sentByCurrentUser && !readKeys.some((key) => message.readBy?.includes(key));
+  return Boolean(recipientIsCurrentUser) && !readKeys.some((key) => message.readBy?.includes(key));
 }

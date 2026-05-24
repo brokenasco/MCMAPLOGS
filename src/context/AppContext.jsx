@@ -96,7 +96,7 @@ export function AppProvider({ children }) {
       total +
       thread.messages.filter(
         (message) =>
-          !isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) &&
+          isMessageForCurrentUser(message, { currentUserId, currentMessageKey }) &&
           !isMessageReadByCurrentUser(message, currentReadKeys)
       ).length,
     0
@@ -893,6 +893,8 @@ export function AppProvider({ children }) {
       id: crypto.randomUUID?.() || `msg-${Date.now()}`,
       senderKey: currentMessageKey,
       senderId: currentUserId,
+      recipientKey: getThreadRecipientKey({ activeRole, thread }),
+      recipientId: getThreadRecipientId({ activeRole, thread }),
       senderName: activeRole === 'MAI' ? maiUser.name : beltUser.name,
       body: cleanBody,
       createdAt: new Date().toISOString(),
@@ -943,6 +945,8 @@ export function AppProvider({ children }) {
         thread_id: savedThread.id,
         sender_id: currentUserId,
         sender_key: currentMessageKey,
+        recipient_id: getThreadRecipientId({ activeRole, thread: savedThread }),
+        recipient_key: getThreadRecipientKey({ activeRole, thread: savedThread }),
         sender_name: activeRole === 'MAI' ? maiUser.name : beltUser.name,
         body: cleanBody,
         read_by: currentReadKeys
@@ -977,7 +981,7 @@ export function AppProvider({ children }) {
 
     const unreadMessages = thread.messages.filter(
       (message) =>
-        !isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) &&
+        isMessageForCurrentUser(message, { currentUserId, currentMessageKey }) &&
         !isMessageReadByCurrentUser(message, currentReadKeys)
     );
     if (!unreadMessages.length) return;
@@ -993,7 +997,7 @@ export function AppProvider({ children }) {
           ? {
               ...currentThread,
               messages: currentThread.messages.map((message) =>
-                isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) ||
+                !isMessageForCurrentUser(message, { currentUserId, currentMessageKey }) ||
                 isMessageReadByCurrentUser(message, currentReadKeys)
                   ? message
                   : { ...message, readBy: mergeReadKeys(message.readBy, currentReadKeys) }
@@ -1178,26 +1182,49 @@ function buildLogHistoryEntry(action, previousLog, updates) {
 }
 
 function mapThreadFromSupabase(row) {
-  return {
+  const thread = {
     id: row.id,
+    beltUserId: row.belt_user_id,
     beltUserName: row.belt_user_name,
     beltUserEmail: row.belt_user_email,
     maiName: row.mai_name,
-    maiNumber: row.mai_number,
-    messages: (row.messages || []).map(mapMessageFromSupabase).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    maiNumber: row.mai_number
+  };
+
+  return {
+    ...thread,
+    messages: (row.messages || [])
+      .map((message) => mapMessageFromSupabase(message, thread))
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
   };
 }
 
-function mapMessageFromSupabase(row) {
+function mapMessageFromSupabase(row, thread = null) {
+  const inferredRecipientKey = thread
+    ? row.sender_key === thread.maiNumber
+      ? thread.beltUserEmail
+      : thread.maiNumber
+    : null;
+  const inferredRecipientId = thread && inferredRecipientKey === thread.beltUserEmail ? thread.beltUserId : null;
+
   return {
     id: row.id,
     senderId: row.sender_id,
     senderKey: row.sender_key,
+    recipientId: row.recipient_id || inferredRecipientId,
+    recipientKey: row.recipient_key || inferredRecipientKey,
     senderName: row.sender_name,
     body: row.body,
     createdAt: row.created_at,
     readBy: row.read_by || []
   };
+}
+
+function isMessageForCurrentUser(message, { currentUserId, currentMessageKey }) {
+  return Boolean(
+    (currentUserId && message.recipientId === currentUserId) ||
+    (currentMessageKey && message.recipientKey === currentMessageKey)
+  );
 }
 
 function isMessageFromCurrentUser(message, { currentUserId, currentMessageKey }) {
@@ -1213,6 +1240,14 @@ function isMessageReadByCurrentUser(message, currentReadKeys) {
 
 function mergeReadKeys(existingKeys = [], nextKeys = []) {
   return [...new Set([...existingKeys, ...nextKeys].filter(Boolean))];
+}
+
+function getThreadRecipientKey({ activeRole, thread }) {
+  return activeRole === 'MAI' ? thread.beltUserEmail : thread.maiNumber;
+}
+
+function getThreadRecipientId({ activeRole, thread }) {
+  return activeRole === 'MAI' ? thread.beltUserId || null : null;
 }
 
 function mergeMaiDirectory(directory) {

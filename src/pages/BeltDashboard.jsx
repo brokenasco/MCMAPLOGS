@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Eye, Lock, Medal, Pencil, PlusCircle, RotateCcw, Target, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, Eye, Lock, Medal, Pencil, PlusCircle, RotateCcw, Target, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
@@ -125,13 +125,24 @@ export default function BeltDashboard() {
                 {pendingLogs.length} logs pending MAI review. {returnedLogs.length} returned logs need correction.
               </p>
             </div>
-            <Link
-              to={returnedLogs.length ? '#returned-logs' : '/belt/submit'}
-              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-            >
-              <ArrowRight size={17} aria-hidden="true" />
-              Continue Progress
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/belt/submit"
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+              >
+                <PlusCircle size={17} aria-hidden="true" />
+                Log Hours
+              </Link>
+              {returnedLogs.length ? (
+                <a
+                  href="#returned-logs"
+                  className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90"
+                >
+                  <RotateCcw size={17} aria-hidden="true" />
+                  Fix Returned Log
+                </a>
+              ) : null}
+            </div>
           </div>
         </div>
 
