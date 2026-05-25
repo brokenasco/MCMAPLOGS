@@ -130,7 +130,7 @@ export default function Subscription() {
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$5.83/mo' : displaySubscription.monthlyDisplay}</p>
+              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$69.99/year' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
                 {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$69.99 billed annually after 3-month trial' : 'no payment required'}
               </p>
@@ -201,7 +201,7 @@ export default function Subscription() {
           <StatCard label="MAI trial" value="3 months" detail="Free before annual billing" />
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
-          <StatCard label="MAI offer" value="$5.83/mo" detail="Billed annually after trial" />
+          <StatCard label="MAI offer" value="$69.99/year" detail="Billed annually after trial" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
             <StatCard

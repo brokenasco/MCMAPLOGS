@@ -19,7 +19,7 @@ const subscriptionPlans = {
     requiresPayment: true,
     annualPrice: 69.99,
     trialDays: 90,
-    monthlyDisplay: '$5.83/mo billed annually'
+    monthlyDisplay: '$69.99/year'
   }
 };
 
