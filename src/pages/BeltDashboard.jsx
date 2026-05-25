@@ -13,7 +13,7 @@ import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 import { SubmitHoursForm } from './SubmitHours.jsx';
 
 export default function BeltDashboard() {
-  const { advanceBeltUser, beltUser, beltLogs, cancelPendingLog, findMaiByNumber, profile, resubmitLog, updatePendingLog } = useApp();
+  const { activeRole, advanceBeltUser, beltUser, beltLogs, cancelPendingLog, findMaiByNumber, loading, profile, resubmitLog, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
@@ -38,12 +38,18 @@ export default function BeltDashboard() {
   }, [currentBelt, progress.targetBelt]);
 
   React.useEffect(() => {
-    if (!hasCompletedTargetBelt || !completionAlertKey) return;
-    if (localStorage.getItem(completionAlertKey)) return;
+    if (loading || activeRole !== 'Belt User') return;
+    if (!hasCompletedTargetBelt || !completionAlertKey) {
+      setShowCompletionAlert(false);
+      return;
+    }
+    if (localStorage.getItem(completionAlertKey) === 'dismissed') {
+      setShowCompletionAlert(false);
+      return;
+    }
 
     setShowCompletionAlert(true);
-    localStorage.setItem(completionAlertKey, 'shown');
-  }, [completionAlertKey, hasCompletedTargetBelt]);
+  }, [activeRole, completionAlertKey, hasCompletedTargetBelt, loading]);
 
   const openPendingEdit = (log) => {
     setSelectedLog(log);
@@ -176,12 +182,15 @@ export default function BeltDashboard() {
               <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Completion</p>
               <h2 className="mt-1 text-xl font-bold text-ink">Congratulations!</h2>
               <p className="mt-2 text-sm leading-6 text-ink/70">
-                You have completed the required logged hours for your current belt. It is time to schedule your belt advancement test with an MAI.
+                Congratulations! You have completed the required verified hours for your current target belt. It is time to schedule your belt advancement test with an MAI.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setShowCompletionAlert(false)}
+              onClick={() => {
+                if (completionAlertKey) localStorage.setItem(completionAlertKey, 'dismissed');
+                setShowCompletionAlert(false);
+              }}
               className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink"
             >
               Dismiss
