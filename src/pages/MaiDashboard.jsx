@@ -3,7 +3,6 @@ import { CheckCircle2, ClipboardList, Eye, MessageSquare, PlusCircle, XCircle } 
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
-import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
@@ -18,19 +17,9 @@ export default function MaiDashboard() {
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
   const [actionMessage, setActionMessage] = React.useState('');
   const [activePanel, setActivePanel] = React.useState('pending');
-  const pendingMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Pending').length;
-  const verifiedMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Verified').length;
-  const pendingMaiMinutes = maiSubmittedLogs
-    .filter((log) => log.status === 'Pending')
-    .reduce((total, log) => total + getLogMinutes(log), 0);
   const currentBelt = profile?.belt_level || maiUser.beltLevel;
   const progressUser = React.useMemo(() => ({ ...maiUser, beltLevel: currentBelt }), [currentBelt, maiUser]);
   const maiProgress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: maiSubmittedLogs }), [maiSubmittedLogs, progressUser]);
-  const lastSubmittedMaiLog = React.useMemo(() => {
-    return maiSubmittedLogs
-      .slice()
-      .sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date))[0];
-  }, [maiSubmittedLogs]);
 
   const handleVerify = async (log) => {
     await verifyLog(log.id);
@@ -186,32 +175,6 @@ export default function MaiDashboard() {
         </section>
       )}
 
-      <section className="mt-8">
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <MiniSummary label="Current target belt" value={maiProgress.targetBelt} />
-          <MiniSummary
-            label="Last submitted MAI log"
-            value={lastSubmittedMaiLog ? formatDate(lastSubmittedMaiLog.date) : 'None yet'}
-            detail={lastSubmittedMaiLog ? shortTechnique(lastSubmittedMaiLog) : 'Submit your first MAI training log'}
-          />
-          <MiniSummary label="Hours pending verification" value={formatMinutes(pendingMaiMinutes)} detail={`${pendingMaiSubmissions} pending ${pendingMaiSubmissions === 1 ? 'log' : 'logs'}`} />
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="mb-3 text-xl font-bold">Other Statistics / Career Data</h2>
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatCard label="Pending logs" value={pendingLogs.length} detail="Need review" />
-          <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
-          <StatCard label="Returned logs" value={returnedLogs.length} detail="Need follow-up" />
-          <StatCard label="Assigned MAI number" value={maiUser.maiNumber} detail="Used to verify logbooks" />
-          <StatCard label="My submitted hours" value={maiSubmittedLogs.length} detail="Sent to other MAIs" />
-          <StatCard label="My pending MAI hours" value={pendingMaiSubmissions} detail="Awaiting verification" />
-          <StatCard label="My verified MAI hours" value={verifiedMaiSubmissions} detail="Approved by another MAI" />
-          <StatCard label="Awaiting my MAI review" value={pendingLogs.length} detail="Belt User or MAI submissions" />
-        </div>
-      </section>
-
       <section className="mt-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
         <p className="text-sm font-bold uppercase tracking-wide text-clay">Recent Activity</p>
         <h2 className="mt-1 text-xl font-bold">Latest MAI log activity</h2>
@@ -320,16 +283,6 @@ function ReviewDetail({ label, value }) {
     <div>
       <dt className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</dt>
       <dd className="mt-1 text-sm font-semibold leading-6 text-ink">{value}</dd>
-    </div>
-  );
-}
-
-function MiniSummary({ label, value, detail }) {
-  return (
-    <div className="rounded-md border border-coyote/30 bg-field p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</p>
-      <p className="mt-1 text-lg font-black text-ink">{value}</p>
-      {detail ? <p className="mt-1 text-sm leading-5 text-ink/60">{detail}</p> : null}
     </div>
   );
 }

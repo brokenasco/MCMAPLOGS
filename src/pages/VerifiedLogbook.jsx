@@ -1,12 +1,11 @@
 import React from 'react';
-import { Download, Eye, Medal, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock3, Download, Eye, Filter, Medal, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import LogEditForm from '../components/LogEditForm.jsx';
 import LogTable from '../components/LogTable.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
-import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, buildTotalMcmapHours, sumLogMinutes } from '../lib/mcmapProgress.js';
@@ -33,9 +32,13 @@ export default function VerifiedLogbook() {
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
+  const [activeMaiView, setActiveMaiView] = React.useState('entries');
+  const [showMaiDateFilter, setShowMaiDateFilter] = React.useState(false);
+  const [maiDateRange, setMaiDateRange] = React.useState({ from: '', to: '' });
   const visibleLogs = activeRole === 'MAI' ? mergeLogs(assignedMaiLogs, maiSubmittedLogs) : beltLogs;
   const filteredLogs = activeFilter === 'All' ? visibleLogs : visibleLogs.filter((log) => log.status === activeFilter);
   const verifiedLogs = visibleLogs.filter((log) => log.status === 'Verified');
+  const dateFilteredVerifiedLogs = filterByVerifiedDate(verifiedLogs, maiDateRange);
   const isMai = activeRole === 'MAI';
   const emptyTitle = isMai && activeFilter === 'Verified' ? 'No verified logs yet' : `No ${activeFilter.toLowerCase()} logs`;
   const emptyText = isMai && activeFilter === 'Verified'
@@ -82,6 +85,28 @@ export default function VerifiedLogbook() {
     window.print();
   };
 
+  const exportMaiCsv = () => {
+    const rows = [
+      ['Marine', 'Date Verified', 'Training Date', 'Time', 'Belt Level', 'Class Code', 'Verified By'],
+      ...dateFilteredVerifiedLogs.map((log) => [
+        log.marine,
+        formatVerifiedDate(log),
+        log.date,
+        formatLogTime(log),
+        log.targetBelt || log.beltLevel,
+        log.classCode || 'General',
+        log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : ''
+      ])
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'mai-verified-logbook.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const openPendingEdit = (log) => {
     setSelectedLog(log);
     setEditingLog(log);
@@ -116,6 +141,25 @@ export default function VerifiedLogbook() {
     setSelectedLog(null);
     setActionMessage('Pending log canceled.');
   };
+
+  if (isMai) {
+    return (
+      <MaiLogbook
+        activeView={activeMaiView}
+        dateRange={maiDateRange}
+        logs={dateFilteredVerifiedLogs}
+        onDateRangeChange={setMaiDateRange}
+        onExport={exportMaiCsv}
+        onPrint={printLogbook}
+        onSelectLog={setSelectedLog}
+        onToggleFilter={() => setShowMaiDateFilter((current) => !current)}
+        onViewChange={setActiveMaiView}
+        selectedLog={selectedLog}
+        showDateFilter={showMaiDateFilter}
+        totalVisibleLogs={visibleLogs.length}
+      />
+    );
+  }
 
   return (
     <PageShell
@@ -238,6 +282,208 @@ function TotalMcmapHoursPanel({ summary }) {
       </div>
     </section>
   );
+}
+
+function MaiLogbook({
+  activeView,
+  dateRange,
+  logs,
+  onDateRangeChange,
+  onExport,
+  onPrint,
+  onSelectLog,
+  onToggleFilter,
+  onViewChange,
+  selectedLog,
+  showDateFilter,
+  totalVisibleLogs
+}) {
+  const verifiedMinutes = sumLogMinutes(logs);
+  const latestVerified = logs
+    .slice()
+    .sort((a, b) => new Date(getVerifiedDateValue(b) || 0) - new Date(getVerifiedDateValue(a) || 0))[0];
+
+  return (
+    <PageShell
+      eyebrow="Records"
+      title="Logbook"
+      description="Review MAI verified entries, verified hour totals, and historical MCMAP training records."
+    >
+      <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
+        <p className="text-sm font-black uppercase tracking-wide text-brass">Logbook Command Center</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <CommandActionButton
+            active={activeView === 'entries'}
+            detail={`${logs.length} verified ${logs.length === 1 ? 'entry' : 'entries'}`}
+            icon={CheckCircle2}
+            label="Verified Entries"
+            onClick={() => onViewChange('entries')}
+          />
+          <CommandActionButton
+            active={activeView === 'hours'}
+            detail={formatMinutes(verifiedMinutes)}
+            icon={Clock3}
+            label="Verified Hours"
+            onClick={() => onViewChange('hours')}
+          />
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-clay">
+              {activeView === 'entries' ? 'Verified Entries' : 'Verified Hours'}
+            </p>
+            <h2 className="mt-1 text-xl font-bold text-ink">
+              {activeView === 'entries' ? 'Verified log history' : 'Verified hour totals'}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-ink/65">
+              Filtered by date verified. Pending and returned logs are not included.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={onToggleFilter}
+              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white"
+            >
+              <Filter size={17} aria-hidden="true" />
+              Filter
+            </button>
+            <button
+              type="button"
+              onClick={onExport}
+              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/40 bg-field px-4 text-sm font-bold text-ink"
+            >
+              <Download size={17} aria-hidden="true" />
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={onPrint}
+              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/40 bg-field px-4 text-sm font-bold text-ink"
+            >
+              <Printer size={17} aria-hidden="true" />
+              Print
+            </button>
+          </div>
+        </div>
+
+        {showDateFilter ? (
+          <div className="mt-5 grid gap-4 rounded-md border border-coyote/30 bg-field p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label className="block">
+              <span className="text-sm font-bold text-ink">From date verified</span>
+              <input
+                type="date"
+                value={dateRange.from}
+                onChange={(event) => onDateRangeChange((current) => ({ ...current, from: event.target.value }))}
+                className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-ink">To date verified</span>
+              <input
+                type="date"
+                value={dateRange.to}
+                onChange={(event) => onDateRangeChange((current) => ({ ...current, to: event.target.value }))}
+                className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => onDateRangeChange({ from: '', to: '' })}
+              className="focus-ring h-11 rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink"
+            >
+              Clear
+            </button>
+          </div>
+        ) : null}
+      </section>
+
+      {activeView === 'entries' ? (
+        <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_380px]">
+          {logs.length ? <MaiVerifiedEntriesTable logs={logs} onSelectLog={onSelectLog} /> : <EmptyState title="No verified entries found" text="Change the date filter or verify logs to see entries here." />}
+          <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
+        </section>
+      ) : (
+        <section className="mt-6 grid gap-4 md:grid-cols-4">
+          <StatCard label="Verified hours" value={formatMinutes(verifiedMinutes)} detail="Within selected date range" />
+          <StatCard label="Verified entries" value={logs.length} detail="Signed records" />
+          <StatCard label="All records" value={totalVisibleLogs} detail="Historical records" />
+          <StatCard label="Latest verified" value={latestVerified ? formatVerifiedDate(latestVerified) : 'None'} detail={latestVerified ? shortTechnique(latestVerified) : 'No verified entries yet'} />
+        </section>
+      )}
+    </PageShell>
+  );
+}
+
+function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`focus-ring flex min-h-24 items-center justify-between gap-4 rounded-md border p-4 text-left transition ${
+        active
+          ? 'border-brass bg-brass text-ink shadow-sm'
+          : 'border-paper/10 bg-paper/10 text-paper hover:bg-paper/15'
+      }`}
+    >
+      <span>
+        <span className={`block text-xs font-bold uppercase tracking-wide ${active ? 'text-ink/65' : 'text-paper/55'}`}>
+          {label}
+        </span>
+        <span className="mt-1 block text-lg font-black">{detail}</span>
+      </span>
+      <Icon size={22} aria-hidden="true" />
+    </button>
+  );
+}
+
+function MaiVerifiedEntriesTable({ logs, onSelectLog }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-coyote/25">
+          <thead className="bg-charcoal text-paper">
+            <tr>
+              <LogbookHeader>Marine</LogbookHeader>
+              <LogbookHeader>Date Verified</LogbookHeader>
+              <LogbookHeader>Training Date</LogbookHeader>
+              <LogbookHeader>Class</LogbookHeader>
+              <LogbookHeader>Time</LogbookHeader>
+              <LogbookHeader>Belt</LogbookHeader>
+              <LogbookHeader>Verified By</LogbookHeader>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-coyote/20">
+            {logs.map((log) => (
+              <tr key={log.id} className="cursor-pointer align-top hover:bg-field/70" onClick={() => onSelectLog(log)}>
+                <LogbookCell className="font-semibold text-ink">{log.marine}</LogbookCell>
+                <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
+                <LogbookCell>{formatDate(log.date)}</LogbookCell>
+                <LogbookCell>
+                  <span className="font-semibold text-ink">{log.classCode || 'General'}</span>
+                  {log.techniqueName ? <span className="mt-1 block max-w-72 text-xs leading-5 text-ink/55">{log.techniqueName}</span> : null}
+                </LogbookCell>
+                <LogbookCell>{formatLogTime(log)}</LogbookCell>
+                <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
+                <LogbookCell>{log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified'}</LogbookCell>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function LogbookHeader({ children }) {
+  return <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-paper/70">{children}</th>;
+}
+
+function LogbookCell({ children, className = '' }) {
+  return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
 }
 
 function mergeLogs(...logGroups) {
@@ -405,4 +651,34 @@ function formatMaiDisplay(log) {
 
 function formatLogTime(log) {
   return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function filterByVerifiedDate(logs, dateRange) {
+  const hasFilter = Boolean(dateRange.from || dateRange.to);
+  if (!hasFilter) return logs;
+
+  return logs.filter((log) => {
+    const verifiedDate = getVerifiedDateValue(log);
+    if (!verifiedDate) return false;
+    if (dateRange.from && verifiedDate < dateRange.from) return false;
+    if (dateRange.to && verifiedDate > dateRange.to) return false;
+    return true;
+  });
+}
+
+function getVerifiedDateValue(log) {
+  return log.verifiedAt || '';
+}
+
+function formatVerifiedDate(log) {
+  const verifiedDate = getVerifiedDateValue(log);
+  return verifiedDate ? formatDate(verifiedDate) : 'Not recorded';
+}
+
+function formatDate(date) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString();
+}
+
+function shortTechnique(log) {
+  return log.techniqueName?.split('/')[0].trim() || log.description?.split(':').pop()?.trim() || 'Training log';
 }
