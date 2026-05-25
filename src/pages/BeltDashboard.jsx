@@ -13,12 +13,16 @@ import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 import { SubmitHoursForm } from './SubmitHours.jsx';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, profile, resubmitLog, updatePendingLog } = useApp();
+  const { advanceBeltUser, beltUser, beltLogs, cancelPendingLog, findMaiByNumber, profile, resubmitLog, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
   const [activePanel, setActivePanel] = React.useState('pending');
+  const [showCompletionAlert, setShowCompletionAlert] = React.useState(false);
+  const [showAdvancementModal, setShowAdvancementModal] = React.useState(false);
+  const [testBlocked, setTestBlocked] = React.useState(false);
+  const [isAdvancingBelt, setIsAdvancingBelt] = React.useState(false);
   const currentBelt = profile?.belt_level || beltUser.beltLevel;
   const progressUser = React.useMemo(() => ({ ...beltUser, beltLevel: currentBelt }), [beltUser, currentBelt]);
   const progress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: beltLogs }), [beltLogs, progressUser]);
@@ -26,6 +30,20 @@ export default function BeltDashboard() {
   const pendingLogs = beltLogs.filter((log) => log.status === 'Pending');
   const recentLogs = beltLogs.slice(0, 6);
   const hasNoLogs = beltLogs.length === 0;
+  const hasCompletedTargetBelt = isTargetBeltComplete(progress);
+  const completionAlertKey = getCompletionAlertKey({ beltUser, currentBelt, profile, targetBelt: progress.targetBelt });
+
+  React.useEffect(() => {
+    setTestBlocked(false);
+  }, [currentBelt, progress.targetBelt]);
+
+  React.useEffect(() => {
+    if (!hasCompletedTargetBelt || !completionAlertKey) return;
+    if (localStorage.getItem(completionAlertKey)) return;
+
+    setShowCompletionAlert(true);
+    localStorage.setItem(completionAlertKey, 'shown');
+  }, [completionAlertKey, hasCompletedTargetBelt]);
 
   const openPendingEdit = (log) => {
     setSelectedLog(log);
@@ -60,6 +78,41 @@ export default function BeltDashboard() {
     await cancelPendingLog(log.id);
     setSelectedLog(null);
     setActionMessage('Pending log canceled.');
+  };
+
+  const openLogMyHours = () => {
+    setSelectedLog(null);
+
+    if (hasCompletedTargetBelt) {
+      setShowAdvancementModal(true);
+      return;
+    }
+
+    setTestBlocked(false);
+    setActivePanel('log');
+  };
+
+  const handlePassedAdvancementTest = async () => {
+    setIsAdvancingBelt(true);
+    setActionMessage('');
+
+    try {
+      await advanceBeltUser(progress.targetBelt);
+      setShowAdvancementModal(false);
+      setTestBlocked(false);
+      setActivePanel('log');
+      setActionMessage(`Congratulations. Your account belt has been updated to ${progress.targetBelt}. You can now log hours toward the next belt.`);
+    } catch (error) {
+      setActionMessage(error.message || 'Your belt could not be updated. Try again.');
+    } finally {
+      setIsAdvancingBelt(false);
+    }
+  };
+
+  const handleFailedAdvancementTest = () => {
+    setShowAdvancementModal(false);
+    setTestBlocked(true);
+    setActivePanel('log');
   };
 
   return (
@@ -99,7 +152,7 @@ export default function BeltDashboard() {
             detail="Submit MCMAP hours"
             icon={PlusCircle}
             label="Log My Hours"
-            onClick={() => setActivePanel('log')}
+            onClick={openLogMyHours}
           />
         </div>
         <div className="mt-6">
@@ -115,6 +168,36 @@ export default function BeltDashboard() {
           </p>
         </div>
       </section>
+
+      {showCompletionAlert ? (
+        <section className="mt-6 rounded-md border border-brass/35 bg-brass/15 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Completion</p>
+              <h2 className="mt-1 text-xl font-bold text-ink">Congratulations!</h2>
+              <p className="mt-2 text-sm leading-6 text-ink/70">
+                You have completed the required logged hours for your current belt. It is time to schedule your belt advancement test with an MAI.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCompletionAlert(false)}
+              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink"
+            >
+              Dismiss
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {showAdvancementModal ? (
+        <AdvancementModal
+          isSubmitting={isAdvancingBelt}
+          targetBelt={progress.targetBelt}
+          onNo={handleFailedAdvancementTest}
+          onYes={handlePassedAdvancementTest}
+        />
+      ) : null}
 
       {activePanel === 'pending' ? (
         <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_380px]">
@@ -142,7 +225,17 @@ export default function BeltDashboard() {
               Your target belt is calculated from your current belt rank. Submitted logs stay pending until an MAI verifies them.
             </p>
           </div>
-          <SubmitHoursForm embedded />
+          {testBlocked ? (
+            <section className="rounded-md border border-clay/30 bg-clay/10 p-5 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-wide text-clay">Advancement test required</p>
+              <h2 className="mt-1 text-xl font-bold text-ink">Belt test needed before logging next-belt hours</h2>
+              <p className="mt-2 text-sm leading-6 text-ink/70">
+                You must complete your belt advancement test before you are able to submit hours toward your next belt. Please schedule your belt test with an MAI.
+              </p>
+            </section>
+          ) : (
+            <SubmitHoursForm embedded />
+          )}
         </section>
       )}
 
@@ -213,6 +306,38 @@ function NewUserStart({ currentBelt, targetBelt }) {
         Log Hours
       </Link>
     </section>
+  );
+}
+
+function AdvancementModal({ isSubmitting, onNo, onYes, targetBelt }) {
+  return (
+    <div className="fixed inset-0 z-30 grid place-items-center bg-ink/50 px-4 py-8">
+      <section className="w-full max-w-lg rounded-md border border-coyote/35 bg-paper p-6 shadow-panel">
+        <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Advancement Test</p>
+        <h2 className="mt-2 text-2xl font-bold text-ink">Have you successfully passed your {targetBelt} advancement test?</h2>
+        <p className="mt-3 text-sm leading-6 text-ink/65">
+          Passing the test updates your current belt and unlocks hour logging toward your next belt.
+        </p>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onNo}
+            disabled={isSubmitting}
+            className="focus-ring inline-flex h-11 items-center justify-center rounded-md border border-ink/15 bg-field px-5 text-sm font-bold text-ink"
+          >
+            No
+          </button>
+          <button
+            type="button"
+            onClick={onYes}
+            disabled={isSubmitting}
+            className="focus-ring inline-flex h-11 items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? 'Updating...' : 'Yes'}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -456,4 +581,18 @@ function formatLogTime(log) {
 function formatMaiDisplay(log) {
   if (!log.maiNumber && !log.assignedMaiName) return 'MAI verifier not assigned';
   return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim();
+}
+
+function isTargetBeltComplete(progress) {
+  return Boolean(
+    !progress.hasReachedBlackBelt &&
+    progress.requiredMinutes > 0 &&
+    progress.completedMinutes >= progress.requiredMinutes
+  );
+}
+
+function getCompletionAlertKey({ beltUser, currentBelt, profile, targetBelt }) {
+  const accountKey = profile?.id || profile?.email || beltUser.email || beltUser.name;
+  if (!accountKey || !targetBelt) return '';
+  return `mcmap-belt-completion-alert:${accountKey}:${currentBelt}:${targetBelt}`;
 }

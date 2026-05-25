@@ -852,6 +852,57 @@ export function AppProvider({ children }) {
     return { emailConfirmationRequired };
   };
 
+  const advanceBeltUser = async (nextBelt) => {
+    const advancedAt = new Date().toISOString();
+
+    if (!supabase || !currentUserId) {
+      const updatedBeltUser = {
+        ...beltUser,
+        beltLevel: nextBelt
+      };
+      setBeltUser(updatedBeltUser);
+      setProfile((currentProfile) => currentProfile
+        ? { ...currentProfile, belt_level: nextBelt, belt_advanced_at: advancedAt }
+        : currentProfile
+      );
+      return updatedBeltUser;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        belt_level: nextBelt,
+        belt_advanced_at: advancedAt
+      })
+      .eq('id', currentUserId);
+
+    if (error) {
+      if (!error.message?.toLowerCase().includes('belt_advanced_at')) {
+        setAuthMessage(error.message);
+        throw error;
+      }
+
+      const { error: fallbackError } = await supabase
+        .from('profiles')
+        .update({ belt_level: nextBelt })
+        .eq('id', currentUserId);
+
+      if (fallbackError) {
+        setAuthMessage(fallbackError.message);
+        throw fallbackError;
+      }
+    }
+
+    const updatedProfile = {
+      ...profile,
+      belt_level: nextBelt,
+      belt_advanced_at: advancedAt
+    };
+
+    applyProfile(updatedProfile);
+    return updatedProfile;
+  };
+
   const createMockAccount = ({ role, name, email, beltLevel, maiNumber }) => {
     setActiveRole(role);
 
@@ -1117,6 +1168,7 @@ export function AppProvider({ children }) {
     signOut,
     deleteAccount,
     updateAccount,
+    advanceBeltUser,
     refreshAccount,
     getFreshAccessToken
   };
