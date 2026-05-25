@@ -3,6 +3,7 @@ import { additionalMcmapHoursTarget, beltProgression, getBeltRequirements, getTa
 export function buildBeltProgress({ beltUser, logs }) {
   const currentBelt = normalizeBeltName(beltUser.beltLevel);
   const targetBelt = getTargetBelt(currentBelt);
+  const hasReachedBlackBelt = currentBelt === 'Black 1st Degree';
   const requirements = getBeltRequirements(targetBelt);
   const completedByRequirement = new Map();
 
@@ -33,12 +34,13 @@ export function buildBeltProgress({ beltUser, logs }) {
   return {
     currentBelt,
     targetBelt,
+    hasReachedBlackBelt,
     rows,
     requiredMinutes,
     completedMinutes,
     completedCount: rows.filter((row) => row.isComplete).length,
     totalCount: rows.length,
-    percent: requiredMinutes ? Math.round((completedMinutes / requiredMinutes) * 100) : 0
+    percent: hasReachedBlackBelt ? 100 : requiredMinutes ? Math.round((completedMinutes / requiredMinutes) * 100) : 0
   };
 }
 
@@ -63,13 +65,14 @@ export function buildTotalMcmapHours({ beltUser, logs }) {
 
 export function getBeltTrail(currentBelt, progressPercent) {
   const normalizedCurrentBelt = normalizeBeltName(currentBelt);
+  const hasReachedBlackBelt = normalizedCurrentBelt === 'Black 1st Degree';
   const targetBelt = getTargetBelt(normalizedCurrentBelt);
   const currentBeltIndex = beltProgression.indexOf(normalizedCurrentBelt);
   const targetBeltIndex = beltProgression.indexOf(targetBelt);
 
   return beltProgression.map((belt, index) => {
     if (index <= currentBeltIndex) {
-      return { belt, status: 'Complete', label: 'Complete' };
+      return { belt, status: 'Complete', label: hasReachedBlackBelt && belt === 'Black 1st Degree' ? '100%' : 'Complete' };
     }
 
     if (index === targetBeltIndex) {

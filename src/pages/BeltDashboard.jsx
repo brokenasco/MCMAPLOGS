@@ -71,6 +71,15 @@ export default function BeltDashboard() {
     >
       {hasNoLogs ? <NewUserStart currentBelt={currentBelt} targetBelt={progress.targetBelt} /> : null}
 
+      <section className="mb-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+        <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {beltTrail.map((item) => (
+            <BeltTrailItem key={item.belt} item={item} />
+          ))}
+        </div>
+      </section>
+
       <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">Progress Command Center</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -102,7 +111,7 @@ export default function BeltDashboard() {
             <div className="h-full rounded-full bg-brass" style={{ width: `${progress.percent}%` }} />
           </div>
           <p className="mt-3 text-sm leading-6 text-paper/70">
-            {formatMinutes(Math.max(progress.requiredMinutes - progress.completedMinutes, 0))} remaining. {Math.max(progress.totalCount - progress.completedCount, 0)} of {progress.totalCount} techniques left.
+            <ProgressMessage progress={progress} />
           </p>
         </div>
       </section>
@@ -136,15 +145,6 @@ export default function BeltDashboard() {
           <SubmitHoursForm embedded />
         </section>
       )}
-
-      <section className="mt-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {beltTrail.map((item) => (
-            <BeltTrailItem key={item.belt} item={item} />
-          ))}
-        </div>
-      </section>
 
       {actionMessage ? (
         <div className="mt-8 rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold text-olive">
@@ -245,6 +245,14 @@ function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
       <Icon size={22} aria-hidden="true" />
     </button>
   );
+}
+
+function ProgressMessage({ progress }) {
+  if (progress.hasReachedBlackBelt) {
+    return 'Congratulations on achieving Black 1st Degree. Continue logging your MCMAP hours to maintain growth, sharpen your skills, and keep leading from the front.';
+  }
+
+  return `${formatMinutes(Math.max(progress.requiredMinutes - progress.completedMinutes, 0))} remaining. ${Math.max(progress.totalCount - progress.completedCount, 0)} of ${progress.totalCount} techniques left.`;
 }
 
 function BeltTrailItem({ item }) {

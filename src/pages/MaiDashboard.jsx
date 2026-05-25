@@ -6,7 +6,7 @@ import PageShell from '../components/PageShell.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
-import { buildBeltProgress } from '../lib/mcmapProgress.js';
+import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 import { SubmitMaiHoursForm } from './SubmitMaiHours.jsx';
 
 export default function MaiDashboard() {
@@ -20,6 +20,7 @@ export default function MaiDashboard() {
   const currentBelt = profile?.belt_level || maiUser.beltLevel;
   const progressUser = React.useMemo(() => ({ ...maiUser, beltLevel: currentBelt }), [currentBelt, maiUser]);
   const maiProgress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: maiSubmittedLogs }), [maiSubmittedLogs, progressUser]);
+  const beltTrail = React.useMemo(() => getBeltTrail(currentBelt, maiProgress.percent), [currentBelt, maiProgress.percent]);
 
   const handleVerify = async (log) => {
     await verifyLog(log.id);
@@ -41,6 +42,15 @@ export default function MaiDashboard() {
       description={`Unit: ${maiUser.unit}. Assigned MAI number: ${maiUser.maiNumber}.`}
       actions={<RoleBadge role="MAI" />}
     >
+      <section className="mb-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+        <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {beltTrail.map((item) => (
+            <BeltTrailItem key={item.belt} item={item} />
+          ))}
+        </div>
+      </section>
+
       <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">Command Center</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -72,7 +82,7 @@ export default function MaiDashboard() {
             <div className="h-full rounded-full bg-brass" style={{ width: `${maiProgress.percent}%` }} />
           </div>
           <p className="mt-3 text-sm leading-6 text-paper/70">
-            {formatMinutes(Math.max(maiProgress.requiredMinutes - maiProgress.completedMinutes, 0))} remaining. {Math.max(maiProgress.totalCount - maiProgress.completedCount, 0)} of {maiProgress.totalCount} techniques left.
+            <ProgressMessage progress={maiProgress} />
           </p>
         </div>
       </section>
@@ -275,6 +285,33 @@ function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
       </span>
       <Icon size={22} aria-hidden="true" />
     </button>
+  );
+}
+
+function ProgressMessage({ progress }) {
+  if (progress.hasReachedBlackBelt) {
+    return 'Congratulations on achieving Black 1st Degree. Continue logging your MCMAP hours to maintain growth, sharpen your skills, and keep leading from the front.';
+  }
+
+  return `${formatMinutes(Math.max(progress.requiredMinutes - progress.completedMinutes, 0))} remaining. ${Math.max(progress.totalCount - progress.completedCount, 0)} of ${progress.totalCount} techniques left.`;
+}
+
+function BeltTrailItem({ item }) {
+  const styles = {
+    Complete: 'border-olive/30 bg-olive/10 text-olive',
+    Current: 'border-brass/50 bg-brass/15 text-ink',
+    Locked: 'border-coyote/35 bg-field text-ink/55'
+  };
+  const Icon = item.status === 'Complete' ? CheckCircle2 : item.status === 'Current' ? Clock3 : XCircle;
+
+  return (
+    <div className={`rounded-md border p-4 ${styles[item.status]}`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-black">{item.belt}</p>
+        <Icon size={18} aria-hidden="true" />
+      </div>
+      <p className="mt-2 text-xs font-bold uppercase tracking-wide">{item.label}</p>
+    </div>
   );
 }
 
