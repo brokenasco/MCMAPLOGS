@@ -111,8 +111,8 @@ export default function Subscription() {
       title={isUpgradeFlow ? 'Upgrade to MAI' : 'Manage Subscription'}
       description={
         isUpgradeFlow
-          ? 'Keep the same account and upgrade to MAI when you are ready to verify and sign logbooks.'
-          : 'Belt User accounts are free. MAIs use the annual plan for verification and logbook signing.'
+          ? 'Upgrade when you are ready to save time, verify records, reduce paperwork, and manage Marines from one account.'
+          : 'Belt User accounts are free. MAIs use the annual plan to protect records, speed up verification, and export official documentation.'
       }
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
@@ -125,8 +125,8 @@ export default function Subscription() {
                 {isMai
                   ? isOwnerMai
                     ? 'Owner MAI access is unlocked without Stripe billing.'
-                    : 'MAI accounts can review, return, and sign submitted MCMAP logbooks.'
-                  : 'Your Belt User account stays free. Upgrade this same account to MAI when you complete checkout.'}
+                    : 'MAI accounts save time by reviewing, returning, signing, and exporting MCMAP records from one organized workspace.'
+                  : 'Your Belt User account stays free. Upgrade this same account to MAI when you are ready to reduce paperwork and verify Marine training records.'}
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
@@ -144,16 +144,16 @@ export default function Subscription() {
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
-                ? 'Start the 3-month MAI trial to convert this account to MAI after checkout. Belt User access remains free until you upgrade.'
+                ? 'Start the 3-month MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
                 : isOwnerMai
                 ? 'This owner MAI account can use verification tools for free. No checkout or Stripe billing is required.'
                 : isTrialingMai
-                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year.`
+                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year for verification, exports, and reduced administrative work.`
                   : isActiveMai
                   ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your annual MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
                   : isCanceledMai
                   ? 'This MAI subscription is canceled. Start checkout again to unlock verification tools.'
-                  : 'Start the 3-month free trial to unlock MAI verification and signing tools. Annual billing is $84.99 after the trial.'}
+                  : 'Start the 3-month free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $84.99 after the trial.'}
             </p>
           </div>
 
@@ -199,6 +199,8 @@ export default function Subscription() {
         <aside className="grid gap-4">
           <StatCard label="Belt User accounts" value="Free" detail="No payment required" />
           <StatCard label="MAI trial" value="3 months" detail="Free before annual billing" />
+          <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
+          <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
           <StatCard label="MAI offer" value="$7/mo" detail="Billed annually after trial" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
@@ -212,7 +214,7 @@ export default function Subscription() {
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout starts a 3-month MAI free trial. When Stripe confirms checkout, this account becomes an MAI account and MAI tools unlock while the subscription is trialing or active.
+        Stripe Checkout starts a 3-month MAI free trial. When Stripe confirms checkout, this account becomes an MAI account and unlocks faster verification, protected records, and exportable documentation while the subscription is trialing or active.
       </div>
     </PageShell>
   );
