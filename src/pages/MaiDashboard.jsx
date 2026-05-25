@@ -11,7 +11,7 @@ import { buildBeltProgress } from '../lib/mcmapProgress.js';
 import { SubmitMaiHoursForm } from './SubmitMaiHours.jsx';
 
 export default function MaiDashboard() {
-  const { maiUser, pendingLogs, verifiedLogs, returnedLogs, maiSubmittedLogs, verifyLog, returnLog } = useApp();
+  const { maiUser, pendingLogs, profile, verifiedLogs, returnedLogs, maiSubmittedLogs, verifyLog, returnLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [returningLog, setReturningLog] = React.useState(null);
   const [returnReason, setReturnReason] = React.useState('Missing detail');
@@ -23,7 +23,9 @@ export default function MaiDashboard() {
   const pendingMaiMinutes = maiSubmittedLogs
     .filter((log) => log.status === 'Pending')
     .reduce((total, log) => total + getLogMinutes(log), 0);
-  const maiProgress = React.useMemo(() => buildBeltProgress({ beltUser: maiUser, logs: maiSubmittedLogs }), [maiSubmittedLogs, maiUser]);
+  const currentBelt = profile?.belt_level || maiUser.beltLevel;
+  const progressUser = React.useMemo(() => ({ ...maiUser, beltLevel: currentBelt }), [currentBelt, maiUser]);
+  const maiProgress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: maiSubmittedLogs }), [maiSubmittedLogs, progressUser]);
   const lastSubmittedMaiLog = React.useMemo(() => {
     return maiSubmittedLogs
       .slice()

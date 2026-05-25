@@ -5,8 +5,8 @@ import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes, getBeltRequirements, getTargetBelt, getTargetBeltOptions, isAdditionalMcmapTarget } from '../data/mcmapReference.js';
 
-function buildInitialForm(beltUser, savedDraft) {
-  const targetBelt = getTargetBeltOptions(beltUser.beltLevel)[0] || getTargetBelt(beltUser.beltLevel);
+function buildInitialForm(currentBelt, savedDraft) {
+  const targetBelt = getTargetBeltOptions(currentBelt)[0] || getTargetBelt(currentBelt);
   const requirements = getBeltRequirements(targetBelt);
 
   return {
@@ -34,14 +34,15 @@ export default function SubmitHours() {
 }
 
 export function SubmitHoursForm({ embedded = false }) {
-  const { beltUser, beltLogs, submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft } = useApp();
-  const [form, setForm] = React.useState(() => buildInitialForm(beltUser, savedDraft));
+  const { beltUser, beltLogs, submitLog, savedDraft, findMaiByNumber, profile, saveDraft, clearDraft } = useApp();
+  const currentBelt = profile?.belt_level || beltUser.beltLevel;
+  const [form, setForm] = React.useState(() => buildInitialForm(currentBelt, savedDraft));
   const [errors, setErrors] = React.useState({});
   const [submittedLog, setSubmittedLog] = React.useState(null);
   const [draftMessage, setDraftMessage] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const targetOptions = React.useMemo(() => getTargetBeltOptions(beltUser.beltLevel), [beltUser.beltLevel]);
-  const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : targetOptions[0] || getTargetBelt(beltUser.beltLevel);
+  const targetOptions = React.useMemo(() => getTargetBeltOptions(currentBelt), [currentBelt]);
+  const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : targetOptions[0] || getTargetBelt(currentBelt);
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
   const previousMais = React.useMemo(() => getPreviousMais(beltLogs, findMaiByNumber), [beltLogs, findMaiByNumber]);
@@ -121,7 +122,7 @@ export function SubmitHoursForm({ embedded = false }) {
 
       setSubmittedLog(savedLog);
       clearDraft();
-      setForm(buildInitialForm(beltUser, null));
+      setForm(buildInitialForm(currentBelt, null));
     } finally {
       setIsSubmitting(false);
     }
@@ -133,10 +134,10 @@ export function SubmitHoursForm({ embedded = false }) {
   };
 
   const formClassName = embedded
-    ? 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6'
+    ? 'w-full rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6'
     : 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6';
   const successClassName = embedded
-    ? 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm'
+    ? 'w-full rounded-md border border-olive/20 bg-paper p-6 shadow-sm'
     : 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm';
 
   return (
@@ -212,7 +213,7 @@ export function SubmitHoursForm({ embedded = false }) {
                 )}
               </div>
               <p className="mt-2 text-sm leading-6 text-ink/60">
-                Current belt: {beltUser.beltLevel}. {isAdditionalMcmapTarget(targetBelt) ? 'Additional verified hours count toward your total MCMAP hours.' : 'This is locked one belt above your current rank.'}
+                Current belt: {currentBelt}. {isAdditionalMcmapTarget(targetBelt) ? 'Additional verified hours count toward your total MCMAP hours.' : 'This is locked one belt above your current rank.'}
               </p>
               <ErrorText message={errors.targetBelt} />
             </label>

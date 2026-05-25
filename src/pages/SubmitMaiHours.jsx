@@ -122,10 +122,10 @@ export function SubmitMaiHoursForm({ embedded = false }) {
   };
 
   const formClassName = embedded
-    ? 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6'
+    ? 'w-full rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6'
     : 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6';
   const successClassName = embedded
-    ? 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm'
+    ? 'w-full rounded-md border border-olive/20 bg-paper p-6 shadow-sm'
     : 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm';
 
   return (

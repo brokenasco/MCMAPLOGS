@@ -13,14 +13,16 @@ import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 import { SubmitHoursForm } from './SubmitHours.jsx';
 
 export default function BeltDashboard() {
-  const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, resubmitLog, updatePendingLog } = useApp();
+  const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, profile, resubmitLog, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
   const [activePanel, setActivePanel] = React.useState('pending');
-  const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
-  const beltTrail = React.useMemo(() => getBeltTrail(beltUser.beltLevel, progress.percent), [beltUser.beltLevel, progress.percent]);
+  const currentBelt = profile?.belt_level || beltUser.beltLevel;
+  const progressUser = React.useMemo(() => ({ ...beltUser, beltLevel: currentBelt }), [beltUser, currentBelt]);
+  const progress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: beltLogs }), [beltLogs, progressUser]);
+  const beltTrail = React.useMemo(() => getBeltTrail(currentBelt, progress.percent), [currentBelt, progress.percent]);
   const pendingLogs = beltLogs.filter((log) => log.status === 'Pending');
   const recentLogs = beltLogs.slice(0, 6);
   const hasNoLogs = beltLogs.length === 0;
@@ -67,7 +69,7 @@ export default function BeltDashboard() {
       description="Track your current belt progress and recent MCMAP training records."
       actions={<RoleBadge role="Belt User" />}
     >
-      {hasNoLogs ? <NewUserStart beltUser={beltUser} targetBelt={progress.targetBelt} /> : null}
+      {hasNoLogs ? <NewUserStart currentBelt={currentBelt} targetBelt={progress.targetBelt} /> : null}
 
       <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">Progress Command Center</p>
@@ -153,7 +155,7 @@ export default function BeltDashboard() {
       {editingLog ? (
         <div className="mt-8">
           <LogEditForm
-            beltUser={beltUser}
+            beltUser={progressUser}
             findMaiByNumber={findMaiByNumber}
             log={editingLog}
             mode={editingMode}
@@ -196,12 +198,12 @@ export default function BeltDashboard() {
   );
 }
 
-function NewUserStart({ beltUser, targetBelt }) {
+function NewUserStart({ currentBelt, targetBelt }) {
   return (
     <section className="mb-6 rounded-md border border-brass/30 bg-brass/10 p-5">
       <h2 className="text-2xl font-bold text-ink">Welcome to your MCMAP Logbook</h2>
       <p className="mt-2 text-sm leading-6 text-ink/70">
-        Current belt: {beltUser.beltLevel}. Your first target is {targetBelt}. Start by submitting your first training session.
+        Current belt: {currentBelt}. Your first target is {targetBelt}. Start by submitting your first training session.
       </p>
       <Link
         to="/belt/submit"

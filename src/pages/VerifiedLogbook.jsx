@@ -21,8 +21,10 @@ export default function VerifiedLogbook() {
     beltUser,
     cancelPendingLog,
     findMaiByNumber,
+    maiUser,
     maiSubmittedLogs,
     pendingLogs,
+    profile,
     resubmitLog,
     updatePendingLog
   } = useApp();
@@ -40,8 +42,12 @@ export default function VerifiedLogbook() {
     ? 'New Belt User submissions appear under Pending first. Once you sign and verify them, they move here.'
     : 'Change the filter or submit a new log to see records here.';
   const verifiedMinutes = sumLogMinutes(verifiedLogs);
-  const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
-  const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
+  const currentAccount = isMai ? maiUser : beltUser;
+  const currentBelt = profile?.belt_level || currentAccount.beltLevel;
+  const progressLogs = isMai ? maiSubmittedLogs : beltLogs;
+  const progressUser = React.useMemo(() => ({ ...currentAccount, beltLevel: currentBelt }), [currentAccount, currentBelt]);
+  const progress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: progressLogs }), [progressLogs, progressUser]);
+  const mcmapHourSummary = React.useMemo(() => buildTotalMcmapHours({ beltUser: progressUser, logs: progressLogs }), [progressLogs, progressUser]);
 
   React.useEffect(() => {
     setActiveFilter(activeRole === 'MAI' ? 'Pending' : 'Verified');
@@ -137,7 +143,7 @@ export default function VerifiedLogbook() {
       {!isMai && editingLog ? (
         <div className="mb-8">
           <LogEditForm
-            beltUser={beltUser}
+            beltUser={progressUser}
             findMaiByNumber={findMaiByNumber}
             log={editingLog}
             mode={editingMode}
