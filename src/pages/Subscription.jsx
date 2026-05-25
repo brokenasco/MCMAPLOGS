@@ -201,7 +201,6 @@ export default function Subscription() {
           <StatCard label="MAI trial" value="60 days" detail="Free before annual billing" />
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
-          <StatCard label="MAI offer" value="$69.99/year" detail="Billed annually after trial" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
             <StatCard
@@ -226,11 +225,9 @@ function formatDate(dateString) {
 
 function getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai }) {
   if (!isMai) return 'Free Belt User account';
-  if (isOwnerMai) return 'Owner MAI access';
-  if (isTrialingMai) return '60-day free trial active';
-  if (isActiveMai && displaySubscription.cancelAtPeriodEnd) return 'Active until cancellation date';
-  if (isActiveMai) return 'Paid annual subscription active';
-  if (isCanceledMai) return 'MAI subscription canceled';
-  if (displaySubscription.status === 'past_due') return 'Payment past due';
-  return 'MAI billing required';
+  if (isOwnerMai) return 'Full Access';
+  if (isTrialingMai) return 'Free Trial';
+  if (isActiveMai && !displaySubscription.cancelAtPeriodEnd) return 'Full Access';
+  if (isCanceledMai || displaySubscription.cancelAtPeriodEnd || displaySubscription.status === 'past_due') return 'Restricted Access';
+  return 'Restricted Access';
 }

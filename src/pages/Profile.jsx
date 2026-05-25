@@ -1,6 +1,6 @@
 import React from 'react';
-import { AlertTriangle, CreditCard, Pencil, Save, Trash2, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangle, Pencil, Save, Trash2, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -100,18 +100,8 @@ export default function Profile() {
             <Detail label="Current target" value={getTargetBelt(currentBelt)} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
             <Detail
-              label="Subscription Type"
-              value={
-                activeRole === 'MAI'
-                  ? displaySubscription.status === 'owner_free'
-                    ? 'Owner MAI account'
-                    : displaySubscription.status === 'trialing'
-                    ? '60-day free trial active'
-                    : displaySubscription.status === 'active'
-                    ? '$69.99/year active'
-                    : '60-day trial checkout required'
-                  : 'Free Belt User account'
-              }
+              label="Subscription Status"
+              value={getSubscriptionAccessLabel({ activeRole, displaySubscription })}
             />
           </dl>
 
@@ -232,27 +222,18 @@ export default function Profile() {
             <StatCard label="Pending queue" value={pendingLogs.length} detail="MAI review" />
             <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
           </div>
-
-          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-            <h2 className="text-xl font-bold">{isMai ? 'Manage Subscription' : 'Upgrade to MAI'}</h2>
-            <p className="mt-2 text-sm leading-6 text-ink/65">
-              {isMai
-                ? 'Review MAI trial status, annual billing, and Stripe checkout from one place.'
-                : 'When you become an MAI, use this same account to start the MAI trial and unlock verification tools after checkout.'}
-            </p>
-            <Link
-              to="/profile/subscription"
-              className="focus-ring mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
-            >
-              <CreditCard size={17} aria-hidden="true" />
-              {isMai ? 'Manage Subscription' : 'Upgrade to MAI'}
-            </Link>
-          </div>
-
         </section>
       </div>
     </PageShell>
   );
+}
+
+function getSubscriptionAccessLabel({ activeRole, displaySubscription }) {
+  if (activeRole !== 'MAI') return 'Free Account';
+  if (displaySubscription.status === 'owner_free') return 'Full Access';
+  if (displaySubscription.status === 'trialing') return 'Free Trial';
+  if (displaySubscription.status === 'active' && !displaySubscription.cancelAtPeriodEnd) return 'Full Access';
+  return 'Restricted Access';
 }
 
 function Detail({ label, value }) {
