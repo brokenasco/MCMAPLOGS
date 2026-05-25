@@ -87,7 +87,7 @@ export default function Landing() {
             <p className="text-sm font-black uppercase tracking-wide text-clay">Simple pricing</p>
             <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs get 3 months free.</h2>
             <p className="mt-1 text-sm leading-6 text-ink/70">
-              MAI access is $84.99/year after the trial for verification tools, exportable records, and reduced admin work.
+              MAI access is $69.99/year after the trial for verification tools, exportable records, and reduced admin work.
             </p>
           </div>
           <Link

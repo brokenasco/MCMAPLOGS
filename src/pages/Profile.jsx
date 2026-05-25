@@ -108,7 +108,7 @@ export default function Profile() {
                     : displaySubscription.status === 'trialing'
                     ? '3-month free trial active'
                     : displaySubscription.status === 'active'
-                    ? '$84.99/year active'
+                    ? '$69.99/year active'
                     : '3-month trial checkout required'
                   : 'Free Belt User account'
               }

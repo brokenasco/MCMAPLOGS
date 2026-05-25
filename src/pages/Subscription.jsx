@@ -130,9 +130,9 @@ export default function Subscription() {
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$7/mo' : displaySubscription.monthlyDisplay}</p>
+              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$5.83/mo' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
-                {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$84.99 billed annually after 3-month trial' : 'no payment required'}
+                {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$69.99 billed annually after 3-month trial' : 'no payment required'}
               </p>
             </div>
           </div>
@@ -148,12 +148,12 @@ export default function Subscription() {
                 : isOwnerMai
                 ? 'This owner MAI account can use verification tools for free. No checkout or Stripe billing is required.'
                 : isTrialingMai
-                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $84.99 per year for verification, exports, and reduced administrative work.`
+                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $69.99 per year for verification, exports, and reduced administrative work.`
                   : isActiveMai
                   ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your annual MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
                   : isCanceledMai
                   ? 'This MAI subscription is canceled. Start checkout again to unlock verification tools.'
-                  : 'Start the 3-month free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $84.99 after the trial.'}
+                  : 'Start the 3-month free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $69.99 after the trial.'}
             </p>
           </div>
 
@@ -201,7 +201,7 @@ export default function Subscription() {
           <StatCard label="MAI trial" value="3 months" detail="Free before annual billing" />
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
-          <StatCard label="MAI offer" value="$7/mo" detail="Billed annually after trial" />
+          <StatCard label="MAI offer" value="$5.83/mo" detail="Billed annually after trial" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
           {isMai ? (
             <StatCard
