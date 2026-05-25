@@ -70,7 +70,7 @@ export default function Landing() {
             Digitally log, verify, and export MCMAP training hours.
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-paper/75">
-            Less paperwork. Faster verification. Protected records for Marines, MAIs, belt advancement, JEPES, and FITREP documentation.
+            Less paperwork. Faster verification. Protected records for MAIs and Belt users.
           </p>
 
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
@@ -87,7 +87,7 @@ export default function Landing() {
             <p className="text-sm font-black uppercase tracking-wide text-clay">Simple pricing</p>
             <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs get 60 days free.</h2>
             <p className="mt-1 text-sm leading-6 text-ink/70">
-              MAI access is $69.99/year after the trial for verification tools, exportable records, and reduced admin work.
+              MAI access is $69.99/year after the trial for verification tools, exportable records, and reduced admin work. That is only $5.83 a month!
             </p>
           </div>
           <Link

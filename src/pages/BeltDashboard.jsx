@@ -15,13 +15,12 @@ import { SubmitHoursForm } from './SubmitHours.jsx';
 const advancementReminderText = 'You must pass your belt advancement test to update your current belt and unlock the ability to log hours towards your next belt.';
 
 export default function BeltDashboard() {
-  const { activeRole, advanceBeltUser, beltUser, beltLogs, cancelPendingLog, findMaiByNumber, loading, profile, resubmitLog, updatePendingLog } = useApp();
+  const { advanceBeltUser, beltUser, beltLogs, cancelPendingLog, findMaiByNumber, profile, resubmitLog, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
   const [activePanel, setActivePanel] = React.useState('pending');
-  const [showCompletionAlert, setShowCompletionAlert] = React.useState(false);
   const [showAdvancementModal, setShowAdvancementModal] = React.useState(false);
   const [testBlocked, setTestBlocked] = React.useState(false);
   const [isAdvancingBelt, setIsAdvancingBelt] = React.useState(false);
@@ -33,26 +32,11 @@ export default function BeltDashboard() {
   const recentLogs = beltLogs.slice(0, 6);
   const hasNoLogs = beltLogs.length === 0;
   const hasCompletedTargetBelt = isTargetBeltComplete(progress);
-  const completionAlertKey = getCompletionAlertKey({ beltUser, currentBelt, profile, targetBelt: progress.targetBelt });
   const shouldShowCompletionBanner = hasCompletedTargetBelt && !progress.hasReachedBlackBelt;
 
   React.useEffect(() => {
     setTestBlocked(false);
   }, [currentBelt, progress.targetBelt]);
-
-  React.useEffect(() => {
-    if (loading || activeRole !== 'Belt User') return;
-    if (!hasCompletedTargetBelt || !completionAlertKey) {
-      setShowCompletionAlert(false);
-      return;
-    }
-    if (localStorage.getItem(completionAlertKey) === 'dismissed') {
-      setShowCompletionAlert(false);
-      return;
-    }
-
-    setShowCompletionAlert(true);
-  }, [activeRole, completionAlertKey, hasCompletedTargetBelt, loading]);
 
   const openPendingEdit = (log) => {
     setSelectedLog(log);
@@ -181,31 +165,6 @@ export default function BeltDashboard() {
           </p>
         </div>
       </section>
-
-      {showCompletionAlert ? (
-        <section className="mt-6 rounded-md border border-brass/35 bg-brass/15 p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Completion</p>
-              <h2 className="mt-1 text-xl font-bold text-ink">Congratulations!</h2>
-              <p className="mt-2 text-sm leading-6 text-ink/70">
-                Congratulations! You have completed the required verified hours for your current target belt. It is time to schedule your belt advancement test with an MAI.
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-ink/80">{advancementReminderText}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (completionAlertKey) localStorage.setItem(completionAlertKey, 'dismissed');
-                setShowCompletionAlert(false);
-              }}
-              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink"
-            >
-              Dismiss
-            </button>
-          </div>
-        </section>
-      ) : null}
 
       {showAdvancementModal ? (
         <AdvancementModal
@@ -621,10 +580,4 @@ function isTargetBeltComplete(progress) {
     progress.requiredMinutes > 0 &&
     progress.completedMinutes >= progress.requiredMinutes
   );
-}
-
-function getCompletionAlertKey({ beltUser, currentBelt, profile, targetBelt }) {
-  const accountKey = profile?.id || profile?.email || beltUser.email || beltUser.name;
-  if (!accountKey || !targetBelt) return '';
-  return `mcmap-belt-completion-alert:${accountKey}:${currentBelt}:${targetBelt}`;
 }
