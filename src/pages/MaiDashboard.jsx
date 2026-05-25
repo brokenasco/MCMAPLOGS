@@ -17,7 +17,7 @@ export default function MaiDashboard() {
   const [returnReason, setReturnReason] = React.useState('Missing detail');
   const [returnMessage, setReturnMessage] = React.useState('Add the techniques trained, who supervised the period, and resubmit.');
   const [actionMessage, setActionMessage] = React.useState('');
-  const [showPendingLogs, setShowPendingLogs] = React.useState(false);
+  const [activePanel, setActivePanel] = React.useState('pending');
   const pendingMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Pending').length;
   const verifiedMaiSubmissions = maiSubmittedLogs.filter((log) => log.status === 'Verified').length;
   const pendingMaiMinutes = maiSubmittedLogs
@@ -43,10 +43,6 @@ export default function MaiDashboard() {
     setSelectedLog(null);
   };
 
-  const openSubmitMyHours = () => {
-    document.getElementById('submit-my-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <PageShell
       eyebrow="MAI"
@@ -55,45 +51,38 @@ export default function MaiDashboard() {
       actions={<RoleBadge role="MAI" />}
     >
       <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
-        <div className="grid gap-6 lg:grid-cols-[1fr_300px] lg:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-brass">Command Center</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <CommandDetail label="Current Belt" value={maiProgress.currentBelt} />
-              <CommandDetail label="Working Toward" value={maiProgress.targetBelt} />
-              <button
-                type="button"
-                onClick={() => setShowPendingLogs((current) => !current)}
-                className="focus-ring rounded-md border border-paper/10 bg-paper/10 p-4 text-left hover:bg-paper/15"
-              >
-                <p className="text-xs font-bold uppercase tracking-wide text-paper/55">Logs Pending Verification</p>
-                <p className="mt-1 text-2xl font-black text-paper">{pendingLogs.length}</p>
-                <p className="mt-1 text-xs font-bold text-brass">
-                  {showPendingLogs ? 'Hide pending logs' : 'Click to review'}
-                </p>
-              </button>
-            </div>
-            <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-paper/60">
-                <span>Overall belt progress</span>
-                <span>{maiProgress.percent}% complete</span>
-              </div>
-              <div className="h-4 overflow-hidden rounded-full bg-paper/15">
-                <div className="h-full rounded-full bg-brass" style={{ width: `${maiProgress.percent}%` }} />
-              </div>
-              <p className="mt-3 text-sm leading-6 text-paper/70">
-                {formatMinutes(Math.max(maiProgress.requiredMinutes - maiProgress.completedMinutes, 0))} remaining. {Math.max(maiProgress.totalCount - maiProgress.completedCount, 0)} of {maiProgress.totalCount} techniques left.
-              </p>
-            </div>
+        <p className="text-sm font-black uppercase tracking-wide text-brass">Command Center</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <CommandDetail label="Current Belt" value={maiProgress.currentBelt} />
+          <CommandDetail label="Working Toward" value={maiProgress.targetBelt} />
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <CommandActionButton
+            active={activePanel === 'pending'}
+            detail={`${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'}`}
+            icon={ClipboardList}
+            label="Logs Pending Verification"
+            onClick={() => setActivePanel('pending')}
+          />
+          <CommandActionButton
+            active={activePanel === 'log'}
+            detail="Submit MCMAP hours"
+            icon={PlusCircle}
+            label="Log My Hours"
+            onClick={() => setActivePanel('log')}
+          />
+        </div>
+        <div className="mt-6">
+          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-paper/60">
+            <span>Overall belt progress</span>
+            <span>{maiProgress.percent}% complete</span>
           </div>
-          <button
-            type="button"
-            onClick={openSubmitMyHours}
-            className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-md bg-brass px-5 text-sm font-black text-ink shadow-sm hover:bg-brass/90"
-          >
-            <PlusCircle size={19} aria-hidden="true" />
-            Log My Hours
-          </button>
+          <div className="h-4 overflow-hidden rounded-full bg-paper/15">
+            <div className="h-full rounded-full bg-brass" style={{ width: `${maiProgress.percent}%` }} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-paper/70">
+            {formatMinutes(Math.max(maiProgress.requiredMinutes - maiProgress.completedMinutes, 0))} remaining. {Math.max(maiProgress.totalCount - maiProgress.completedCount, 0)} of {maiProgress.totalCount} techniques left.
+          </p>
         </div>
       </section>
 
@@ -150,7 +139,7 @@ export default function MaiDashboard() {
         </section>
       ) : null}
 
-      {showPendingLogs ? (
+      {activePanel === 'pending' ? (
         <section id="pending-verification" className="mt-5">
           <div className="mb-3 flex items-center gap-2">
             <ClipboardList size={20} className="text-clay" aria-hidden="true" />
@@ -180,19 +169,22 @@ export default function MaiDashboard() {
             <EmptyState title="No logs need review right now" text="When Belt Users submit hours to your MAI number, they will appear here." />
           )}
         </section>
-      ) : null}
-
-      <section id="submit-my-hours" className="mt-8 scroll-mt-24">
-        <div className="mb-5">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-clay">Submit My Hours</p>
-            <h2 className="mt-1 text-xl font-bold">Track your own MCMAP training</h2>
-            <p className="mt-2 text-sm leading-6 text-ink/65">
-              Submit your training hours to another MAI for verification. MAIs cannot verify their own hours.
-            </p>
+      ) : (
+        <section id="submit-my-hours" className="mt-8 scroll-mt-24">
+          <div className="mb-5">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-clay">Log My Hours</p>
+              <h2 className="mt-1 text-xl font-bold">Track your own MCMAP training</h2>
+              <p className="mt-2 text-sm leading-6 text-ink/65">
+                Submit your training hours to another MAI for verification. MAIs cannot verify their own hours.
+              </p>
+            </div>
           </div>
-        </div>
-        <SubmitMaiHoursForm embedded />
+          <SubmitMaiHoursForm embedded />
+        </section>
+      )}
+
+      <section className="mt-8">
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <MiniSummary label="Current target belt" value={maiProgress.targetBelt} />
           <MiniSummary
@@ -296,6 +288,28 @@ function CommandDetail({ label, value }) {
       <p className="text-xs font-bold uppercase tracking-wide text-paper/55">{label}</p>
       <p className="mt-1 text-2xl font-black text-paper">{value}</p>
     </div>
+  );
+}
+
+function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`focus-ring flex min-h-24 items-center justify-between gap-4 rounded-md border p-4 text-left transition ${
+        active
+          ? 'border-brass bg-brass text-ink shadow-sm'
+          : 'border-paper/10 bg-paper/10 text-paper hover:bg-paper/15'
+      }`}
+    >
+      <span>
+        <span className={`block text-xs font-bold uppercase tracking-wide ${active ? 'text-ink/65' : 'text-paper/55'}`}>
+          {label}
+        </span>
+        <span className="mt-1 block text-lg font-black">{detail}</span>
+      </span>
+      <Icon size={22} aria-hidden="true" />
+    </button>
   );
 }
 

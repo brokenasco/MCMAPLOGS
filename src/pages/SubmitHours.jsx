@@ -22,6 +22,18 @@ function buildInitialForm(beltUser, savedDraft) {
 }
 
 export default function SubmitHours() {
+  return (
+    <PageShell
+      eyebrow="Belt User"
+      title="Submit MCMAP Hours"
+      description="Select the technique or tie-in you trained. Your target belt is calculated from your current belt rank."
+    >
+      <SubmitHoursForm />
+    </PageShell>
+  );
+}
+
+export function SubmitHoursForm({ embedded = false }) {
   const { beltUser, beltLogs, submitLog, savedDraft, findMaiByNumber, saveDraft, clearDraft } = useApp();
   const [form, setForm] = React.useState(() => buildInitialForm(beltUser, savedDraft));
   const [errors, setErrors] = React.useState({});
@@ -120,12 +132,15 @@ export default function SubmitHours() {
     setDraftMessage('Draft saved. You can come back and finish it later.');
   };
 
+  const formClassName = embedded
+    ? 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6'
+    : 'mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6';
+  const successClassName = embedded
+    ? 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm'
+    : 'mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm';
+
   return (
-    <PageShell
-      eyebrow="Belt User"
-      title="Submit MCMAP Hours"
-      description="Select the technique or tie-in you trained. Your target belt is calculated from your current belt rank."
-    >
+    <>
       {savedDraft && !submittedLog ? (
         <div className="mx-auto mb-4 max-w-4xl rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
           Saved draft loaded. Review the details and submit when complete.
@@ -133,7 +148,7 @@ export default function SubmitHours() {
       ) : null}
 
       {submittedLog ? (
-        <section className="mx-auto max-w-4xl rounded-md border border-olive/20 bg-paper p-6 shadow-sm">
+        <section className={successClassName}>
           <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-olive">
             <CheckCircle2 size={18} aria-hidden="true" />
             Submitted
@@ -165,7 +180,7 @@ export default function SubmitHours() {
           </div>
         </section>
       ) : (
-        <form className="mx-auto max-w-4xl rounded-md border border-coyote/35 bg-paper p-5 shadow-sm sm:p-6" onSubmit={submit}>
+        <form className={formClassName} onSubmit={submit}>
           {draftMessage ? (
             <div className="mb-4 rounded-md border border-olive/25 bg-olive/10 p-3 text-sm font-semibold text-olive">
               {draftMessage}
@@ -328,7 +343,7 @@ export default function SubmitHours() {
           </div>
         </form>
       )}
-    </PageShell>
+    </>
   );
 }
 

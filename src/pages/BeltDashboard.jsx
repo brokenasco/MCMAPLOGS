@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock3, Eye, Lock, Pencil, PlusCircle, RotateCcw, Trash2 } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Clock3, Eye, Lock, Pencil, PlusCircle, RotateCcw, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
@@ -10,6 +10,7 @@ import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
+import { SubmitHoursForm } from './SubmitHours.jsx';
 
 export default function BeltDashboard() {
   const { beltUser, beltLogs, cancelPendingLog, findMaiByNumber, resubmitLog, updatePendingLog } = useApp();
@@ -17,8 +18,10 @@ export default function BeltDashboard() {
   const [editingLog, setEditingLog] = React.useState(null);
   const [editingMode, setEditingMode] = React.useState('edit');
   const [actionMessage, setActionMessage] = React.useState('');
+  const [activePanel, setActivePanel] = React.useState('pending');
   const progress = React.useMemo(() => buildBeltProgress({ beltUser, logs: beltLogs }), [beltLogs, beltUser]);
   const beltTrail = React.useMemo(() => getBeltTrail(beltUser.beltLevel, progress.percent), [beltUser.beltLevel, progress.percent]);
+  const pendingLogs = beltLogs.filter((log) => log.status === 'Pending');
   const recentLogs = beltLogs.slice(0, 6);
   const hasNoLogs = beltLogs.length === 0;
 
@@ -67,35 +70,70 @@ export default function BeltDashboard() {
       {hasNoLogs ? <NewUserStart beltUser={beltUser} targetBelt={progress.targetBelt} /> : null}
 
       <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
-        <div className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-brass">Progress Command Center</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <CommandDetail label="Current Belt" value={progress.currentBelt} />
-              <CommandDetail label="Working Toward" value={progress.targetBelt} />
-            </div>
-            <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-paper/60">
-                <span>Overall belt progress</span>
-                <span>{progress.percent}% complete</span>
-              </div>
-              <div className="h-4 overflow-hidden rounded-full bg-paper/15">
-                <div className="h-full rounded-full bg-brass" style={{ width: `${progress.percent}%` }} />
-              </div>
-              <p className="mt-3 text-sm leading-6 text-paper/70">
-                {formatMinutes(progress.requiredMinutes - progress.completedMinutes)} remaining. {progress.totalCount - progress.completedCount} of {progress.totalCount} techniques left.
-              </p>
-            </div>
+        <p className="text-sm font-black uppercase tracking-wide text-brass">Progress Command Center</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <CommandDetail label="Current Belt" value={progress.currentBelt} />
+          <CommandDetail label="Working Toward" value={progress.targetBelt} />
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <CommandActionButton
+            active={activePanel === 'pending'}
+            detail={`${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'}`}
+            icon={ClipboardList}
+            label="Logs Pending Verification"
+            onClick={() => setActivePanel('pending')}
+          />
+          <CommandActionButton
+            active={activePanel === 'log'}
+            detail="Submit MCMAP hours"
+            icon={PlusCircle}
+            label="Log My Hours"
+            onClick={() => setActivePanel('log')}
+          />
+        </div>
+        <div className="mt-6">
+          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-paper/60">
+            <span>Overall belt progress</span>
+            <span>{progress.percent}% complete</span>
           </div>
-          <Link
-            to="/belt/submit"
-            className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-md bg-brass px-5 text-sm font-black text-ink shadow-sm hover:bg-brass/90"
-          >
-            <PlusCircle size={19} aria-hidden="true" />
-            Log Training Hours
-          </Link>
+          <div className="h-4 overflow-hidden rounded-full bg-paper/15">
+            <div className="h-full rounded-full bg-brass" style={{ width: `${progress.percent}%` }} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-paper/70">
+            {formatMinutes(Math.max(progress.requiredMinutes - progress.completedMinutes, 0))} remaining. {Math.max(progress.totalCount - progress.completedCount, 0)} of {progress.totalCount} techniques left.
+          </p>
         </div>
       </section>
+
+      {activePanel === 'pending' ? (
+        <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_380px]">
+          <div>
+            <h2 className="mb-3 text-xl font-bold">Logs Pending Verification</h2>
+            {pendingLogs.length ? (
+              <PendingBeltLogs
+                logs={pendingLogs}
+                onCancelPending={handleCancelPendingLog}
+                onEditPending={openPendingEdit}
+                onSelectLog={setSelectedLog}
+              />
+            ) : (
+              <EmptyState title="No logs pending verification" text="When you submit training hours, pending logs will appear here until your MAI verifies them." />
+            )}
+          </div>
+          <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
+        </section>
+      ) : (
+        <section className="mt-6">
+          <div className="mb-4">
+            <p className="text-sm font-bold uppercase tracking-wide text-clay">Log My Hours</p>
+            <h2 className="mt-1 text-xl font-bold">Submit MCMAP training hours</h2>
+            <p className="mt-2 text-sm leading-6 text-ink/65">
+              Your target belt is calculated from your current belt rank. Submitted logs stay pending until an MAI verifies them.
+            </p>
+          </div>
+          <SubmitHoursForm embedded />
+        </section>
+      )}
 
       <section className="mt-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
         <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
@@ -185,6 +223,28 @@ function CommandDetail({ label, value }) {
   );
 }
 
+function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`focus-ring flex min-h-24 items-center justify-between gap-4 rounded-md border p-4 text-left transition ${
+        active
+          ? 'border-brass bg-brass text-ink shadow-sm'
+          : 'border-paper/10 bg-paper/10 text-paper hover:bg-paper/15'
+      }`}
+    >
+      <span>
+        <span className={`block text-xs font-bold uppercase tracking-wide ${active ? 'text-ink/65' : 'text-paper/55'}`}>
+          {label}
+        </span>
+        <span className="mt-1 block text-lg font-black">{detail}</span>
+      </span>
+      <Icon size={22} aria-hidden="true" />
+    </button>
+  );
+}
+
 function BeltTrailItem({ item }) {
   const styles = {
     Complete: 'border-olive/30 bg-olive/10 text-olive',
@@ -200,6 +260,35 @@ function BeltTrailItem({ item }) {
         <Icon size={18} aria-hidden="true" />
       </div>
       <p className="mt-2 text-xs font-bold uppercase tracking-wide">{item.label}</p>
+    </div>
+  );
+}
+
+function PendingBeltLogs({ logs, onCancelPending, onEditPending, onSelectLog }) {
+  return (
+    <div className="grid gap-4">
+      {logs.map((log) => (
+        <article key={log.id} className="rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+          <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-start">
+            <div>
+              <h3 className="text-xl font-bold text-ink">{shortTechnique(log)}</h3>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <ReviewDetail label="Target belt" value={log.targetBelt || log.beltLevel} />
+                <ReviewDetail label="Class code" value={log.classCode || 'General'} />
+                <ReviewDetail label="Submitted time" value={formatLogTime(log)} />
+                <ReviewDetail label="Date submitted" value={formatDate(log.date)} />
+                <ReviewDetail label="Waiting on" value={formatMaiDisplay(log)} />
+              </dl>
+            </div>
+            <RecentLogActions
+              log={log}
+              onCancelPending={onCancelPending}
+              onEditPending={onEditPending}
+              onSelectLog={onSelectLog}
+            />
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
@@ -333,10 +422,28 @@ function RecentCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
 }
 
+function ReviewDetail({ label, value }) {
+  return (
+    <div>
+      <dt className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold leading-6 text-ink">{value}</dd>
+    </div>
+  );
+}
+
 function shortTechnique(log) {
   return log.techniqueName?.split('/')[0].trim() || log.description?.split(':').pop()?.trim() || 'Training log';
 }
 
 function formatDate(date) {
   return new Date(`${date}T12:00:00`).toLocaleDateString();
+}
+
+function formatLogTime(log) {
+  return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function formatMaiDisplay(log) {
+  if (!log.maiNumber && !log.assignedMaiName) return 'MAI verifier not assigned';
+  return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim();
 }
