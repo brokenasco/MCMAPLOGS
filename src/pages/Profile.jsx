@@ -106,10 +106,10 @@ export default function Profile() {
                   ? displaySubscription.status === 'owner_free'
                     ? 'Owner MAI account'
                     : displaySubscription.status === 'trialing'
-                    ? '3-month free trial active'
+                    ? '60-day free trial active'
                     : displaySubscription.status === 'active'
                     ? '$69.99/year active'
-                    : '3-month trial checkout required'
+                    : '60-day trial checkout required'
                   : 'Free Belt User account'
               }
             />

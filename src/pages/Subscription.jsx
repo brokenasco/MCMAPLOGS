@@ -132,7 +132,7 @@ export default function Subscription() {
             <div className="rounded-md bg-field px-4 py-3 text-right">
               <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$69.99/year' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
-                {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$69.99 billed annually after 3-month trial' : 'no payment required'}
+                {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$69.99 billed annually after 60-day trial' : 'no payment required'}
               </p>
             </div>
           </div>
@@ -144,7 +144,7 @@ export default function Subscription() {
             </p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
-                ? 'Start the 3-month MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
+                ? 'Start the 60-day MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
                 : isOwnerMai
                 ? 'This owner MAI account can use verification tools for free. No checkout or Stripe billing is required.'
                 : isTrialingMai
@@ -153,7 +153,7 @@ export default function Subscription() {
                   ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your annual MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
                   : isCanceledMai
                   ? 'This MAI subscription is canceled. Start checkout again to unlock verification tools.'
-                  : 'Start the 3-month free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $69.99 after the trial.'}
+                  : 'Start the 60-day free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $69.99 after the trial.'}
             </p>
           </div>
 
@@ -166,7 +166,7 @@ export default function Subscription() {
                 className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
               >
                 <CreditCard size={17} aria-hidden="true" />
-                {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Start 3-month free trial'}
+                {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Start 60-day free trial'}
               </button>
             ) : null}
             {isMai && hasMaiAccess && !isOwnerMai ? (
@@ -198,7 +198,7 @@ export default function Subscription() {
 
         <aside className="grid gap-4">
           <StatCard label="Belt User accounts" value="Free" detail="No payment required" />
-          <StatCard label="MAI trial" value="3 months" detail="Free before annual billing" />
+          <StatCard label="MAI trial" value="60 days" detail="Free before annual billing" />
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
           <StatCard label="MAI offer" value="$69.99/year" detail="Billed annually after trial" />
@@ -214,7 +214,7 @@ export default function Subscription() {
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout starts a 3-month MAI free trial. When Stripe confirms checkout, this account becomes an MAI account and unlocks faster verification, protected records, and exportable documentation while the subscription is trialing or active.
+        Stripe Checkout starts a 60-day MAI free trial. When Stripe confirms checkout, this account becomes an MAI account and unlocks faster verification, protected records, and exportable documentation while the subscription is trialing or active.
       </div>
     </PageShell>
   );
@@ -227,7 +227,7 @@ function formatDate(dateString) {
 function getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai }) {
   if (!isMai) return 'Free Belt User account';
   if (isOwnerMai) return 'Owner MAI access';
-  if (isTrialingMai) return '3-month free trial active';
+  if (isTrialingMai) return '60-day free trial active';
   if (isActiveMai && displaySubscription.cancelAtPeriodEnd) return 'Active until cancellation date';
   if (isActiveMai) return 'Paid annual subscription active';
   if (isCanceledMai) return 'MAI subscription canceled';

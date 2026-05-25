@@ -30,7 +30,7 @@ const userPaths = [
   },
   {
     title: "I'm an MAI",
-    badge: '3-month free trial',
+    badge: '60-day free trial',
     text: 'Verify records quickly, manage submissions in one queue, and export official documentation.',
     cta: 'Create MAI Account',
     to: '/signup',
@@ -85,7 +85,7 @@ export default function Landing() {
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-clay">Simple pricing</p>
-            <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs get 3 months free.</h2>
+            <h2 className="mt-1 text-2xl font-bold text-ink">Belt Users are free. MAIs get 60 days free.</h2>
             <p className="mt-1 text-sm leading-6 text-ink/70">
               MAI access is $69.99/year after the trial for verification tools, exportable records, and reduced admin work.
             </p>

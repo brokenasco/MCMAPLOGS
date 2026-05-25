@@ -16,10 +16,10 @@ export default function SubscriptionBanner() {
           {!isMai
             ? 'Belt User accounts are free.'
             : hasTrialingMaiPlan
-              ? 'MAI 3-month free trial active. Then $69.99/year.'
+              ? 'MAI 60-day free trial active. Then $69.99/year.'
               : hasActiveMaiPlan
               ? 'MAI annual subscription active: $69.99/year.'
-              : 'MAI access starts with a 3-month free trial, then $69.99/year.'}
+              : 'MAI access starts with a 60-day free trial, then $69.99/year.'}
         </p>
         <Link
           to="/profile/subscription"
