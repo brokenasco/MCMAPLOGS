@@ -190,7 +190,7 @@ export default function Profile() {
                     <div>
                       <h3 className="font-bold text-ink">Delete account</h3>
                       <p className="mt-1 text-sm leading-6 text-ink/70">
-                        This removes your login, profile, and submitted training logs. Paid MAI subscriptions are canceled during deletion.
+                        This removes your login and profile. Pending or returned logs are removed, while verified logs stay preserved for MAI recordkeeping with your name anonymized. Paid MAI subscriptions are canceled during deletion.
                       </p>
                     </div>
                   </div>

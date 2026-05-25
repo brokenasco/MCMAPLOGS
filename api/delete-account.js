@@ -27,7 +27,8 @@ export default async function handler(request, response) {
       await cancelStripeSubscription(profile.stripe_subscription_id);
     }
 
-    await deleteSubmittedLogs(user.id);
+    await anonymizeVerifiedSubmittedLogs(user.id);
+    await deleteUnverifiedSubmittedLogs(user.id);
     await clearMaiVerificationReferences(user.id);
     await deleteProfile(user.id);
     await deleteAuthUser(user.id);
@@ -102,13 +103,33 @@ async function cancelStripeSubscription(subscriptionId) {
   }
 }
 
-async function deleteSubmittedLogs(userId) {
-  const deleteResponse = await supabaseFetch(`/rest/v1/training_logs?belt_user_id=eq.${encodeURIComponent(userId)}`, {
+async function anonymizeVerifiedSubmittedLogs(userId) {
+  const updateResponse = await supabaseFetch(
+    `/rest/v1/training_logs?belt_user_id=eq.${encodeURIComponent(userId)}&status=eq.Verified`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        belt_user_id: null,
+        marine_name: 'Former Belt User'
+      })
+    }
+  );
+
+  if (!updateResponse.ok) {
+    throw new Error('Unable to preserve verified training logs before deleting the account.');
+  }
+}
+
+async function deleteUnverifiedSubmittedLogs(userId) {
+  const deleteResponse = await supabaseFetch(`/rest/v1/training_logs?belt_user_id=eq.${encodeURIComponent(userId)}&status=neq.Verified`, {
     method: 'DELETE'
   });
 
   if (!deleteResponse.ok) {
-    throw new Error('Unable to delete submitted training logs.');
+    throw new Error('Unable to delete unverified training logs.');
   }
 }
 
