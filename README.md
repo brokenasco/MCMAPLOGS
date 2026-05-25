@@ -59,6 +59,8 @@ Run `supabase/structured-mcmap-logs.sql` in the Supabase SQL editor before using
 
 Run `supabase/extra-verified-hours.sql` in the Supabase SQL editor before using overflow hour tracking. It adds applied-time and extra-time fields so verified time above a requirement is preserved as Extra Verified Hours.
 
+Run `supabase/mai-to-mai-messages.sql` in the Supabase SQL editor before using MAI-to-MAI messaging. It adds MAI-to-MAI thread fields and updates message permissions so MAIs can start conversations by MAI code.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 60-day free trial, then bills $69.99/year.

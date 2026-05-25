@@ -9,8 +9,13 @@ export default function Messages() {
   const [selectedThreadId, setSelectedThreadId] = React.useState(messageThreads[0]?.id || '');
   const [draft, setDraft] = React.useState('');
   const [newMaiNumber, setNewMaiNumber] = React.useState('');
+  const [messageError, setMessageError] = React.useState('');
   const selectedThread = messageThreads.find((thread) => thread.id === selectedThreadId) || messageThreads[0] || null;
   const eligibleMais = React.useMemo(() => getEligibleMais({ beltLogs, maiDirectory }), [beltLogs, maiDirectory]);
+  const lookedUpMai = React.useMemo(
+    () => maiDirectory.find((mai) => mai.maiNumber?.toLowerCase() === newMaiNumber.trim().toLowerCase()),
+    [maiDirectory, newMaiNumber]
+  );
 
   React.useEffect(() => {
     if (selectedThread?.id) {
@@ -26,15 +31,19 @@ export default function Messages() {
 
   const submitMessage = async (event) => {
     event.preventDefault();
-    const result = await sendMessage({
-      threadId: selectedThread?.id,
-      targetMaiNumber: selectedThread ? selectedThread.maiNumber : newMaiNumber,
-      body: draft
-    });
-    if (result) {
+    setMessageError('');
+    try {
+      const result = await sendMessage({
+        threadId: selectedThread?.id,
+        targetMaiNumber: selectedThread ? getThreadTargetMaiNumber({ activeRole, maiUser, thread: selectedThread }) : newMaiNumber,
+        body: draft
+      });
+      if (!result) return;
       setDraft('');
       setSelectedThreadId(result.threadId);
       setNewMaiNumber('');
+    } catch (error) {
+      setMessageError(error.message || 'Message could not be sent. Check the MAI code and try again.');
     }
   };
 
@@ -44,7 +53,7 @@ export default function Messages() {
       title="Messages"
       description="Communicate inside the logbook with MAIs or Belt Users connected to submitted training logs."
     >
-      {messageThreads.length || activeRole === 'Belt User' ? (
+      {messageThreads.length || ['Belt User', 'MAI'].includes(activeRole) ? (
         <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
           <aside className="rounded-md border border-coyote/35 bg-paper p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
@@ -60,6 +69,7 @@ export default function Messages() {
                   onChange={(event) => {
                     setNewMaiNumber(event.target.value);
                     setSelectedThreadId('');
+                    setMessageError('');
                   }}
                   className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
                 >
@@ -70,6 +80,31 @@ export default function Messages() {
                     </option>
                   ))}
                 </select>
+              </label>
+            ) : null}
+
+            {activeRole === 'MAI' ? (
+              <label className="mt-4 block">
+                <span className="text-sm font-bold text-ink">Start message to MAI</span>
+                <input
+                  value={newMaiNumber}
+                  onChange={(event) => {
+                    setNewMaiNumber(event.target.value);
+                    setSelectedThreadId('');
+                    setMessageError('');
+                  }}
+                  className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
+                  placeholder="Enter MAI code"
+                />
+                {newMaiNumber.trim() ? (
+                  <span className={`mt-2 block text-xs font-semibold ${lookedUpMai && lookedUpMai.maiNumber?.toLowerCase() !== maiUser.maiNumber?.toLowerCase() ? 'text-olive' : 'text-clay'}`}>
+                    {lookedUpMai && lookedUpMai.maiNumber?.toLowerCase() !== maiUser.maiNumber?.toLowerCase()
+                      ? `${lookedUpMai.maiNumber} ${lookedUpMai.name}`
+                      : lookedUpMai?.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
+                        ? 'Choose another MAI. You cannot message yourself.'
+                        : 'No MAI found with that code.'}
+                  </span>
+                ) : null}
               </label>
             ) : null}
 
@@ -88,13 +123,14 @@ export default function Messages() {
                     onClick={() => {
                       setSelectedThreadId(thread.id);
                       setNewMaiNumber('');
+                      setMessageError('');
                     }}
                     className={`focus-ring rounded-md border p-3 text-left ${
                       selectedThread?.id === thread.id ? 'border-olive bg-olive/10' : 'border-coyote/30 bg-field hover:bg-paper'
                     }`}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-ink">{activeRole === 'MAI' ? thread.beltUserName : thread.maiName}</span>
+                      <span className="text-sm font-bold text-ink">{getThreadDisplayName({ activeRole, maiUser, thread })}</span>
                       {unread ? <span className="h-2.5 w-2.5 rounded-full bg-clay" /> : null}
                     </span>
                   </button>
@@ -110,10 +146,10 @@ export default function Messages() {
                   <p className="text-sm font-bold uppercase tracking-wide text-clay">Conversation</p>
                   <h2 className="mt-1 text-xl font-bold text-ink">
                     {selectedThread
-                      ? activeRole === 'MAI'
-                        ? selectedThread.beltUserName
-                        : `${selectedThread.maiName} | ${selectedThread.maiNumber}`
-                      : `New message to ${newMaiNumber}`}
+                      ? getThreadConversationTitle({ activeRole, maiUser, thread: selectedThread })
+                      : lookedUpMai
+                        ? `${lookedUpMai.name} | ${lookedUpMai.maiNumber}`
+                        : `New message to ${newMaiNumber}`}
                   </h2>
                 </div>
 
@@ -133,6 +169,11 @@ export default function Messages() {
                 </div>
 
                 <form className="border-t border-coyote/25 p-5" onSubmit={submitMessage}>
+                  {messageError ? (
+                    <div className="mb-4 rounded-md border border-clay/20 bg-clay/10 p-3 text-sm font-semibold text-clay">
+                      {messageError}
+                    </div>
+                  ) : null}
                   <label className="block">
                     <span className="text-sm font-bold text-ink">Reply</span>
                     <textarea
@@ -144,7 +185,7 @@ export default function Messages() {
                   </label>
                   <button
                     type="submit"
-                    disabled={!draft.trim() || (!selectedThread && !newMaiNumber)}
+                    disabled={!draft.trim() || (!selectedThread && !newMaiNumber.trim()) || (activeRole === 'MAI' && !selectedThread && (!lookedUpMai || lookedUpMai.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()))}
                     className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Send size={17} aria-hidden="true" />
@@ -158,14 +199,14 @@ export default function Messages() {
                 text={
                   activeRole === 'Belt User'
                     ? 'Once you submit a log to an MAI, you will be able to message that MAI here.'
-                    : 'When Belt Users message you about submitted logs, those conversations will appear here.'
+                    : 'Enter an MAI code to start a message, or open a conversation when one appears here.'
                 }
               />
             )}
           </section>
         </div>
       ) : (
-        <EmptyState title="No messages yet" text="When Belt Users message you about submitted logs, those conversations will appear here." />
+        <EmptyState title="No messages yet" text="Enter an MAI code to start a message, or open a conversation when one appears here." />
       )}
     </PageShell>
   );
@@ -176,6 +217,39 @@ function getEligibleMais({ beltLogs, maiDirectory }) {
   return submittedMaiNumbers
     .map((maiNumber) => maiDirectory.find((mai) => mai.maiNumber?.toLowerCase() === maiNumber.toLowerCase()))
     .filter(Boolean);
+}
+
+function getThreadDisplayName({ activeRole, maiUser, thread }) {
+  if (activeRole === 'MAI' && thread.threadType === 'mai_mai') {
+    return thread.initiatingMaiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
+      ? thread.recipientMaiName
+      : thread.initiatingMaiName;
+  }
+
+  return activeRole === 'MAI' ? thread.beltUserName : thread.maiName;
+}
+
+function getThreadConversationTitle({ activeRole, maiUser, thread }) {
+  if (activeRole === 'MAI' && thread.threadType === 'mai_mai') {
+    const name = getThreadDisplayName({ activeRole, maiUser, thread });
+    const maiNumber = thread.initiatingMaiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
+      ? thread.recipientMaiNumber
+      : thread.initiatingMaiNumber;
+    return `${name} | ${maiNumber}`;
+  }
+
+  if (activeRole === 'MAI') return thread.beltUserName;
+  return `${thread.maiName} | ${thread.maiNumber}`;
+}
+
+function getThreadTargetMaiNumber({ activeRole, maiUser, thread }) {
+  if (activeRole === 'MAI' && thread.threadType === 'mai_mai') {
+    return thread.initiatingMaiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
+      ? thread.recipientMaiNumber
+      : thread.initiatingMaiNumber;
+  }
+
+  return thread.maiNumber;
 }
 
 function formatDateTime(date) {

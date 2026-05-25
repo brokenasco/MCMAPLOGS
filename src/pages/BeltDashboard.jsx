@@ -12,6 +12,8 @@ import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 import { SubmitHoursForm } from './SubmitHours.jsx';
 
+const advancementReminderText = 'You must pass your belt advancement test to update your current belt and unlock the ability to log hours towards your next belt.';
+
 export default function BeltDashboard() {
   const { activeRole, advanceBeltUser, beltUser, beltLogs, cancelPendingLog, findMaiByNumber, loading, profile, resubmitLog, updatePendingLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
@@ -32,6 +34,7 @@ export default function BeltDashboard() {
   const hasNoLogs = beltLogs.length === 0;
   const hasCompletedTargetBelt = isTargetBeltComplete(progress);
   const completionAlertKey = getCompletionAlertKey({ beltUser, currentBelt, profile, targetBelt: progress.targetBelt });
+  const shouldShowCompletionBanner = hasCompletedTargetBelt && !progress.hasReachedBlackBelt;
 
   React.useEffect(() => {
     setTestBlocked(false);
@@ -130,14 +133,18 @@ export default function BeltDashboard() {
     >
       {hasNoLogs ? <NewUserStart currentBelt={currentBelt} targetBelt={progress.targetBelt} /> : null}
 
-      <section className="mb-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {beltTrail.map((item) => (
-            <BeltTrailItem key={item.belt} item={item} />
-          ))}
-        </div>
-      </section>
+      {shouldShowCompletionBanner ? (
+        <BeltCompletionBanner targetBelt={progress.targetBelt} />
+      ) : (
+        <section className="mb-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+          <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {beltTrail.map((item) => (
+              <BeltTrailItem key={item.belt} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">Progress Command Center</p>
@@ -184,6 +191,7 @@ export default function BeltDashboard() {
               <p className="mt-2 text-sm leading-6 text-ink/70">
                 Congratulations! You have completed the required verified hours for your current target belt. It is time to schedule your belt advancement test with an MAI.
               </p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-ink/80">{advancementReminderText}</p>
             </div>
             <button
               type="button"
@@ -239,7 +247,7 @@ export default function BeltDashboard() {
               <p className="text-sm font-black uppercase tracking-wide text-clay">Advancement test required</p>
               <h2 className="mt-1 text-xl font-bold text-ink">Belt test needed before logging next-belt hours</h2>
               <p className="mt-2 text-sm leading-6 text-ink/70">
-                You must complete your belt advancement test before you are able to submit hours toward your next belt. Please schedule your belt test with an MAI.
+                {advancementReminderText}
               </p>
             </section>
           ) : (
@@ -325,7 +333,7 @@ function AdvancementModal({ isSubmitting, onNo, onYes, targetBelt }) {
         <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Advancement Test</p>
         <h2 className="mt-2 text-2xl font-bold text-ink">Have you successfully passed your {targetBelt} advancement test?</h2>
         <p className="mt-3 text-sm leading-6 text-ink/65">
-          Passing the test updates your current belt and unlocks hour logging toward your next belt.
+          {advancementReminderText}
         </p>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
@@ -347,6 +355,21 @@ function AdvancementModal({ isSubmitting, onNo, onYes, targetBelt }) {
         </div>
       </section>
     </div>
+  );
+}
+
+function BeltCompletionBanner({ targetBelt }) {
+  return (
+    <section className="mb-6 rounded-md border border-brass/40 bg-brass/15 p-5 shadow-sm">
+      <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Completion</p>
+      <h2 className="mt-1 text-2xl font-bold text-ink">
+        Congratulations! You have completed the required hours for your {targetBelt} belt.
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-ink/70">
+        It is time to schedule your belt advancement test with an MAI.
+      </p>
+      <p className="mt-2 text-sm font-semibold leading-6 text-ink/80">{advancementReminderText}</p>
+    </section>
   );
 }
 

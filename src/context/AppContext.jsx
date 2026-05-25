@@ -953,20 +953,27 @@ export function AppProvider({ children }) {
     const cleanBody = body.trim();
     if (!cleanBody) return null;
 
+    const existingMaiThread = !threadId && activeRole === 'MAI'
+      ? findExistingMaiToMaiThread({ currentMaiNumber: maiUser.maiNumber, targetMaiNumber, threads: messageThreads })
+      : null;
     const thread = threadId
       ? messageThreads.find((item) => item.id === threadId)
-      : buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs });
+      : existingMaiThread
+        ? existingMaiThread
+      : activeRole === 'MAI'
+        ? buildMaiToMaiThread({ targetMaiNumber, maiUser, maiDirectory })
+        : buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs });
 
     if (!thread) {
-      throw new Error('You can only message MAIs connected to your submitted logs.');
+      throw new Error(activeRole === 'MAI' ? 'That MAI code does not match an active MAI account.' : 'You can only message MAIs connected to your submitted logs.');
     }
 
     const message = {
       id: crypto.randomUUID?.() || `msg-${Date.now()}`,
       senderKey: currentMessageKey,
       senderId: currentUserId,
-      recipientKey: getThreadRecipientKey({ activeRole, thread }),
-      recipientId: getThreadRecipientId({ activeRole, thread }),
+      recipientKey: getThreadRecipientKey({ activeRole, thread, senderKey: currentMessageKey }),
+      recipientId: getThreadRecipientId({ activeRole, thread, senderKey: currentMessageKey }),
       senderName: activeRole === 'MAI' ? maiUser.name : beltUser.name,
       body: cleanBody,
       createdAt: new Date().toISOString(),
@@ -991,15 +998,32 @@ export function AppProvider({ children }) {
     let savedThread = thread;
 
     if (!threadId) {
+      const threadPayload = thread.threadType === 'mai_mai'
+        ? {
+            thread_type: 'mai_mai',
+            initiating_mai_user_id: currentUserId,
+            initiating_mai_name: maiUser.name,
+            initiating_mai_number: maiUser.maiNumber,
+            recipient_mai_user_id: thread.recipientMaiUserId,
+            recipient_mai_name: thread.recipientMaiName,
+            recipient_mai_number: thread.recipientMaiNumber,
+            belt_user_name: maiUser.name,
+            belt_user_email: maiUser.maiNumber,
+            mai_number: thread.recipientMaiNumber,
+            mai_name: thread.recipientMaiName
+          }
+        : {
+            thread_type: 'belt_mai',
+            belt_user_id: currentUserId,
+            belt_user_name: beltUser.name,
+            belt_user_email: beltUser.email,
+            mai_number: thread.maiNumber,
+            mai_name: thread.maiName
+          };
+
       const { data: threadData, error: threadError } = await supabase
         .from('message_threads')
-        .insert({
-          belt_user_id: currentUserId,
-          belt_user_name: beltUser.name,
-          belt_user_email: beltUser.email,
-          mai_number: thread.maiNumber,
-          mai_name: thread.maiName
-        })
+        .insert(threadPayload)
         .select()
         .single();
 
@@ -1017,8 +1041,8 @@ export function AppProvider({ children }) {
         thread_id: savedThread.id,
         sender_id: currentUserId,
         sender_key: currentMessageKey,
-        recipient_id: getThreadRecipientId({ activeRole, thread: savedThread }),
-        recipient_key: getThreadRecipientKey({ activeRole, thread: savedThread }),
+        recipient_id: getThreadRecipientId({ activeRole, thread: savedThread, senderKey: currentMessageKey }),
+        recipient_key: getThreadRecipientKey({ activeRole, thread: savedThread, senderKey: currentMessageKey }),
         sender_name: activeRole === 'MAI' ? maiUser.name : beltUser.name,
         body: cleanBody,
         read_by: currentReadKeys
@@ -1315,11 +1339,18 @@ function normalizeBeltName(beltName = '') {
 function mapThreadFromSupabase(row) {
   const thread = {
     id: row.id,
+    threadType: row.thread_type || 'belt_mai',
     beltUserId: row.belt_user_id,
     beltUserName: row.belt_user_name,
     beltUserEmail: row.belt_user_email,
     maiName: row.mai_name,
-    maiNumber: row.mai_number
+    maiNumber: row.mai_number,
+    initiatingMaiUserId: row.initiating_mai_user_id,
+    initiatingMaiName: row.initiating_mai_name,
+    initiatingMaiNumber: row.initiating_mai_number,
+    recipientMaiUserId: row.recipient_mai_user_id,
+    recipientMaiName: row.recipient_mai_name,
+    recipientMaiNumber: row.recipient_mai_number
   };
 
   return {
@@ -1331,12 +1362,8 @@ function mapThreadFromSupabase(row) {
 }
 
 function mapMessageFromSupabase(row, thread = null) {
-  const inferredRecipientKey = thread
-    ? row.sender_key === thread.maiNumber
-      ? thread.beltUserEmail
-      : thread.maiNumber
-    : null;
-  const inferredRecipientId = thread && inferredRecipientKey === thread.beltUserEmail ? thread.beltUserId : null;
+  const inferredRecipientKey = getInferredRecipientKey(row, thread);
+  const inferredRecipientId = getInferredRecipientId(inferredRecipientKey, thread);
 
   return {
     id: row.id,
@@ -1373,11 +1400,21 @@ function mergeReadKeys(existingKeys = [], nextKeys = []) {
   return [...new Set([...existingKeys, ...nextKeys].filter(Boolean))];
 }
 
-function getThreadRecipientKey({ activeRole, thread }) {
+function getThreadRecipientKey({ activeRole, thread, senderKey }) {
+  if (thread.threadType === 'mai_mai') {
+    return activeRole === 'MAI' && thread.initiatingMaiNumber === senderKey
+      ? thread.recipientMaiNumber
+      : thread.initiatingMaiNumber;
+  }
+
   return activeRole === 'MAI' ? thread.beltUserEmail : thread.maiNumber;
 }
 
-function getThreadRecipientId({ activeRole, thread }) {
+function getThreadRecipientId({ activeRole, thread, senderKey }) {
+  if (thread.threadType === 'mai_mai') {
+    return senderKey === thread.initiatingMaiNumber ? thread.recipientMaiUserId || null : thread.initiatingMaiUserId || null;
+  }
+
   return activeRole === 'MAI' ? thread.beltUserId || null : null;
 }
 
@@ -1418,10 +1455,20 @@ function getEffectiveAccountRole(accountType) {
 
 function getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads }) {
   if (activeRole === 'MAI') {
-    return messageThreads.filter((thread) => thread.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase());
+    return messageThreads.filter((thread) => {
+      if (thread.threadType === 'mai_mai') {
+        return [thread.initiatingMaiNumber, thread.recipientMaiNumber].some(
+          (maiNumber) => maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
+        );
+      }
+
+      return thread.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase();
+    });
   }
 
-  return messageThreads.filter((thread) => thread.beltUserEmail?.toLowerCase() === beltUser.email?.toLowerCase());
+  return messageThreads.filter((thread) =>
+    thread.threadType !== 'mai_mai' && thread.beltUserEmail?.toLowerCase() === beltUser.email?.toLowerCase()
+  );
 }
 
 function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs }) {
@@ -1440,6 +1487,62 @@ function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs }
     messages: []
   };
 }
+
+function buildMaiToMaiThread({ targetMaiNumber, maiUser, maiDirectory }) {
+  const cleanMaiNumber = targetMaiNumber?.trim();
+  if (!cleanMaiNumber || cleanMaiNumber.toLowerCase() === maiUser.maiNumber?.toLowerCase()) return null;
+
+  const recipientMai = maiDirectory.find((item) => item.maiNumber?.toLowerCase() === cleanMaiNumber.toLowerCase());
+  if (!recipientMai?.id) return null;
+
+  return {
+    id: `thread-mai-${maiUser.maiNumber}-${recipientMai.maiNumber}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    threadType: 'mai_mai',
+    initiatingMaiUserId: null,
+    initiatingMaiName: maiUser.name,
+    initiatingMaiNumber: maiUser.maiNumber,
+    recipientMaiUserId: recipientMai.id,
+    recipientMaiName: recipientMai.name,
+    recipientMaiNumber: recipientMai.maiNumber,
+    senderMaiNumber: maiUser.maiNumber,
+    messages: []
+  };
+}
+
+function findExistingMaiToMaiThread({ currentMaiNumber, targetMaiNumber, threads }) {
+  const target = targetMaiNumber?.trim().toLowerCase();
+  const current = currentMaiNumber?.trim().toLowerCase();
+  if (!target || !current) return null;
+
+  return threads.find((thread) => {
+    if (thread.threadType !== 'mai_mai') return false;
+    const participants = [thread.initiatingMaiNumber, thread.recipientMaiNumber].map((value) => value?.toLowerCase());
+    return participants.includes(current) && participants.includes(target);
+  }) || null;
+}
+
+function getInferredRecipientKey(row, thread) {
+  if (!thread) return null;
+
+  if (thread.threadType === 'mai_mai') {
+    return row.sender_key === thread.initiatingMaiNumber ? thread.recipientMaiNumber : thread.initiatingMaiNumber;
+  }
+
+  return row.sender_key === thread.maiNumber ? thread.beltUserEmail : thread.maiNumber;
+}
+
+function getInferredRecipientId(recipientKey, thread) {
+  if (!thread) return null;
+
+  if (thread.threadType === 'mai_mai') {
+    if (recipientKey === thread.initiatingMaiNumber) return thread.initiatingMaiUserId;
+    if (recipientKey === thread.recipientMaiNumber) return thread.recipientMaiUserId;
+    return null;
+  }
+
+  return recipientKey === thread.beltUserEmail ? thread.beltUserId : null;
+}
+
 
 export function useApp() {
   const context = React.useContext(AppContext);
