@@ -41,6 +41,7 @@ export default function VerifiedLogbook() {
           activeView={maiVerificationView}
           dateRange={maiVerificationRange}
           entriesLabel="Verified Entries as MAI"
+          extraLabel="Extra Verified Hours as MAI"
           hoursLabel="Verified Hours as MAI"
           logs={verifiedAsMai}
           onDateRangeChange={setMaiVerificationRange}
@@ -56,6 +57,7 @@ export default function VerifiedLogbook() {
           activeView={maiStudentView}
           dateRange={maiStudentRange}
           entriesLabel="Verified Entries as Student"
+          extraLabel="Extra Verified Hours as Student"
           hoursLabel="Verified Hours as Student"
           logs={verifiedAsStudent}
           onDateRangeChange={setMaiStudentRange}
@@ -82,6 +84,7 @@ export default function VerifiedLogbook() {
         activeView={beltView}
         dateRange={beltRange}
         entriesLabel="Verified Entries"
+        extraLabel="Extra Verified Hours"
         hoursLabel="Verified Hours"
         logs={verifiedBeltLogs}
         onDateRangeChange={setBeltRange}
@@ -100,6 +103,7 @@ function VerifiedCommandCenter({
   activeView,
   dateRange,
   entriesLabel,
+  extraLabel,
   hoursLabel,
   logs,
   onDateRangeChange,
@@ -111,19 +115,24 @@ function VerifiedCommandCenter({
   title
 }) {
   const verifiedMinutes = sumLogMinutes(logs);
+  const extraLogs = logs.filter((log) => getExtraMinutes(log) > 0);
+  const extraMinutes = extraLogs.reduce((total, log) => total + getExtraMinutes(log), 0);
   const latestVerified = logs
     .slice()
     .sort((a, b) => new Date(getVerifiedDateValue(b) || 0) - new Date(getVerifiedDateValue(a) || 0))[0];
 
   const exportFilteredCsv = () => {
     const rows = [
-      ['Marine', 'Date Verified', 'Training Date', 'Time', 'Target Belt', 'Class Code', 'Verified By'],
-      ...logs.map((log) => [
+      ['Marine', 'Date Verified', 'Training Date', 'Original Verified Time', 'Time Applied to Requirement', 'Extra Verified Time', 'Target Belt', 'Technique / Tie-In', 'Class Code', 'Verified By'],
+      ...(activeView === 'extra' ? extraLogs : logs).map((log) => [
         log.marine,
         formatVerifiedDate(log),
         log.date,
         formatLogTime(log),
+        formatAppliedTime(log),
+        formatExtraTime(log),
         log.targetBelt || log.beltLevel,
+        log.techniqueName || '',
         log.classCode || 'General',
         log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : ''
       ])
@@ -142,7 +151,7 @@ function VerifiedCommandCenter({
     <section className="mb-8">
       <div className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">{title}</p>
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
           <CommandActionButton
             active={activeView === 'entries'}
             detail={`${logs.length} verified ${logs.length === 1 ? 'entry' : 'entries'}`}
@@ -157,6 +166,13 @@ function VerifiedCommandCenter({
             label={hoursLabel}
             onClick={() => onViewChange('hours')}
           />
+          <CommandActionButton
+            active={activeView === 'extra'}
+            detail={formatMinutes(extraMinutes)}
+            icon={Clock3}
+            label={extraLabel}
+            onClick={() => onViewChange('extra')}
+          />
         </div>
       </div>
 
@@ -164,10 +180,10 @@ function VerifiedCommandCenter({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-clay">
-              {activeView === 'entries' ? entriesLabel : hoursLabel}
+              {activeView === 'entries' ? entriesLabel : activeView === 'extra' ? extraLabel : hoursLabel}
             </p>
             <h2 className="mt-1 text-xl font-bold text-ink">
-              {activeView === 'entries' ? 'Verified log history' : 'Verified hour totals'}
+              {activeView === 'entries' ? 'Verified log history' : activeView === 'extra' ? 'Extra verified hour history' : 'Verified hour totals'}
             </h2>
             <p className="mt-2 text-sm leading-6 text-ink/65">
               Filtered by date verified. Pending, returned, and canceled logs are not included.
@@ -238,6 +254,15 @@ function VerifiedCommandCenter({
             <VerifiedEntriesTable logs={logs} onSelectLog={onSelectLog} />
           ) : (
             <EmptyState title="No verified entries found" text="Change the date filter or verify logs to see entries here." />
+          )}
+          <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
+        </section>
+      ) : activeView === 'extra' ? (
+        <section className="mt-5 grid gap-5 lg:grid-cols-[1fr_380px]">
+          {extraLogs.length ? (
+            <ExtraHoursTable logs={extraLogs} onSelectLog={onSelectLog} />
+          ) : (
+            <EmptyState title="No extra verified hours found" text="Overflow time appears here when verified logs exceed a requirement's remaining time." />
           )}
           <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
         </section>
@@ -316,6 +341,45 @@ function VerifiedEntriesTable({ logs, onSelectLog }) {
   );
 }
 
+function ExtraHoursTable({ logs, onSelectLog }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-coyote/25">
+          <thead className="bg-charcoal text-paper">
+            <tr>
+              <LogbookHeader>User</LogbookHeader>
+              <LogbookHeader>Date Verified</LogbookHeader>
+              <LogbookHeader>Original Belt</LogbookHeader>
+              <LogbookHeader>Technique / Tie-In</LogbookHeader>
+              <LogbookHeader>Class Code</LogbookHeader>
+              <LogbookHeader>Original Time</LogbookHeader>
+              <LogbookHeader>Applied</LogbookHeader>
+              <LogbookHeader>Extra Time</LogbookHeader>
+              <LogbookHeader>MAI</LogbookHeader>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-coyote/20">
+            {logs.map((log) => (
+              <tr key={log.id} className="cursor-pointer align-top hover:bg-field/70" onClick={() => onSelectLog(log)}>
+                <LogbookCell className="font-semibold text-ink">{log.marine}</LogbookCell>
+                <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
+                <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
+                <LogbookCell>{log.techniqueName || 'General training'}</LogbookCell>
+                <LogbookCell>{log.classCode || 'General'}</LogbookCell>
+                <LogbookCell>{formatLogTime(log)}</LogbookCell>
+                <LogbookCell>{formatAppliedTime(log)}</LogbookCell>
+                <LogbookCell className="font-bold text-olive">{formatExtraTime(log)}</LogbookCell>
+                <LogbookCell>{log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified'}</LogbookCell>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function LogbookHeader({ children }) {
   return <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-paper/70">{children}</th>;
 }
@@ -355,6 +419,18 @@ function formatDate(date) {
 
 function formatLogTime(log) {
   return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function formatAppliedTime(log) {
+  return formatMinutes(Number(log.appliedMinutes ?? log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function formatExtraTime(log) {
+  return formatMinutes(getExtraMinutes(log));
+}
+
+function getExtraMinutes(log) {
+  return Number(log.extraMinutes || 0);
 }
 
 function shortTechnique(log) {

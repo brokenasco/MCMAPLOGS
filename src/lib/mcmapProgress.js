@@ -11,7 +11,7 @@ export function buildBeltProgress({ beltUser, logs }) {
     .filter((log) => log.status === 'Verified' && matchesTargetBelt(log, targetBelt))
     .forEach((log) => {
       const key = getRequirementKey(log.classCode, log.techniqueName);
-      const minutes = getLogMinutes(log);
+      const minutes = getAppliedLogMinutes(log);
       completedByRequirement.set(key, (completedByRequirement.get(key) || 0) + minutes);
     });
 
@@ -89,6 +89,10 @@ export function sumLogMinutes(logs) {
 
 export function getLogMinutes(log) {
   return Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
+}
+
+export function getAppliedLogMinutes(log) {
+  return Number(log.appliedMinutes ?? log.minutes ?? Math.round(Number(log.hours || 0) * 60));
 }
 
 function getRequiredMinutesForBelt(belt) {

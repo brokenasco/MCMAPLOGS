@@ -57,6 +57,8 @@ Run `supabase/mai-subscriptions.sql` in the Supabase SQL editor before enabling 
 
 Run `supabase/structured-mcmap-logs.sql` in the Supabase SQL editor before using the structured Belt User logbook. It adds the target belt, class code, technique/tie-in name, and minute tracking fields to `training_logs`.
 
+Run `supabase/extra-verified-hours.sql` in the Supabase SQL editor before using overflow hour tracking. It adds applied-time and extra-time fields so verified time above a requirement is preserved as Extra Verified Hours.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 3-month free trial, then bills $69.99/year.

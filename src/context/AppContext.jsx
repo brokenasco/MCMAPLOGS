@@ -1,5 +1,6 @@
 import React from 'react';
 import { currentBeltUser, currentMai, messageThreads as mockMessageThreads, trainingLogs } from '../data/mockData.js';
+import { additionalMcmapHoursTarget, getBeltRequirements } from '../data/mcmapReference.js';
 import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
@@ -484,6 +485,11 @@ export function AppProvider({ children }) {
       throw new Error('MAIs cannot verify their own submitted hours.');
     }
 
+    const logsForOverflow = supabase && logToVerify?.beltUserId
+      ? await loadSubmitterVerifiedLogsForOverflow(logToVerify.beltUserId)
+      : logs;
+    const overflow = calculateVerificationOverflow(logToVerify, logsForOverflow);
+
     if (!supabase || !currentUserId) {
       setLogs((currentLogs) =>
         currentLogs.map((log) =>
@@ -493,7 +499,9 @@ export function AppProvider({ children }) {
                 status: 'Verified',
                 verifiedAt: new Date().toISOString().slice(0, 10),
                 verifiedBy: maiUser.name,
-                verifiedByMaiNumber: maiUser.maiNumber
+                verifiedByMaiNumber: maiUser.maiNumber,
+                appliedMinutes: overflow.appliedMinutes,
+                extraMinutes: overflow.extraMinutes
               }
             : log
         )
@@ -506,7 +514,9 @@ export function AppProvider({ children }) {
       .update({
         status: 'Verified',
         verified_by: currentUserId,
-        verified_at: new Date().toISOString()
+        verified_at: new Date().toISOString(),
+        applied_minutes: overflow.appliedMinutes,
+        extra_minutes: overflow.extraMinutes
       })
       .eq('id', logId);
 
@@ -517,6 +527,17 @@ export function AppProvider({ children }) {
 
     await loadLogs();
   };
+
+  async function loadSubmitterVerifiedLogsForOverflow(submitterId) {
+    const { data, error } = await supabase
+      .from('training_logs')
+      .select('*')
+      .eq('belt_user_id', submitterId)
+      .eq('status', 'Verified');
+
+    if (error || !data) return logs;
+    return mergeLogsById(logs, data.map(mapLogFromSupabase));
+  }
 
   const returnLog = async (logId, reason = 'Needs correction', message = 'Please add more detail and resubmit this log.') => {
     if (!supabase || !currentUserId) {
@@ -1194,6 +1215,8 @@ function mapLogFromSupabase(row) {
     description: row.description,
     maiNumber: row.mai_number,
     status: row.status,
+    appliedMinutes: Number(row.applied_minutes ?? row.minutes ?? Math.round(Number(row.hours || 0) * 60)),
+    extraMinutes: Number(row.extra_minutes ?? 0),
     returnReason: row.return_reason,
     returnMessage: row.return_message,
     resubmittedAt: row.resubmitted_at,
@@ -1231,6 +1254,62 @@ function buildLogHistoryEntry(action, previousLog, updates) {
       maiNumber: updates.maiNumber
     }
   };
+}
+
+function calculateVerificationOverflow(logToVerify, allLogs) {
+  const submittedMinutes = getLogMinutes(logToVerify);
+  const targetBelt = logToVerify?.targetBelt || logToVerify?.beltLevel;
+  const requirement = getBeltRequirements(targetBelt).find(
+    (item) => getRequirementKey(item.code, item.name) === getRequirementKey(logToVerify?.classCode, logToVerify?.techniqueName)
+  );
+
+  if (!logToVerify || targetBelt === additionalMcmapHoursTarget || !requirement?.requiredMinutes) {
+    return {
+      appliedMinutes: submittedMinutes,
+      extraMinutes: 0
+    };
+  }
+
+  const alreadyAppliedMinutes = allLogs
+    .filter((log) =>
+      log.id !== logToVerify.id &&
+      log.status === 'Verified' &&
+      isSameSubmitter(log, logToVerify) &&
+      getRequirementKey(log.classCode, log.techniqueName) === getRequirementKey(logToVerify.classCode, logToVerify.techniqueName) &&
+      normalizeBeltName(log.targetBelt || log.beltLevel) === normalizeBeltName(targetBelt)
+    )
+    .reduce((total, log) => total + Number(log.appliedMinutes ?? getLogMinutes(log)), 0);
+
+  const neededMinutes = Math.max(requirement.requiredMinutes - Math.min(alreadyAppliedMinutes, requirement.requiredMinutes), 0);
+  const appliedMinutes = Math.min(submittedMinutes, neededMinutes);
+
+  return {
+    appliedMinutes,
+    extraMinutes: Math.max(submittedMinutes - appliedMinutes, 0)
+  };
+}
+
+function isSameSubmitter(log, comparisonLog) {
+  if (log.beltUserId && comparisonLog.beltUserId) return log.beltUserId === comparisonLog.beltUserId;
+  return log.marine === comparisonLog.marine;
+}
+
+function getRequirementKey(code, name) {
+  return `${code || ''}::${name || ''}`.toLowerCase();
+}
+
+function getLogMinutes(log = {}) {
+  return Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
+}
+
+function normalizeBeltName(beltName = '') {
+  const normalized = beltName.toLowerCase();
+  if (normalized.includes('tan')) return 'Tan Belt';
+  if (normalized.includes('gray') || normalized.includes('grey')) return 'Gray Belt';
+  if (normalized.includes('green')) return 'Green Belt';
+  if (normalized.includes('brown')) return 'Brown Belt';
+  if (normalized.includes('black')) return 'Black 1st Degree';
+  return beltName;
 }
 
 function mapThreadFromSupabase(row) {

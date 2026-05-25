@@ -38,6 +38,8 @@ export default function LogDetailPanel({ log, onClose }) {
       <dl className="mt-5 grid gap-4 sm:grid-cols-2">
         <Detail label="Status" value={<StatusBadge status={log.status} />} />
         <Detail label="Hours" value={formatLogTime(log)} />
+        <Detail label="Applied to requirement" value={formatAppliedTime(log)} />
+        <Detail label="Extra verified hours" value={formatExtraTime(log)} />
         <Detail label="Class code" value={log.classCode || 'General'} />
         <Detail label="Target belt" value={log.targetBelt || log.beltLevel} />
         <Detail
@@ -89,4 +91,12 @@ function formatMaiDisplay(log) {
 
 function formatLogTime(log) {
   return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function formatAppliedTime(log) {
+  return formatMinutes(Number(log.appliedMinutes ?? log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function formatExtraTime(log) {
+  return formatMinutes(Number(log.extraMinutes || 0));
 }
