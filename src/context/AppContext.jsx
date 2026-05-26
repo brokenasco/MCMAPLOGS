@@ -1414,13 +1414,14 @@ function mapLogFromSupabase(row) {
     appliedMinutes: Number(row.applied_minutes ?? row.minutes ?? Math.round(Number(row.hours || 0) * 60)),
     extraMinutes: Number(row.extra_minutes ?? 0),
     source: row.source || row.verification_source || '',
+    verificationSource: row.verification_source || '',
     returnReason: row.return_reason,
     returnMessage: row.return_message,
     resubmittedAt: row.resubmitted_at,
     editHistory: row.edit_history || [],
     submittedAt: row.created_at?.slice(0, 10),
     verifiedAt: row.verified_at?.slice(0, 10),
-    verifiedBy: row.source === 'Account Creation' || row.verification_source === 'Account Creation' ? 'Upon Account Creation' : row.verified_by ? 'Verified MAI' : null,
+    verifiedBy: row.source === 'Account Creation' || row.source === 'Account Creation Backfill' || row.verification_source === 'Account Creation' ? 'Upon Account Creation' : row.verified_by ? 'Verified MAI' : null,
     verifiedByMaiNumber: row.verified_by ? row.mai_number : null
   };
 }

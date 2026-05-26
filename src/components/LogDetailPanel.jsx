@@ -53,7 +53,7 @@ export default function LogDetailPanel({ log, onClose }) {
         <Detail label="Sent to MAI" value={formatMaiDisplay(log)} />
         <Detail label="Submitted" value={log.submittedAt || 'Saved record'} />
         <Detail label="Resubmitted" value={log.resubmittedAt ? new Date(log.resubmittedAt).toLocaleDateString() : 'Not resubmitted'} />
-        <Detail label="Signed by" value={log.verifiedBy ? `${log.verifiedBy} | ${log.verifiedByMaiNumber}` : 'Not signed yet'} />
+        <Detail label="Signed by" value={formatVerifier(log)} />
       </dl>
 
       <div className="mt-5 rounded-md bg-field p-4">
@@ -87,6 +87,14 @@ function Detail({ label, value }) {
 
 function formatMaiDisplay(log) {
   return `${log.maiNumber || ''} ${log.assignedMaiName || ''}`.trim() || 'Not assigned';
+}
+
+function formatVerifier(log) {
+  if (!log?.verifiedBy) return 'Not signed yet';
+  if (log.source === 'Account Creation' || log.source === 'Account Creation Backfill' || log.verificationSource === 'Account Creation') {
+    return 'Upon Account Creation';
+  }
+  return `${log.verifiedBy}${log.verifiedByMaiNumber ? ` | ${log.verifiedByMaiNumber}` : ''}`;
 }
 
 function formatLogTime(log) {

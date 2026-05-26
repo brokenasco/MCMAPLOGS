@@ -11,7 +11,7 @@ import { buildBeltProgress, sumLogMinutes } from '../lib/mcmapProgress.js';
 const pageSize = 5;
 
 export default function VerifiedLogbook() {
-  const { activeRole, assignedMaiLogs, beltLogs, beltUser, maiSubmittedLogs, profile } = useApp();
+  const { activeRole, assignedMaiLogs, beltLogs, beltUser, profile } = useApp();
   const isMai = activeRole === 'MAI';
 
   const [selectedLog, setSelectedLog] = React.useState(null);
@@ -40,7 +40,7 @@ export default function VerifiedLogbook() {
 
   if (isMai) {
     const verifiedAsMai = filterByVerifiedDate(getVerifiedLogs(assignedMaiLogs), maiVerificationRange);
-    const verifiedAsStudent = filterByVerifiedDate(getVerifiedLogs(maiSubmittedLogs), maiStudentRange);
+    const verifiedAsStudent = filterByVerifiedDate(getVerifiedLogs(beltLogs), maiStudentRange);
 
     return (
       <PageShell
@@ -388,7 +388,7 @@ function VerifiedEntriesTable({ logs, onSelectLog }) {
                 </LogbookCell>
                 <LogbookCell>{formatLogTime(log)}</LogbookCell>
                 <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
-                <LogbookCell>{log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified'}</LogbookCell>
+                <LogbookCell>{formatVerifier(log)}</LogbookCell>
               </tr>
             ))}
           </tbody>
@@ -427,7 +427,7 @@ function ExtraHoursTable({ logs, onSelectLog }) {
                 <LogbookCell>{formatLogTime(log)}</LogbookCell>
                 <LogbookCell>{formatAppliedTime(log)}</LogbookCell>
                 <LogbookCell className="font-bold text-olive">{formatExtraTime(log)}</LogbookCell>
-                <LogbookCell>{log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified'}</LogbookCell>
+                <LogbookCell>{formatVerifier(log)}</LogbookCell>
               </tr>
             ))}
           </tbody>
@@ -580,7 +580,7 @@ function buildPrintableTable(activeView, records) {
         formatLogTime(log),
         formatAppliedTime(log),
         formatExtraTime(log),
-        log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified'
+        formatVerifier(log)
       ])
     );
   }
@@ -595,7 +595,7 @@ function buildPrintableTable(activeView, records) {
       log.techniqueName || '',
       formatLogTime(log),
       log.targetBelt || log.beltLevel,
-      log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified'
+      formatVerifier(log)
     ])
   );
 }
@@ -619,6 +619,12 @@ function getVerifiedDateValue(log) {
 function formatVerifiedDate(log) {
   const verifiedDate = getVerifiedDateValue(log);
   return verifiedDate ? formatDate(verifiedDate) : 'Not recorded';
+}
+
+function formatVerifier(log) {
+  if (log.source === 'Account Creation' || log.source === 'Account Creation Backfill') return 'Upon Account Creation';
+  if (log.verificationSource === 'Account Creation') return 'Upon Account Creation';
+  return log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified';
 }
 
 function formatDate(date) {
