@@ -19,10 +19,13 @@ export default function Subscription() {
   const isTrialingMai = isMai && displaySubscription.status === 'trialing';
   const isOwnerMai = isMai && (displaySubscription.status === 'owner_free' || profile?.account_type === 'Owner/Developer');
   const isCanceledMai = isMai && ['canceled', 'cancelled'].includes(displaySubscription.status);
+  const isPastDueMai = isMai && ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(displaySubscription.status);
   const hasMaiAccess = isActiveMai || isTrialingMai || isOwnerMai;
   const isUpgradeFlow = activeRole === 'Belt User';
   const checkoutResult = searchParams.get('checkout');
-  const subscriptionStatusLabel = getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai });
+  const subscriptionStatus = getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai, isPastDueMai });
+  const subscriptionStatusLabel = subscriptionStatus.label;
+  const renewalLabel = getRenewalLabel({ displaySubscription, isActiveMai, isCanceledMai, isTrialingMai });
 
   React.useEffect(() => {
     refreshAccount();
@@ -142,6 +145,7 @@ export default function Subscription() {
               <CheckCircle2 size={17} aria-hidden="true" />
               {subscriptionStatusLabel}
             </p>
+            <p className="mt-1 text-sm font-semibold text-ink/70">{subscriptionStatus.detail}</p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
                 ? 'Start the 60-day MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
@@ -153,8 +157,14 @@ export default function Subscription() {
                   ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your annual MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
                   : isCanceledMai
                   ? 'This MAI subscription is canceled. Start checkout again to unlock verification tools.'
+                  : isPastDueMai
+                  ? 'Payment is missing or failed. Resume subscription to restore MAI premium features.'
                   : 'Start the 60-day free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $69.99 after the trial.'}
             </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <SubscriptionDetail label="Billing cycle / renewal date" value={renewalLabel} />
+              <SubscriptionDetail label="Data preservation" value="Account data, logs, messages, and history stay preserved." />
+            </div>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -166,19 +176,30 @@ export default function Subscription() {
                 className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
               >
                 <CreditCard size={17} aria-hidden="true" />
-                {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Start 60-day free trial'}
+                {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Resume Subscription'}
               </button>
             ) : null}
             {isMai && hasMaiAccess && !isOwnerMai ? (
-              <button
-                type="button"
-                onClick={openBillingPortal}
-                disabled={isOpeningPortal}
-                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
-              >
-                <CreditCard size={17} aria-hidden="true" />
-                {isOpeningPortal ? 'Opening billing...' : 'Manage billing in Stripe'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={openBillingPortal}
+                  disabled={isOpeningPortal}
+                  className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
+                >
+                  <CreditCard size={17} aria-hidden="true" />
+                  {isOpeningPortal ? 'Opening billing...' : 'Manage Subscription'}
+                </button>
+                <button
+                  type="button"
+                  onClick={openBillingPortal}
+                  disabled={isOpeningPortal}
+                  className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-clay/25 bg-clay/10 px-4 text-sm font-bold text-clay hover:bg-clay/15"
+                >
+                  <CreditCard size={17} aria-hidden="true" />
+                  {displaySubscription.cancelAtPeriodEnd ? 'Resume Subscription' : 'Cancel Subscription'}
+                </button>
+              </>
             ) : null}
           </div>
           {billingMessage ? (
@@ -202,18 +223,19 @@ export default function Subscription() {
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
           <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
+          <StatCard label="Billing date" value={renewalLabel} detail="From Stripe subscription records" />
           {isMai ? (
             <StatCard
               label="Subscription status"
-              value={hasMaiAccess ? 'Unlocked' : 'Locked'}
-              detail={subscriptionStatusLabel}
+              value={subscriptionStatusLabel}
+              detail={subscriptionStatus.detail}
             />
           ) : null}
         </aside>
       </div>
 
       <div className="mt-6 rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-        Stripe Checkout starts a 60-day MAI free trial. When Stripe confirms checkout, this account becomes an MAI account and unlocks faster verification, protected records, and exportable documentation while the subscription is trialing or active.
+        Stripe Checkout upgrades the existing account. Current belt, logbook history, verified hours, extra verified hours, messages, and profile data stay preserved. If an MAI cancels, access continues through the paid billing period and data stays preserved for future reactivation.
       </div>
     </PageShell>
   );
@@ -223,11 +245,64 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString();
 }
 
-function getSubscriptionStatusLabel({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai }) {
-  if (!isMai) return 'Free Belt User account';
-  if (isOwnerMai) return 'Full Access';
-  if (isTrialingMai) return 'Free Trial';
-  if (isActiveMai && !displaySubscription.cancelAtPeriodEnd) return 'Full Access';
-  if (isCanceledMai || displaySubscription.cancelAtPeriodEnd || displaySubscription.status === 'past_due') return 'Restricted Access';
-  return 'Restricted Access';
+function SubscriptionDetail({ label, value }) {
+  return (
+    <div className="rounded-md bg-paper/70 p-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-ink/45">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-ink">{value}</p>
+    </div>
+  );
+}
+
+function getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai, isPastDueMai }) {
+  if (!isMai) {
+    return {
+      label: 'Free Account',
+      detail: 'Belt Users are free.'
+    };
+  }
+
+  if (isOwnerMai) {
+    return {
+      label: 'Full Access',
+      detail: 'Owner MAI access is active.'
+    };
+  }
+
+  if (isTrialingMai) {
+    return {
+      label: 'Free Trial',
+      detail: 'Trial active.'
+    };
+  }
+
+  if (isActiveMai) {
+    return {
+      label: 'Full Access',
+      detail: displaySubscription.cancelAtPeriodEnd
+        ? 'Paid MAI subscription active until the billing period ends.'
+        : 'Paid MAI subscription active.'
+    };
+  }
+
+  if (isCanceledMai || isPastDueMai) {
+    return {
+      label: 'Restricted Access',
+      detail: 'Trial expired and subscription canceled/failed.'
+    };
+  }
+
+  return {
+    label: 'Restricted Access',
+    detail: 'Resume subscription to unlock MAI premium features.'
+  };
+}
+
+function getRenewalLabel({ displaySubscription, isActiveMai, isCanceledMai, isTrialingMai }) {
+  if (!displaySubscription.currentPeriodEnd) return 'Not available yet';
+  if (isTrialingMai) return `Trial ends ${formatDate(displaySubscription.currentPeriodEnd)}`;
+  if (isActiveMai && displaySubscription.cancelAtPeriodEnd) return `Access ends ${formatDate(displaySubscription.currentPeriodEnd)}`;
+  if (isActiveMai) return `Renews ${formatDate(displaySubscription.currentPeriodEnd)}`;
+  if (isCanceledMai) return `Ended ${formatDate(displaySubscription.currentPeriodEnd)}`;
+  return formatDate(displaySubscription.currentPeriodEnd);
 }

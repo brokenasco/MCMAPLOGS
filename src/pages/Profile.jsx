@@ -1,6 +1,6 @@
 import React from 'react';
-import { AlertTriangle, Pencil, Save, Trash2, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, CreditCard, Pencil, Save, Trash2, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -222,6 +222,25 @@ export default function Profile() {
             <StatCard label="Pending queue" value={pendingLogs.length} detail="MAI review" />
             <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
           </div>
+
+          <div className="mt-5 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+            <p className="text-sm font-bold uppercase tracking-wide text-clay">Manage Subscription</p>
+            <h2 className="mt-1 text-xl font-bold text-ink">
+              {isMai ? 'Subscription and billing' : 'Upgrade to MAI'}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-ink/65">
+              {isMai
+                ? 'View status, billing cycle, cancellation, and resume options without deleting your account or training history.'
+                : 'Upgrade this same account to MAI access. Your belt history, logs, messages, and profile data stay with you.'}
+            </p>
+            <Link
+              to="/profile/subscription"
+              className="focus-ring mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+            >
+              <CreditCard size={17} aria-hidden="true" />
+              {isMai ? 'Manage Subscription' : 'Upgrade to MAI'}
+            </Link>
+          </div>
         </section>
       </div>
     </PageShell>
@@ -232,7 +251,7 @@ function getSubscriptionAccessLabel({ activeRole, displaySubscription }) {
   if (activeRole !== 'MAI') return 'Free Account';
   if (displaySubscription.status === 'owner_free') return 'Full Access';
   if (displaySubscription.status === 'trialing') return 'Free Trial';
-  if (displaySubscription.status === 'active' && !displaySubscription.cancelAtPeriodEnd) return 'Full Access';
+  if (displaySubscription.status === 'active') return 'Full Access';
   return 'Restricted Access';
 }
 
