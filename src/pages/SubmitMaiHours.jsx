@@ -240,7 +240,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
               <label className="block">
                 <span className="text-sm font-bold text-ink">Technique / Tie-In</span>
                 <select name="techniqueId" value={form.techniqueId} onChange={updateField} className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base">
-                  {targetRequirements.map((technique) => <option key={technique.id} value={technique.id}>{technique.code} - {technique.name}</option>)}
+                  {targetRequirements.map((technique) => <option key={technique.id} value={technique.id}>{technique.name}</option>)}
                 </select>
                 <ErrorText message={errors.techniqueId} />
               </label>
@@ -361,8 +361,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
               >
                 {targetRequirements.map((technique) => (
                   <option key={technique.id} value={technique.id}>
-                    {technique.code} - {technique.name}
-                    {technique.requiredMinutes ? ` (${formatMinutes(technique.requiredMinutes)})` : ' (No progression requirement)'}
+                    {technique.name}
                   </option>
                 ))}
               </select>

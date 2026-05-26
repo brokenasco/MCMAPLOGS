@@ -257,7 +257,7 @@ export function SubmitHoursForm({ embedded = false }) {
                 >
                   {targetRequirements.map((technique) => (
                     <option key={technique.id} value={technique.id}>
-                      {technique.code} - {technique.name}
+                      {technique.name}
                     </option>
                   ))}
                 </select>
@@ -418,8 +418,7 @@ export function SubmitHoursForm({ embedded = false }) {
               >
                 {targetRequirements.map((technique) => (
                   <option key={technique.id} value={technique.id}>
-                    {technique.code} - {technique.name}
-                    {technique.requiredMinutes ? ` (${formatMinutes(technique.requiredMinutes)})` : ' (No progression requirement)'}
+                    {technique.name}
                   </option>
                 ))}
               </select>
