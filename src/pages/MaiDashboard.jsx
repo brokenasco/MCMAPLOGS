@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, ClipboardList, Eye, MessageSquare, PlusCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Clock3, Eye, MessageSquare, PlusCircle, XCircle } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
