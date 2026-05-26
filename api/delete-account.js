@@ -30,6 +30,8 @@ export default async function handler(request, response) {
     await anonymizeVerifiedSubmittedLogs(user.id);
     await deleteUnverifiedSubmittedLogs(user.id);
     await clearMaiVerificationReferences(user.id);
+    await anonymizeDeletedUserMessages(user.id);
+    await anonymizeDeletedUserMessageThreads(user.id);
     await deleteProfile(user.id);
     await deleteAuthUser(user.id);
 
@@ -146,6 +148,90 @@ async function clearMaiVerificationReferences(userId) {
 
   if (!updateResponse.ok) {
     throw new Error('Unable to remove MAI verification references.');
+  }
+}
+
+async function anonymizeDeletedUserMessages(userId) {
+  const sentResponse = await supabaseFetch(`/rest/v1/messages?sender_id=eq.${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender_id: null,
+      sender_key: 'deleted-user',
+      sender_name: 'Deleted User'
+    })
+  });
+
+  if (!sentResponse.ok) {
+    throw new Error('Unable to anonymize sent messages before deleting the account.');
+  }
+
+  const receivedResponse = await supabaseFetch(`/rest/v1/messages?recipient_id=eq.${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      recipient_id: null,
+      recipient_key: 'deleted-user',
+      seen_at: new Date().toISOString()
+    })
+  });
+
+  if (!receivedResponse.ok) {
+    throw new Error('Unable to anonymize received messages before deleting the account.');
+  }
+}
+
+async function anonymizeDeletedUserMessageThreads(userId) {
+  const beltThreadResponse = await supabaseFetch(`/rest/v1/message_threads?belt_user_id=eq.${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      belt_user_id: null,
+      belt_user_name: 'Deleted User',
+      belt_user_email: 'deleted-user'
+    })
+  });
+
+  if (!beltThreadResponse.ok) {
+    throw new Error('Unable to anonymize Belt User message threads before deleting the account.');
+  }
+
+  const initiatingMaiThreadResponse = await supabaseFetch(`/rest/v1/message_threads?initiating_mai_user_id=eq.${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      initiating_mai_user_id: null,
+      initiating_mai_name: 'Deleted User',
+      initiating_mai_number: 'deleted-user'
+    })
+  });
+
+  if (!initiatingMaiThreadResponse.ok) {
+    throw new Error('Unable to anonymize started MAI message threads before deleting the account.');
+  }
+
+  const recipientMaiThreadResponse = await supabaseFetch(`/rest/v1/message_threads?recipient_mai_user_id=eq.${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      recipient_mai_user_id: null,
+      recipient_mai_name: 'Deleted User',
+      recipient_mai_number: 'deleted-user'
+    })
+  });
+
+  if (!recipientMaiThreadResponse.ok) {
+    throw new Error('Unable to anonymize received MAI message threads before deleting the account.');
   }
 }
 
