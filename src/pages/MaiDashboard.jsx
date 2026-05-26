@@ -35,6 +35,23 @@ export default function MaiDashboard() {
     setSelectedLog(null);
   };
 
+  const scrollToSection = (sectionId) => {
+    window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const handleStickyAction = () => {
+    if (pendingLogs.length) {
+      setActivePanel('pending');
+      scrollToSection('pending-verification');
+      return;
+    }
+
+    setActivePanel('log');
+    scrollToSection('submit-my-hours');
+  };
+
   return (
     <PageShell
       eyebrow="MAI"
@@ -146,7 +163,7 @@ export default function MaiDashboard() {
       ) : null}
 
       {activePanel === 'pending' ? (
-        <section id="pending-verification" className="mt-5">
+        <section id="pending-verification" className="mt-5 scroll-mt-28">
           <div className="mb-3 flex items-center gap-2">
             <ClipboardList size={20} className="text-clay" aria-hidden="true" />
             <h2 className="text-xl font-bold">Pending Logs</h2>
@@ -176,7 +193,7 @@ export default function MaiDashboard() {
           )}
         </section>
       ) : (
-        <section id="submit-my-hours" className="mt-8 scroll-mt-24">
+        <section id="submit-my-hours" className="mt-8 scroll-mt-28">
           <div className="mb-5">
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-clay">Log My Hours</p>
@@ -215,16 +232,8 @@ export default function MaiDashboard() {
       </section>
 
       <MobileStickyAction
-        label={pendingLogs.length ? 'Review Selected Logs' : 'Log My Hours'}
-        onClick={() => {
-          if (pendingLogs.length) {
-            setActivePanel('pending');
-            document.getElementById('pending-verification')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-          }
-          setActivePanel('log');
-          document.getElementById('submit-my-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }}
+        label={pendingLogs.length ? 'Pending Verification' : 'Log My Hours'}
+        onClick={handleStickyAction}
       />
     </PageShell>
   );

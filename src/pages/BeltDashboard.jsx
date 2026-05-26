@@ -86,6 +86,23 @@ export default function BeltDashboard() {
     setActivePanel('log');
   };
 
+  const scrollToSection = (sectionId) => {
+    window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const handleStickyAction = () => {
+    if (returnedLogs.length) {
+      openReturnedEdit(returnedLogs[0]);
+      scrollToSection('returned-log-fix');
+      return;
+    }
+
+    openLogMyHours();
+    scrollToSection('submit-hours-section');
+  };
+
   const handlePassedAdvancementTest = async () => {
     setIsAdvancingBelt(true);
     setActionMessage('');
@@ -182,7 +199,7 @@ export default function BeltDashboard() {
       ) : null}
 
       {activePanel === 'pending' ? (
-        <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_380px]">
+        <section id="pending-logs-section" className="mt-6 scroll-mt-28 grid gap-5 lg:grid-cols-[1fr_380px]">
           <div>
             <h2 className="mb-3 text-xl font-bold">Logs Pending Verification</h2>
             {pendingLogs.length ? (
@@ -199,7 +216,7 @@ export default function BeltDashboard() {
           <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
         </section>
       ) : (
-        <section className="mt-6">
+        <section id="submit-hours-section" className="mt-6 scroll-mt-28">
           <div className="mb-4">
             <p className="text-sm font-bold uppercase tracking-wide text-clay">Log My Hours</p>
             <h2 className="mt-1 text-xl font-bold">Submit MCMAP training hours</h2>
@@ -228,7 +245,7 @@ export default function BeltDashboard() {
       ) : null}
 
       {editingLog ? (
-        <div className="mt-8">
+        <div id={editingMode === 'resubmit' ? 'returned-log-fix' : 'pending-log-edit'} className="mt-8 scroll-mt-28">
           <LogEditForm
             beltUser={progressUser}
             findMaiByNumber={findMaiByNumber}
@@ -272,13 +289,7 @@ export default function BeltDashboard() {
 
       <MobileStickyAction
         label={returnedLogs.length ? 'Fix Returned Log' : 'Submit Hours'}
-        onClick={() => {
-          if (returnedLogs.length) {
-            openReturnedEdit(returnedLogs[0]);
-            return;
-          }
-          openLogMyHours();
-        }}
+        onClick={handleStickyAction}
       />
     </PageShell>
   );
