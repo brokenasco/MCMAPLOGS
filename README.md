@@ -63,6 +63,8 @@ Run `supabase/mai-to-mai-messages.sql` in the Supabase SQL editor before using M
 
 Run `supabase/welcome-message.sql` in the Supabase SQL editor before using the one-time founder welcome message. It adds a `welcome_seen` flag to `profiles`.
 
+Run `supabase/message-seen-at.sql` in the Supabase SQL editor before using persistent seen timestamps. It adds `seen_at`, backfills message recipients, and ensures read status is saved per recipient.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 60-day free trial, then bills $69.99/year.

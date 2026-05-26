@@ -112,8 +112,7 @@ export default function Messages() {
               {messageThreads.map((thread) => {
                 const unread = thread.messages.some((message) =>
                   isUnreadForCurrentUser(message, {
-                    currentUserId: session?.user?.id,
-                    currentMessageKey: activeRole === 'MAI' ? maiUser.maiNumber : beltUser.email
+                    currentUserId: session?.user?.id
                   })
                 );
                 return (
@@ -158,9 +157,12 @@ export default function Messages() {
                     <article key={message.id} className="rounded-md bg-field p-4">
                       <div className="flex flex-col justify-between gap-1 sm:flex-row">
                         <p className="text-sm font-bold text-ink">{message.senderName}</p>
-                        <p className="text-xs font-semibold text-ink/50">{formatDateTime(message.createdAt)}</p>
                       </div>
                       <p className="mt-2 text-sm leading-6 text-ink/75">{message.body}</p>
+                      <div className="mt-3 grid gap-1 text-xs font-semibold text-ink/50 sm:grid-cols-2">
+                        <p>Sent: {formatDateTime(message.createdAt)}</p>
+                        <p>Seen: {message.seenAt ? formatDateTime(message.seenAt) : 'Not yet viewed'}</p>
+                      </div>
                     </article>
                   ))}
                   {!selectedThread?.messages?.length ? (
@@ -256,11 +258,6 @@ function formatDateTime(date) {
   return new Date(date).toLocaleString();
 }
 
-function isUnreadForCurrentUser(message, { currentUserId, currentMessageKey }) {
-  const readKeys = [currentUserId, currentMessageKey].filter(Boolean);
-  const recipientIsCurrentUser =
-    (currentUserId && message.recipientId === currentUserId) ||
-    (currentMessageKey && message.recipientKey === currentMessageKey);
-
-  return Boolean(recipientIsCurrentUser) && !readKeys.some((key) => message.readBy?.includes(key));
+function isUnreadForCurrentUser(message, { currentUserId }) {
+  return Boolean(currentUserId && message.recipientId === currentUserId && !message.seenAt);
 }
