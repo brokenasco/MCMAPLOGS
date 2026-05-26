@@ -16,7 +16,7 @@ export default function SignUp() {
     name: '',
     email: '',
     password: '',
-    beltLevel: 'Green Belt'
+    beltLevel: 'No MCMAP Belt'
   });
   const [assignedMaiNumber, setAssignedMaiNumber] = React.useState('');
   const [statusMessage, setStatusMessage] = React.useState('');

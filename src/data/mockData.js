@@ -144,7 +144,7 @@ export const trainingLogs = [
   }
 ];
 
-export const beltLevels = ['Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
+export const beltLevels = ['No MCMAP Belt', 'Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
 
 export const messageThreads = [
   {

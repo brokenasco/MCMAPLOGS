@@ -1,4 +1,4 @@
-import { additionalMcmapHoursTarget, beltProgression, getBeltRequirements, getTargetBelt } from '../data/mcmapReference.js';
+import { additionalMcmapHoursTarget, beltProgression, earnedBeltProgression, getBeltRequirements, getTargetBelt, noMcmapBelt } from '../data/mcmapReference.js';
 
 export function buildBeltProgress({ beltUser, logs }) {
   const currentBelt = normalizeBeltName(beltUser.beltLevel);
@@ -47,8 +47,8 @@ export function buildBeltProgress({ beltUser, logs }) {
 export function buildTotalMcmapHours({ beltUser, logs }) {
   const currentBelt = normalizeBeltName(beltUser.beltLevel);
   const targetBelt = getTargetBelt(currentBelt);
-  const currentBeltIndex = beltProgression.indexOf(currentBelt);
-  const completedBelts = currentBeltIndex >= 0 ? beltProgression.slice(0, currentBeltIndex + 1) : [];
+  const currentBeltIndex = earnedBeltProgression.indexOf(currentBelt);
+  const completedBelts = currentBeltIndex >= 0 ? earnedBeltProgression.slice(0, currentBeltIndex + 1) : [];
   const completedBeltMinutes = completedBelts.reduce((total, belt) => total + getRequiredMinutesForBelt(belt), 0);
   const targetBeltVerifiedMinutes = sumLogMinutes(
     logs.filter((log) => log.status === 'Verified' && matchesTargetBelt(log, targetBelt))
@@ -111,10 +111,11 @@ function matchesTargetBelt(log, targetBelt) {
 
 function normalizeBeltName(beltName = '') {
   const normalized = beltName.toLowerCase();
+  if (normalized.includes('no mcmap') || normalized.includes('no belt') || normalized === 'none') return noMcmapBelt;
   if (normalized.includes('tan')) return 'Tan Belt';
   if (normalized.includes('gray') || normalized.includes('grey')) return 'Gray Belt';
   if (normalized.includes('green')) return 'Green Belt';
   if (normalized.includes('brown')) return 'Brown Belt';
   if (normalized.includes('black')) return 'Black 1st Degree';
-  return 'Tan Belt';
+  return noMcmapBelt;
 }

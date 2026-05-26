@@ -1,4 +1,6 @@
-export const beltProgression = ['Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
+export const noMcmapBelt = 'No MCMAP Belt';
+export const beltProgression = [noMcmapBelt, 'Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
+export const earnedBeltProgression = beltProgression.filter((belt) => belt !== noMcmapBelt);
 export const additionalMcmapHoursTarget = 'Additional MCMAP Hours';
 
 export const beltReference = {
@@ -98,7 +100,7 @@ export function getTargetBelt(currentBelt) {
   const normalizedBelt = normalizeBeltName(currentBelt);
   const currentIndex = beltProgression.indexOf(normalizedBelt);
   if (normalizedBelt === 'Black 1st Degree') return additionalMcmapHoursTarget;
-  return beltProgression[Math.min(currentIndex + 1, beltProgression.length - 1)] || 'Gray Belt';
+  return beltProgression[Math.min(currentIndex + 1, beltProgression.length - 1)] || 'Tan Belt';
 }
 
 export function getTargetBeltOptions(currentBelt) {
@@ -153,10 +155,11 @@ function parseTime(time) {
 
 function normalizeBeltName(beltName = '') {
   const normalized = beltName.toLowerCase();
+  if (normalized.includes('no mcmap') || normalized.includes('no belt') || normalized === 'none') return noMcmapBelt;
   if (normalized.includes('tan')) return 'Tan Belt';
   if (normalized.includes('gray') || normalized.includes('grey')) return 'Gray Belt';
   if (normalized.includes('green')) return 'Green Belt';
   if (normalized.includes('brown')) return 'Brown Belt';
   if (normalized.includes('black')) return 'Black 1st Degree';
-  return 'Tan Belt';
+  return noMcmapBelt;
 }

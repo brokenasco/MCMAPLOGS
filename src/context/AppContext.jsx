@@ -1,6 +1,6 @@
 import React from 'react';
 import { currentBeltUser, currentMai, messageThreads as mockMessageThreads, trainingLogs } from '../data/mockData.js';
-import { additionalMcmapHoursTarget, beltProgression, getBeltRequirements } from '../data/mcmapReference.js';
+import { additionalMcmapHoursTarget, beltProgression, earnedBeltProgression, getBeltRequirements, noMcmapBelt } from '../data/mcmapReference.js';
 import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
@@ -177,10 +177,18 @@ export function AppProvider({ children }) {
   async function seedPriorBeltLogs(profileData) {
     if (!supabase || !profileData?.id || profileData.prior_belt_logs_seeded) return;
 
-    const currentBeltIndex = beltProgression.findIndex(
+    if (profileData.belt_level === noMcmapBelt) {
+      await supabase
+        .from('profiles')
+        .update({ prior_belt_logs_seeded: true })
+        .eq('id', profileData.id);
+      return;
+    }
+
+    const currentBeltIndex = earnedBeltProgression.findIndex(
       (belt) => belt.toLowerCase() === (profileData.belt_level || '').toLowerCase()
     );
-    const beltsToSeed = beltProgression.slice(0, Math.max(0, currentBeltIndex) + 1);
+    const beltsToSeed = earnedBeltProgression.slice(0, Math.max(0, currentBeltIndex) + 1);
     if (!beltsToSeed.length) return;
 
     const { data: existingRecords } = await supabase
@@ -1112,16 +1120,21 @@ export function AppProvider({ children }) {
     const existingMaiThread = !threadId && activeRole === 'MAI'
       ? findExistingMaiToMaiThread({ currentMaiNumber: maiUser.maiNumber, targetMaiNumber, threads: messageThreads })
       : null;
+    const existingBeltThread = !threadId && activeRole === 'Belt User'
+      ? findExistingBeltToMaiThread({ beltUserEmail: beltUser.email, targetMaiNumber, threads: messageThreads })
+      : null;
     const thread = threadId
       ? messageThreads.find((item) => item.id === threadId)
       : existingMaiThread
         ? existingMaiThread
+      : existingBeltThread
+        ? existingBeltThread
       : activeRole === 'MAI'
         ? buildMaiToMaiThread({ targetMaiNumber, maiUser, maiDirectory })
-        : buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs });
+        : buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory });
 
     if (!thread) {
-      throw new Error(activeRole === 'MAI' ? 'That MAI code does not match an active MAI account.' : 'You can only message MAIs connected to your submitted logs.');
+      throw new Error('That MAI code does not match an active MAI account.');
     }
 
     const message = {
@@ -1488,12 +1501,13 @@ function getLogMinutes(log = {}) {
 
 function normalizeBeltName(beltName = '') {
   const normalized = beltName.toLowerCase();
+  if (normalized.includes('no mcmap') || normalized.includes('no belt') || normalized === 'none') return noMcmapBelt;
   if (normalized.includes('tan')) return 'Tan Belt';
   if (normalized.includes('gray') || normalized.includes('grey')) return 'Gray Belt';
   if (normalized.includes('green')) return 'Green Belt';
   if (normalized.includes('brown')) return 'Brown Belt';
   if (normalized.includes('black')) return 'Black 1st Degree';
-  return beltName;
+  return beltName || noMcmapBelt;
 }
 
 function mapThreadFromSupabase(row) {
@@ -1654,10 +1668,7 @@ function getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThread
   );
 }
 
-function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs }) {
-  const canMessageMai = beltLogs.some((log) => log.maiNumber?.toLowerCase() === targetMaiNumber?.toLowerCase());
-  if (!canMessageMai) return null;
-
+function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory }) {
   const mai = maiDirectory.find((item) => item.maiNumber?.toLowerCase() === targetMaiNumber?.toLowerCase());
   if (!mai) return null;
 
@@ -1669,6 +1680,18 @@ function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory, beltLogs }
     maiNumber: mai.maiNumber,
     messages: []
   };
+}
+
+function findExistingBeltToMaiThread({ beltUserEmail, targetMaiNumber, threads }) {
+  const target = targetMaiNumber?.trim().toLowerCase();
+  const beltEmail = beltUserEmail?.trim().toLowerCase();
+  if (!target || !beltEmail) return null;
+
+  return threads.find((thread) =>
+    thread.threadType !== 'mai_mai' &&
+    thread.beltUserEmail?.toLowerCase() === beltEmail &&
+    thread.maiNumber?.toLowerCase() === target
+  ) || null;
 }
 
 function buildMaiToMaiThread({ targetMaiNumber, maiUser, maiDirectory }) {
