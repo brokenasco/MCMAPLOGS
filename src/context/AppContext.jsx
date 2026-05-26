@@ -1427,7 +1427,7 @@ function mapLogFromSupabase(row) {
     editHistory: row.edit_history || [],
     submittedAt: row.created_at?.slice(0, 10),
     verifiedAt: row.verified_at?.slice(0, 10),
-    verifiedBy: row.source === 'Account Creation' || row.source === 'Account Creation Backfill' || row.verification_source === 'Account Creation' ? 'Upon Account Creation' : row.verified_by ? 'Verified MAI' : null,
+    verifiedBy: row.source === 'Account Creation' || row.source === 'Account Creation Backfill' || row.verification_source === 'Account Creation' ? 'Upon Account Creation' : row.verified_by ? row.assigned_mai_name : null,
     verifiedByMaiNumber: row.verified_by ? row.mai_number : null,
     archived: Boolean(row.archived)
   };

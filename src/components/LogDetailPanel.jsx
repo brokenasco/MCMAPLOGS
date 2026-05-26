@@ -90,7 +90,7 @@ function formatVerifier(log) {
   }
 
   const maiNumber = log.verifiedByMaiNumber || log.maiNumber || '';
-  const maiName = log.verifiedBy || log.assignedMaiName || '';
+  const maiName = log.verifiedBy === 'Verified MAI' ? '' : log.verifiedBy || log.assignedMaiName || '';
   const signedBy = `${maiNumber} ${maiName}`.trim();
 
   return signedBy || 'Not signed yet';

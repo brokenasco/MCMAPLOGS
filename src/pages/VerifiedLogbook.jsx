@@ -809,7 +809,12 @@ function formatVerifiedDate(log) {
 function formatVerifier(log) {
   if (log.source === 'Account Creation' || log.source === 'Account Creation Backfill') return 'Upon Account Creation';
   if (log.verificationSource === 'Account Creation') return 'Upon Account Creation';
-  return log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified';
+
+  const maiNumber = log.verifiedByMaiNumber || log.maiNumber || '';
+  const maiName = log.verifiedBy === 'Verified MAI' ? '' : log.verifiedBy || log.assignedMaiName || '';
+  const verifier = `${maiNumber} ${maiName}`.trim();
+
+  return verifier || 'Verified';
 }
 
 function formatLogSource(log, fallback) {
