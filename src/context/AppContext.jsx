@@ -1,6 +1,6 @@
 import React from 'react';
 import { currentBeltUser, currentMai, messageThreads as mockMessageThreads, trainingLogs } from '../data/mockData.js';
-import { additionalMcmapHoursTarget, getBeltRequirements } from '../data/mcmapReference.js';
+import { additionalMcmapHoursTarget, beltProgression, getBeltRequirements } from '../data/mcmapReference.js';
 import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
@@ -168,9 +168,86 @@ export function AppProvider({ children }) {
 
     applyProfile(profileData);
     await loadMaiDirectory(profileData);
+    await seedPriorBeltLogs(profileData);
     await loadLogs(profileData);
     await loadMessages(profileData);
     return profileData;
+  }
+
+  async function seedPriorBeltLogs(profileData) {
+    if (!supabase || !profileData?.id || profileData.prior_belt_logs_seeded) return;
+
+    const currentBeltIndex = beltProgression.findIndex(
+      (belt) => belt.toLowerCase() === (profileData.belt_level || '').toLowerCase()
+    );
+    const beltsToSeed = beltProgression.slice(0, Math.max(0, currentBeltIndex) + 1);
+    if (!beltsToSeed.length) return;
+
+    const { data: existingRecords } = await supabase
+      .from('training_logs')
+      .select('id')
+      .eq('belt_user_id', profileData.id)
+      .eq('source', 'Account Creation')
+      .limit(1);
+
+    if (existingRecords?.length) {
+      await supabase
+        .from('profiles')
+        .update({ prior_belt_logs_seeded: true })
+        .eq('id', profileData.id);
+      return;
+    }
+
+    const createdAt = new Date().toISOString();
+    const records = beltsToSeed.flatMap((beltName) =>
+      getBeltRequirements(beltName).map((requirement) => ({
+        belt_user_id: profileData.id,
+        marine_name: profileData.full_name,
+        date: createdAt.slice(0, 10),
+        hours: Number((requirement.requiredMinutes / 60).toFixed(2)),
+        minutes: requirement.requiredMinutes,
+        belt_level: beltName,
+        target_belt: beltName,
+        class_code: requirement.code,
+        technique_name: requirement.name,
+        submitter_role: profileData.account_type,
+        assigned_mai_user_id: null,
+        assigned_mai_name: 'Upon Account Creation',
+        description: `${requirement.code}: ${requirement.name}`,
+        mai_number: null,
+        status: 'Verified',
+        verified_by: null,
+        verified_at: createdAt,
+        applied_minutes: requirement.requiredMinutes,
+        extra_minutes: 0,
+        source: 'Account Creation',
+        verification_source: 'Account Creation',
+        created_at: createdAt
+      }))
+    );
+
+    const { error: insertError } = await supabase
+      .from('training_logs')
+      .insert(records);
+
+    if (insertError) {
+      setAuthMessage(insertError.message);
+      return;
+    }
+
+    const { data: updatedProfile, error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({ prior_belt_logs_seeded: true })
+      .eq('id', profileData.id)
+      .select()
+      .single();
+
+    if (profileUpdateError) {
+      setAuthMessage(profileUpdateError.message);
+      return;
+    }
+
+    applyProfile(updatedProfile);
   }
 
   async function loadLogs(profileData = profile) {
@@ -1323,13 +1400,14 @@ function mapLogFromSupabase(row) {
     status: row.status,
     appliedMinutes: Number(row.applied_minutes ?? row.minutes ?? Math.round(Number(row.hours || 0) * 60)),
     extraMinutes: Number(row.extra_minutes ?? 0),
+    source: row.source || row.verification_source || '',
     returnReason: row.return_reason,
     returnMessage: row.return_message,
     resubmittedAt: row.resubmitted_at,
     editHistory: row.edit_history || [],
     submittedAt: row.created_at?.slice(0, 10),
     verifiedAt: row.verified_at?.slice(0, 10),
-    verifiedBy: row.verified_by ? 'Verified MAI' : null,
+    verifiedBy: row.source === 'Account Creation' || row.verification_source === 'Account Creation' ? 'Upon Account Creation' : row.verified_by ? 'Verified MAI' : null,
     verifiedByMaiNumber: row.verified_by ? row.mai_number : null
   };
 }
@@ -1445,13 +1523,12 @@ function mapThreadFromSupabase(row) {
 
 function mapMessageFromSupabase(row, thread = null) {
   const inferredRecipientKey = getInferredRecipientKey(row, thread);
-  const inferredRecipientId = getInferredRecipientId(inferredRecipientKey, thread);
 
   return {
     id: row.id,
     senderId: row.sender_id,
     senderKey: row.sender_key,
-    recipientId: row.recipient_id || inferredRecipientId,
+    recipientId: row.recipient_id,
     recipientKey: row.recipient_key || inferredRecipientKey,
     senderName: row.sender_name,
     body: row.body,
@@ -1636,19 +1713,6 @@ function getInferredRecipientKey(row, thread) {
 
   return row.sender_key === thread.maiNumber ? thread.beltUserEmail : thread.maiNumber;
 }
-
-function getInferredRecipientId(recipientKey, thread) {
-  if (!thread) return null;
-
-  if (thread.threadType === 'mai_mai') {
-    if (recipientKey === thread.initiatingMaiNumber) return thread.initiatingMaiUserId;
-    if (recipientKey === thread.recipientMaiNumber) return thread.recipientMaiUserId;
-    return null;
-  }
-
-  return recipientKey === thread.beltUserEmail ? thread.beltUserId : null;
-}
-
 
 export function useApp() {
   const context = React.useContext(AppContext);

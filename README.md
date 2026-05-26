@@ -71,6 +71,10 @@ Run `supabase/dev-test-lifetime-mai-access.sql` in the Supabase SQL editor to gr
 
 Run `supabase/mai-code-lookup.sql` in the Supabase SQL editor before testing verifier dropdowns. It creates the official MAI code lookup used by Belt Users and MAIs.
 
+Run `supabase/belt-user-message-seen-fix.sql` in the Supabase SQL editor to backfill message recipients and make Belt User unread badges persist correctly.
+
+Run `supabase/prior-belt-logbook-seed.sql` in the Supabase SQL editor to automatically seed verified prior-belt logbook entries when accounts are created.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 60-day free trial, then bills $69.99/year.
