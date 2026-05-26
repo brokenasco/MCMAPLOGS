@@ -284,7 +284,7 @@ export function SubmitHoursForm({ embedded = false }) {
                 >
                   {previousMais.map((mai) => (
                     <option key={mai.maiNumber} value={mai.maiNumber}>
-                      {mai.maiNumber} {mai.name}
+                      {mai.maiNumber} - {mai.name}
                     </option>
                   ))}
                   <option value="new">Enter New MAI Code</option>

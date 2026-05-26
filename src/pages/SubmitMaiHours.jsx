@@ -15,7 +15,8 @@ function buildInitialForm(currentBelt) {
     techniqueId: requirements[0]?.id || '',
     hours: '',
     minutes: '',
-    verifierMaiNumber: ''
+    maiSelection: '',
+    maiNumber: ''
   };
 }
 
@@ -32,7 +33,7 @@ export default function SubmitMaiHours() {
 }
 
 export function SubmitMaiHoursForm({ embedded = false }) {
-  const { maiUser, profile, maiDirectory, submitMaiLog } = useApp();
+  const { beltLogs, findMaiByNumber, maiUser, profile, submitMaiLog } = useApp();
   const currentBelt = profile?.belt_level || maiUser?.beltLevel || 'Black 1st Degree';
   const targetOptions = React.useMemo(() => getTargetBeltOptions(currentBelt), [currentBelt]);
   const [form, setForm] = React.useState(() => buildInitialForm(currentBelt));
@@ -42,11 +43,13 @@ export function SubmitMaiHoursForm({ embedded = false }) {
   const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : targetOptions[0] || getTargetBelt(currentBelt);
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
-  const verifyingMais = React.useMemo(
-    () => maiDirectory.filter((mai) => mai.maiNumber && mai.maiNumber !== maiUser?.maiNumber),
-    [maiDirectory, maiUser?.maiNumber]
+  const previousMais = React.useMemo(
+    () => getPreviousMais(beltLogs, findMaiByNumber, maiUser?.maiNumber),
+    [beltLogs, findMaiByNumber, maiUser?.maiNumber]
   );
-  const selectedMai = verifyingMais.find((mai) => mai.maiNumber === form.verifierMaiNumber);
+  const isNewMaiEntry = form.maiSelection === 'new' || !previousMais.length;
+  const selectedMaiNumber = isNewMaiEntry ? form.maiNumber.trim().toUpperCase() : form.maiSelection;
+  const selectedMai = selectedMaiNumber ? findMaiByNumber(selectedMaiNumber) : null;
   const totalMinutes = getTotalMinutes(form.hours, form.minutes);
   const normalizedTime = formatMinutes(totalMinutes);
   const showTargetSelect = targetOptions.length > 1 || isAdditionalMcmapTarget(targetBelt);
@@ -59,7 +62,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
       if (
         current.targetBelt === nextTargetBelt &&
         nextRequirements.some((technique) => technique.id === current.techniqueId) &&
-        (current.verifierMaiNumber || !verifyingMais[0])
+        current.maiSelection
       ) {
         return current;
       }
@@ -68,10 +71,20 @@ export function SubmitMaiHoursForm({ embedded = false }) {
         ...current,
         targetBelt: nextTargetBelt,
         techniqueId: nextRequirements[0]?.id || '',
-        verifierMaiNumber: current.verifierMaiNumber || verifyingMais[0]?.maiNumber || ''
+        maiSelection: current.maiSelection || previousMais[0]?.maiNumber || 'new'
       };
     });
-  }, [currentBelt, targetOptions, verifyingMais]);
+  }, [currentBelt, targetOptions, previousMais]);
+
+  React.useEffect(() => {
+    setForm((current) => {
+      if (current.maiSelection) return current;
+      return {
+        ...current,
+        maiSelection: previousMais[0]?.maiNumber || 'new'
+      };
+    });
+  }, [previousMais]);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -85,9 +98,12 @@ export function SubmitMaiHoursForm({ embedded = false }) {
     if (!targetBelt) nextErrors.targetBelt = 'Target belt could not be calculated from your current belt.';
     if (!selectedTechnique) nextErrors.techniqueId = 'Choose a technique or tie-in.';
     if (totalMinutes <= 0) nextErrors.time = 'Enter training time greater than zero.';
-    if (!form.verifierMaiNumber) nextErrors.verifierMaiNumber = 'Choose another MAI for verification.';
-    if (form.verifierMaiNumber === maiUser?.maiNumber) nextErrors.verifierMaiNumber = 'You cannot verify your own hours.';
-    if (form.verifierMaiNumber && !selectedMai) nextErrors.verifierMaiNumber = 'That MAI is not available for verification right now.';
+    if (!selectedMaiNumber) nextErrors.maiNumber = 'Choose an MAI or enter a new MAI code.';
+    if (selectedMaiNumber && !/^MAI-\d{4}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842.';
+    if (selectedMaiNumber?.toLowerCase() === maiUser?.maiNumber?.toLowerCase()) nextErrors.maiNumber = 'You cannot verify your own hours.';
+    if (selectedMaiNumber && /^MAI-\d{4}$/i.test(selectedMaiNumber) && !selectedMai) {
+      nextErrors.maiNumber = 'That MAI code does not match an active MAI account. Check the code and try again.';
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -109,7 +125,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
         classCode: selectedTechnique.code,
         techniqueName: selectedTechnique.name,
         description: `${selectedTechnique.code}: ${selectedTechnique.name}`,
-        maiNumber: form.verifierMaiNumber
+        maiNumber: selectedMaiNumber
       });
 
       setSubmittedLog(savedLog);
@@ -259,21 +275,35 @@ export function SubmitMaiHoursForm({ embedded = false }) {
               <label className="block">
                 <span className="text-sm font-bold text-ink">Verifying MAI</span>
                 <select
-                  name="verifierMaiNumber"
-                  value={form.verifierMaiNumber}
+                  name="maiSelection"
+                  value={form.maiSelection || previousMais[0]?.maiNumber || 'new'}
                   onChange={updateField}
                   className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base"
                 >
-                  <option value="">Select an MAI verifier</option>
-                  {verifyingMais.map((mai) => (
+                  {previousMais.map((mai) => (
                     <option key={mai.maiNumber} value={mai.maiNumber}>
-                      {mai.maiNumber} {mai.name}
+                      {mai.maiNumber} - {mai.name}
                     </option>
                   ))}
+                  <option value="new">Enter New MAI Code</option>
                 </select>
-                <p className="mt-2 text-sm leading-6 text-ink/60">MAIs must select another MAI. Self-verification is blocked.</p>
+                <p className="mt-2 text-sm leading-6 text-ink/60">
+                  Previously used MAIs come from your past submitted logs. MAIs must select another MAI.
+                </p>
               </label>
-              <ErrorText message={errors.verifierMaiNumber} />
+              {isNewMaiEntry ? (
+                <Field
+                  label="New MAI code"
+                  name="maiNumber"
+                  value={form.maiNumber}
+                  onChange={updateField}
+                  placeholder="MAI-0000"
+                  error={errors.maiNumber}
+                  hint="Enter the MAI number for the instructor who will verify this log."
+                />
+              ) : (
+                <ErrorText message={errors.maiNumber} />
+              )}
 
               <div className="mt-4 rounded-md border border-coyote/35 bg-field p-4">
                 <p className="flex items-center gap-2 text-sm font-bold text-ink">
@@ -286,7 +316,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
                   </p>
                 ) : (
                   <p className="mt-2 text-sm leading-6 text-clay">
-                    Choose the MAI who will verify this log.
+                    No MAI match found yet. Check the number before submitting.
                   </p>
                 )}
               </div>
@@ -311,6 +341,29 @@ export function SubmitMaiHoursForm({ embedded = false }) {
 
 function getTotalMinutes(hours, minutes) {
   return Math.round(Math.max(0, Number(hours || 0) * 60 + Number(minutes || 0)));
+}
+
+function getPreviousMais(logs, findMaiByNumber, currentMaiNumber) {
+  const byNumber = new Map();
+
+  logs
+    .filter((log) => log.maiNumber)
+    .forEach((log) => {
+      if (log.maiNumber?.toLowerCase() === currentMaiNumber?.toLowerCase()) return;
+
+      const mai = findMaiByNumber(log.maiNumber);
+      if (mai) {
+        byNumber.set(mai.maiNumber, mai);
+      } else if (log.assignedMaiName) {
+        byNumber.set(log.maiNumber, {
+          maiNumber: log.maiNumber,
+          name: log.assignedMaiName,
+          unit: ''
+        });
+      }
+    });
+
+  return [...byNumber.values()];
 }
 
 function formatMaiDisplay(log) {

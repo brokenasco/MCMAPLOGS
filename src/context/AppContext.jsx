@@ -222,23 +222,73 @@ export function AppProvider({ children }) {
   async function loadMaiDirectory(profileData = profile) {
     if (!supabase) return;
 
+    const { data: lookupData, error: lookupError } = await supabase
+      .from('mai_code_lookup')
+      .select('mai_user_id,full_name,first_name,last_name,email,unit,mai_code,account_status,access_status,is_lookup_active,created_at')
+      .eq('is_lookup_active', true);
+
+    if (!lookupError && lookupData) {
+      const directory = lookupData.map((item) => ({
+        id: item.mai_user_id,
+        name: item.full_name || `${item.first_name || ''} ${item.last_name || ''}`.trim(),
+        firstName: item.first_name,
+        lastName: item.last_name,
+        email: item.email,
+        unit: item.unit,
+        maiNumber: item.mai_code,
+        accountStatus: item.account_status,
+        accessStatus: item.access_status,
+        isActive: item.is_lookup_active,
+        createdAt: item.created_at
+      }));
+
+      setMaiDirectory(mergeMaiDirectory(directory));
+      return;
+    }
+
     const { data, error } = await supabase
       .from('profiles')
-      .select('id,full_name,email,unit,mai_number,account_type')
+      .select('id,full_name,email,unit,mai_number,account_type,subscription_status,lifetime_mai_access,dev_test_access,created_at')
       .not('mai_number', 'is', null);
 
     if (error) {
+      const { data: basicData, error: basicError } = await supabase
+        .from('profiles')
+        .select('id,full_name,email,unit,mai_number,account_type,created_at')
+        .not('mai_number', 'is', null);
+
+      if (basicError) return;
+
+      const basicDirectory = basicData
+        .filter((item) => ['MAI', 'Owner/Developer'].includes(item.account_type))
+        .map((item) => ({
+          id: item.id,
+          name: item.full_name,
+          email: item.email,
+          unit: item.unit,
+          maiNumber: item.mai_number,
+          accountStatus: item.account_type,
+          accessStatus: item.account_type === 'Owner/Developer' ? 'owner_free' : 'unknown',
+          isActive: true,
+          createdAt: item.created_at
+        }));
+
+      setMaiDirectory(mergeMaiDirectory(basicDirectory));
       return;
     }
 
     const directory = data
-      .filter((item) => ['MAI', 'Owner/Developer'].includes(item.account_type))
+      .filter((item) => isActiveMaiLookupProfile(item))
       .map((item) => ({
         id: item.id,
         name: item.full_name,
         email: item.email,
         unit: item.unit,
-        maiNumber: item.mai_number
+        maiNumber: item.mai_number,
+        accountStatus: item.account_type,
+        accessStatus: getMaiAccessStatus(item),
+        isActive: true,
+        createdAt: item.created_at
       }));
 
     setMaiDirectory(mergeMaiDirectory(directory));
@@ -641,7 +691,10 @@ export function AppProvider({ children }) {
   };
 
   const findMaiByNumber = (maiNumber = '') =>
-    maiDirectory.find((mai) => mai.maiNumber?.toLowerCase() === maiNumber.trim().toLowerCase()) || null;
+    maiDirectory.find((mai) =>
+      mai.isActive !== false &&
+      mai.maiNumber?.trim().toLowerCase() === maiNumber.trim().toLowerCase()
+    ) || null;
 
   const saveDraft = (draft) => {
     setSavedDraft(draft);
@@ -1450,7 +1503,8 @@ function mergeMaiDirectory(directory) {
     if (!mai?.maiNumber) return;
     byNumber.set(mai.maiNumber.toLowerCase(), {
       ...byNumber.get(mai.maiNumber.toLowerCase()),
-      ...mai
+      ...mai,
+      isActive: mai.isActive !== false
     });
   });
 
@@ -1485,6 +1539,20 @@ function hasLifetimeMaiAccess(profileData) {
     profileData?.dev_test_access ||
     profileData?.id === devTestMaiUserId
   );
+}
+
+function isActiveMaiLookupProfile(profileData) {
+  return (
+    ['MAI', 'Owner/Developer'].includes(profileData.account_type) &&
+    Boolean(profileData.mai_number) &&
+    ['active', 'trialing', 'owner_free', 'lifetime_free'].includes(getMaiAccessStatus(profileData))
+  );
+}
+
+function getMaiAccessStatus(profileData) {
+  if (hasLifetimeMaiAccess(profileData)) return 'lifetime_free';
+  if (profileData.account_type === 'Owner/Developer') return 'owner_free';
+  return profileData.subscription_status || 'unpaid';
 }
 
 function getEffectiveAccountRole(accountType) {
