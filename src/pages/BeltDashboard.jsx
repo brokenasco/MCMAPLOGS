@@ -136,7 +136,7 @@ export default function BeltDashboard() {
           <CommandDetail label="Current Belt" value={progress.currentBelt} />
           <CommandDetail label="Working Toward" value={progress.targetBelt} />
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <CommandActionButton
             active={activePanel === 'pending'}
             detail={`${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'}`}
@@ -346,7 +346,7 @@ function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`focus-ring flex min-h-24 items-center justify-between gap-4 rounded-md border p-4 text-left transition ${
+      className={`focus-ring flex min-h-20 items-center justify-between gap-4 rounded-md border p-4 text-left transition sm:min-h-24 ${
         active
           ? 'border-brass bg-brass text-ink shadow-sm'
           : 'border-paper/10 bg-paper/10 text-paper hover:bg-paper/15'
@@ -484,11 +484,11 @@ function RecentLogs({ logs, onCancelPending, onEditPending, onEditReturned, onSe
 function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned, onSelectLog }) {
   if (log.status === 'Pending') {
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2 sm:flex sm:flex-wrap">
         <button
           type="button"
           onClick={() => onEditPending(log)}
-          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white"
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white sm:h-9"
         >
           <Pencil size={16} aria-hidden="true" />
           Edit
@@ -496,7 +496,7 @@ function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned,
         <button
           type="button"
           onClick={() => onCancelPending(log)}
-          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-clay/30 bg-paper px-3 text-sm font-bold text-clay"
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-clay/30 bg-paper px-3 text-sm font-bold text-clay sm:h-9"
         >
           <Trash2 size={16} aria-hidden="true" />
           Cancel
@@ -507,11 +507,11 @@ function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned,
 
   if (log.status === 'Returned') {
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2 sm:flex sm:flex-wrap">
         <button
           type="button"
           onClick={() => onSelectLog(log)}
-          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink"
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink sm:h-9"
         >
           <Eye size={16} aria-hidden="true" />
           View Reason
@@ -519,7 +519,7 @@ function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned,
         <button
           type="button"
           onClick={() => onEditReturned(log)}
-          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-clay px-3 text-sm font-bold text-white"
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-clay px-3 text-sm font-bold text-white sm:h-9"
         >
           <RotateCcw size={16} aria-hidden="true" />
           Edit & Resubmit
@@ -532,7 +532,7 @@ function RecentLogActions({ log, onCancelPending, onEditPending, onEditReturned,
     <button
       type="button"
       onClick={() => onSelectLog(log)}
-      className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink"
+      className="focus-ring inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink sm:h-9 sm:w-auto"
     >
       <Eye size={16} aria-hidden="true" />
       View

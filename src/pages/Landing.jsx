@@ -96,7 +96,7 @@ export default function Landing() {
           </div>
           <Link
             to="/signup"
-            className="focus-ring inline-flex h-11 items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white"
+            className="focus-ring inline-flex h-11 w-full items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white sm:w-auto"
           >
             Create an account
           </Link>
@@ -199,7 +199,7 @@ function PathCard({ path }) {
       </ul>
       <Link
         to={path.to}
-        className="focus-ring mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-brass px-4 text-sm font-black text-ink hover:bg-brass/90"
+        className="focus-ring mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-brass px-4 text-sm font-black text-ink hover:bg-brass/90 sm:w-auto"
       >
         {path.cta}
         <ArrowRight size={17} aria-hidden="true" />
@@ -252,7 +252,7 @@ function DashboardPreview({ action, rows, stats, subtitle, title }) {
         </div>
         <div className="grid gap-2">
           {rows.map(([name, status], index) => (
-            <div key={name} className="flex items-center justify-between rounded-md bg-paper/10 p-3">
+            <div key={name} className="flex flex-col gap-2 rounded-md bg-paper/10 p-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-semibold text-paper">{name}</p>
               <span className={`rounded-sm px-2 py-1 text-xs font-black ${status === 'Verified' || status === 'Verify' ? 'bg-olive text-white' : 'bg-brass text-ink'}`}>
                 {status}

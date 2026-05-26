@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function AppLayout() {
   const navigate = useNavigate();
-  const { activeRole, markWelcomeSeen, profile } = useApp();
+  const { activeRole, markWelcomeSeen, profile, session } = useApp();
   const showWelcome = Boolean(profile && profile.welcome_seen === false);
 
   const continueToDashboard = async () => {
@@ -16,7 +16,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-field text-ink">
       <Header />
-      <main>
+      <main className={session ? 'pb-20 lg:pb-0' : ''}>
         <Outlet />
       </main>
       {showWelcome ? <WelcomeModal onContinue={continueToDashboard} /> : null}

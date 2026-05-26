@@ -1,12 +1,12 @@
 import React from 'react';
-import { MessageSquare, Plus, Send, X } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Plus, Send, X } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 export default function Messages() {
   const { activeRole, maiDirectory, messageThreads, sendMessage, markThreadRead, session, beltUser, maiUser } = useApp();
-  const [selectedThreadId, setSelectedThreadId] = React.useState(messageThreads[0]?.id || '');
+  const [selectedThreadId, setSelectedThreadId] = React.useState('');
   const [draft, setDraft] = React.useState('');
   const [newMaiNumber, setNewMaiNumber] = React.useState('');
   const [showStartMessage, setShowStartMessage] = React.useState(false);
@@ -22,12 +22,6 @@ export default function Messages() {
       markThreadRead(selectedThread.id);
     }
   }, [selectedThread?.id, markThreadRead]);
-
-  React.useEffect(() => {
-    if (!selectedThreadId && !newMaiNumber && messageThreads[0]?.id) {
-      setSelectedThreadId(messageThreads[0].id);
-    }
-  }, [messageThreads, newMaiNumber, selectedThreadId]);
 
   const openNewMessage = () => {
     const cleanMaiNumber = newMaiNumber.trim();
@@ -92,7 +86,7 @@ export default function Messages() {
       >
       {messageThreads.length || ['Belt User', 'MAI'].includes(activeRole) ? (
         <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-          <aside className="rounded-md border border-coyote/35 bg-paper p-4 shadow-sm">
+          <aside className={`${selectedThread || newMaiNumber ? 'hidden lg:block' : 'block'} rounded-md border border-coyote/35 bg-paper p-4 shadow-sm`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-ink">Inbox</h2>
               <div className="flex items-center gap-2">
@@ -104,7 +98,7 @@ export default function Messages() {
                     setSelectedThreadId('');
                     setMessageError('');
                   }}
-                  className="focus-ring inline-flex h-9 items-center justify-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white"
+                  className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white"
                 >
                   <Plus size={16} aria-hidden="true" />
                   Start New Message
@@ -143,10 +137,23 @@ export default function Messages() {
             </div>
           </aside>
 
-          <section className="rounded-md border border-coyote/35 bg-paper shadow-sm">
+          <section className={`${selectedThread || newMaiNumber ? 'block' : 'hidden lg:block'} rounded-md border border-coyote/35 bg-paper shadow-sm`}>
             {selectedThread || newMaiNumber ? (
               <>
                 <div className="border-b border-coyote/25 p-5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedThreadId('');
+                      setNewMaiNumber('');
+                      setDraft('');
+                      setMessageError('');
+                    }}
+                    className="focus-ring mb-4 inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink lg:hidden"
+                  >
+                    <ArrowLeft size={17} aria-hidden="true" />
+                    Inbox
+                  </button>
                   <p className="text-sm font-bold uppercase tracking-wide text-clay">Conversation</p>
                   <h2 className="mt-1 text-xl font-bold text-ink">
                     {selectedThread
@@ -157,7 +164,7 @@ export default function Messages() {
                   </h2>
                 </div>
 
-                <div className="grid max-h-[520px] gap-3 overflow-y-auto p-5">
+                <div className="grid max-h-[60vh] gap-3 overflow-y-auto p-4 sm:p-5 lg:max-h-[520px]">
                   {(selectedThread?.messages || []).map((message) => (
                     <article key={message.id} className="rounded-md bg-field p-4">
                       <div className="flex flex-col justify-between gap-1 sm:flex-row">
@@ -175,7 +182,7 @@ export default function Messages() {
                   ) : null}
                 </div>
 
-                <form className="border-t border-coyote/25 p-5" onSubmit={submitMessage}>
+                <form className="border-t border-coyote/25 p-4 sm:p-5" onSubmit={submitMessage}>
                   {messageError ? (
                     <div className="mb-4 rounded-md border border-clay/20 bg-clay/10 p-3 text-sm font-semibold text-clay">
                       {messageError}
@@ -193,7 +200,7 @@ export default function Messages() {
                   <button
                     type="submit"
                     disabled={!draft.trim() || (!selectedThread && !newMaiNumber.trim()) || (activeRole === 'MAI' && !selectedThread && (!lookedUpMai || lookedUpMai.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()))}
-                    className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="focus-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
                   >
                     <Send size={17} aria-hidden="true" />
                     Send message
@@ -346,18 +353,18 @@ function StartMessageModal({ activeRole, maiUser, newMaiNumber, lookedUpMai, mes
           </div>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap justify-end gap-3">
+        <div className="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="focus-ring inline-flex h-10 items-center justify-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+            className="focus-ring inline-flex h-11 items-center justify-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink sm:h-10"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onStart}
-            className="focus-ring inline-flex h-10 items-center justify-center rounded-md bg-olive px-4 text-sm font-bold text-white"
+            className="focus-ring inline-flex h-11 items-center justify-center rounded-md bg-olive px-4 text-sm font-bold text-white sm:h-10"
           >
             Start Message
           </button>

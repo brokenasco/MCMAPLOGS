@@ -111,7 +111,7 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper"
+                className="focus-ring inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink hover:bg-paper sm:h-10 sm:w-auto"
               >
                 <Pencil size={17} aria-hidden="true" />
                 Edit account details
@@ -149,11 +149,11 @@ export default function Profile() {
                     placeholder="Unit or training section"
                   />
                 </label>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid gap-3 sm:flex sm:flex-wrap">
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10"
                   >
                     <Save size={17} aria-hidden="true" />
                     {isSaving ? 'Saving...' : 'Save changes'}
@@ -166,7 +166,7 @@ export default function Profile() {
                       setEmailNotice(false);
                       setIsEditing(false);
                     }}
-                    className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+                    className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink sm:h-10"
                   >
                     <X size={17} aria-hidden="true" />
                     Cancel
@@ -206,7 +206,7 @@ export default function Profile() {
                     type="button"
                     onClick={handleDeleteAccount}
                     disabled={!canDelete || isDeleting}
-                    className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="focus-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white hover:bg-clay/90 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
                   >
                     <Trash2 size={17} aria-hidden="true" />
                     {isDeleting ? 'Deleting account...' : 'Delete my account'}
@@ -236,7 +236,7 @@ export default function Profile() {
             </p>
             <Link
               to="/profile/subscription"
-              className="focus-ring mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90"
+              className="focus-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 sm:w-auto"
             >
               <CreditCard size={17} aria-hidden="true" />
               {isMai ? 'Manage Subscription' : 'Upgrade to MAI'}

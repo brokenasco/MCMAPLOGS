@@ -14,7 +14,7 @@ const beltStyles = {
 export default function LogTable({ logs, showMarine = true, onSelectLog, renderActions }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
-      <div className="overflow-x-auto">
+      <div className="hidden md:block">
         <table className="min-w-full divide-y divide-coyote/25">
           <thead className="bg-charcoal text-paper">
             <tr>
@@ -63,6 +63,35 @@ export default function LogTable({ logs, showMarine = true, onSelectLog, renderA
           </tbody>
         </table>
       </div>
+      <div className="grid gap-3 p-3 md:hidden">
+        {logs.map((log) => (
+          <article
+            key={log.id}
+            className={`rounded-md border border-coyote/25 bg-field p-4 ${onSelectLog ? 'cursor-pointer' : ''}`}
+            onClick={() => onSelectLog?.(log)}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                {showMarine ? <p className="text-sm font-black text-ink">{log.marine}</p> : null}
+                <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
+                {log.techniqueName ? <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName}</p> : null}
+              </div>
+              <StatusBadge status={log.status} />
+            </div>
+            <dl className="mt-4 grid gap-3 text-sm">
+              <MobileDetail label="Date" value={new Date(`${log.date}T12:00:00`).toLocaleDateString()} />
+              <MobileDetail label="Time" value={formatLogTime(log)} />
+              <MobileDetail label="Belt" value={log.beltLevel} />
+              <MobileDetail label="Sent To MAI" value={formatMaiDisplay(log)} />
+            </dl>
+            {renderActions ? (
+              <div className="mt-4" onClick={(event) => event.stopPropagation()}>
+                {renderActions(log)}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -73,6 +102,15 @@ function HeaderCell({ children }) {
 
 function BodyCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
+}
+
+function MobileDetail({ label, value }) {
+  return (
+    <div>
+      <dt className="text-xs font-bold uppercase tracking-wide text-ink/45">{label}</dt>
+      <dd className="mt-1 font-semibold text-ink">{value}</dd>
+    </div>
+  );
 }
 
 function formatMaiDisplay(log) {

@@ -164,17 +164,17 @@ export function SubmitHoursForm({ embedded = false }) {
             <Summary label="Time" value={formatMinutes(submittedLog.minutes || 0)} />
             <Summary label="Status" value={submittedLog.status} />
           </dl>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={() => setSubmittedLog(null)}
-              className="focus-ring inline-flex h-10 items-center rounded-md bg-olive px-4 text-sm font-bold text-white"
+              className="focus-ring inline-flex h-11 items-center justify-center rounded-md bg-olive px-4 text-sm font-bold text-white sm:h-10"
             >
               Submit another log
             </button>
             <Link
               to="/logbook/verified"
-              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+              className="focus-ring inline-flex h-11 items-center justify-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink sm:h-10"
             >
               Open logbook
             </Link>

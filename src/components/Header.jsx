@@ -1,22 +1,22 @@
 import React from 'react';
-import { BookOpenCheck, LogIn, LogOut, Menu, ShieldCheck, UserPlus } from 'lucide-react';
+import { BookOpenCheck, CircleHelp, LayoutDashboard, LogIn, LogOut, MessageSquare, ShieldCheck, UserCircle, UserPlus } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 
 const roleLinks = {
   'Belt User': [
-    { label: 'Dashboard', to: '/belt/dashboard' },
-    { label: 'Logbook', to: '/logbook/verified' },
-    { label: 'Messages', to: '/messages' },
-    { label: 'Profile', to: '/profile' },
-    { label: 'Help', to: '/help' }
+    { label: 'Dashboard', to: '/belt/dashboard', icon: LayoutDashboard },
+    { label: 'Logbook', to: '/logbook/verified', icon: BookOpenCheck },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
+    { label: 'Profile', to: '/profile', icon: UserCircle },
+    { label: 'Help', to: '/help', icon: CircleHelp }
   ],
   MAI: [
-    { label: 'Dashboard', to: '/mai/dashboard' },
-    { label: 'Logbook', to: '/logbook/verified' },
-    { label: 'Messages', to: '/messages' },
-    { label: 'Profile', to: '/profile' },
-    { label: 'Help', to: '/help' }
+    { label: 'Dashboard', to: '/mai/dashboard', icon: LayoutDashboard },
+    { label: 'Logbook', to: '/logbook/verified', icon: BookOpenCheck },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
+    { label: 'Profile', to: '/profile', icon: UserCircle },
+    { label: 'Help', to: '/help', icon: CircleHelp }
   ]
 };
 
@@ -26,12 +26,12 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-coyote/30 bg-charcoal text-paper shadow-panel">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
         <NavLink to="/" className="focus-ring flex items-center gap-3 rounded-md">
-          <span className="grid h-10 w-10 place-items-center rounded-md border border-coyote/30 bg-olive text-paper">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-coyote/30 bg-olive text-paper">
             <BookOpenCheck size={22} aria-hidden="true" />
           </span>
-          <span>
+          <span className="min-w-0">
             <span className="block text-lg font-bold text-paper">MCMAP Logbook</span>
             <span className="block text-xs font-medium uppercase tracking-wide text-coyote">
               {activeRole} view
@@ -85,36 +85,44 @@ export default function Header() {
               </NavLink>
             </>
           )}
-          <button
-            type="button"
-            className="focus-ring inline-grid h-10 w-10 place-items-center rounded-md border border-coyote/30 bg-paper text-ink lg:hidden"
-            title="Navigation links are available on large screens"
-          >
-            <Menu size={18} aria-hidden="true" />
-            <span className="sr-only">Menu</span>
-          </button>
         </div>
       </div>
       {session ? (
-        <div className="border-t border-coyote/20 px-4 py-2 lg:hidden">
-        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-coyote/30 bg-charcoal px-2 py-2 shadow-panel lg:hidden">
+        <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
           {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `focus-ring shrink-0 rounded-md px-3 py-2 text-sm font-semibold ${
+                `focus-ring flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-[11px] font-bold ${
                   isActive ? 'bg-paper text-olive' : 'text-paper/70'
                 }`
               }
             >
-              <NavLabel label={link.label} unread={link.label === 'Messages' ? unreadMessageCount : 0} />
+              <MobileNavLabel icon={link.icon} label={link.label} unread={link.label === 'Messages' ? unreadMessageCount : 0} />
             </NavLink>
           ))}
         </div>
       </div>
       ) : null}
     </header>
+  );
+}
+
+function MobileNavLabel({ icon: Icon, label, unread }) {
+  return (
+    <>
+      <span className="relative">
+        <Icon size={19} aria-hidden="true" />
+        {unread ? (
+          <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-clay px-1 text-[10px] font-black text-white">
+            {unread}
+          </span>
+        ) : null}
+      </span>
+      <span>{label}</span>
+    </>
   );
 }
 

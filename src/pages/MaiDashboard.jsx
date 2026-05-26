@@ -57,7 +57,7 @@ export default function MaiDashboard() {
           <CommandDetail label="Current Belt" value={maiProgress.currentBelt} />
           <CommandDetail label="Working Toward" value={maiProgress.targetBelt} />
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <CommandActionButton
             active={activePanel === 'pending'}
             detail={`${pendingLogs.length} pending ${pendingLogs.length === 1 ? 'log' : 'logs'}`}
@@ -120,11 +120,11 @@ export default function MaiDashboard() {
               />
             </label>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 grid gap-3 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={handleReturn}
-              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white"
+              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-clay px-4 text-sm font-bold text-white sm:h-10"
             >
               <MessageSquare size={17} aria-hidden="true" />
               Return log
@@ -132,7 +132,7 @@ export default function MaiDashboard() {
             <button
               type="button"
               onClick={() => setReturningLog(null)}
-              className="focus-ring inline-flex h-10 items-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink"
+              className="focus-ring inline-flex h-11 items-center justify-center rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink sm:h-10"
             >
               Cancel
             </button>
@@ -226,11 +226,11 @@ function PendingReviewCard({ log, onReturn, onVerify, onView }) {
             <ReviewDetail label="Date submitted" value={formatDate(log.date)} />
           </dl>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="grid shrink-0 gap-2 sm:flex sm:flex-wrap">
           <button
             type="button"
             onClick={onView}
-            className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink"
+            className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-sm font-bold text-ink"
           >
             <Eye size={16} aria-hidden="true" />
             View
@@ -238,7 +238,7 @@ function PendingReviewCard({ log, onReturn, onVerify, onView }) {
           <button
             type="button"
             onClick={onVerify}
-            className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white"
+            className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-olive px-3 text-sm font-bold text-white"
           >
             <CheckCircle2 size={16} aria-hidden="true" />
             Verify
@@ -246,7 +246,7 @@ function PendingReviewCard({ log, onReturn, onVerify, onView }) {
           <button
             type="button"
             onClick={onReturn}
-            className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-clay/30 bg-paper px-3 text-sm font-bold text-clay"
+            className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-clay/30 bg-paper px-3 text-sm font-bold text-clay"
           >
             <XCircle size={16} aria-hidden="true" />
             Return
@@ -271,7 +271,7 @@ function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`focus-ring flex min-h-24 items-center justify-between gap-4 rounded-md border p-4 text-left transition ${
+      className={`focus-ring flex min-h-20 items-center justify-between gap-4 rounded-md border p-4 text-left transition sm:min-h-24 ${
         active
           ? 'border-brass bg-brass text-ink shadow-sm'
           : 'border-paper/10 bg-paper/10 text-paper hover:bg-paper/15'

@@ -148,7 +148,7 @@ function VerifiedCommandCenter({
     <section className="mb-8">
       <div className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">{title}</p>
-        <div className={`mt-5 grid gap-3 ${buttonCount === 4 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'}`}>
+        <div className={`mt-5 grid gap-3 ${buttonCount === 4 ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3'}`}>
           <CommandActionButton
             active={activeView === 'entries'}
             detail={`${logs.length} verified ${logs.length === 1 ? 'entry' : 'entries'}`}
@@ -193,12 +193,12 @@ function VerifiedCommandCenter({
                 : 'Filtered by date verified. Pending, returned, and canceled logs are not included.'}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3 sm:flex sm:flex-wrap sm:justify-end">
             {activeView !== 'needed' ? (
               <button
                 type="button"
                 onClick={onToggleFilter}
-                className="focus-ring inline-flex h-10 items-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white"
+                className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white sm:h-10"
               >
                 <Filter size={17} aria-hidden="true" />
                 Filter
@@ -207,7 +207,7 @@ function VerifiedCommandCenter({
             <button
               type="button"
               onClick={() => openPrintableReport({ activeView, records: activeRecords, title, exportMode: 'pdf' })}
-              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/40 bg-field px-4 text-sm font-bold text-ink"
+              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-field px-4 text-sm font-bold text-ink sm:h-10"
             >
               <FileText size={17} aria-hidden="true" />
               PDF
@@ -215,7 +215,7 @@ function VerifiedCommandCenter({
             <button
               type="button"
               onClick={() => openPrintableReport({ activeView, records: activeRecords, title, exportMode: 'print' })}
-              className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/40 bg-field px-4 text-sm font-bold text-ink"
+              className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-field px-4 text-sm font-bold text-ink sm:h-10"
             >
               <Printer size={17} aria-hidden="true" />
               Print
@@ -334,24 +334,24 @@ function PaginationControls({ page, records, onPageChange }) {
   if (records.length <= pageSize) return null;
 
   return (
-    <div className="mt-4 flex items-center justify-between rounded-md border border-coyote/30 bg-paper p-3 text-sm font-semibold text-ink/70">
+    <div className="mt-4 grid gap-3 rounded-md border border-coyote/30 bg-paper p-3 text-sm font-semibold text-ink/70 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
       <button
         type="button"
         disabled={!canGoPrevious}
         onClick={() => onPageChange((current) => Math.max(current - 1, 0))}
-        className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/40 bg-field px-3 disabled:cursor-not-allowed disabled:opacity-40"
+        className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-field px-3 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:justify-start"
       >
         <ChevronLeft size={17} aria-hidden="true" />
         Previous 5
       </button>
-      <span>
+      <span className="text-center">
         Page {page + 1} of {totalPages}
       </span>
       <button
         type="button"
         disabled={!canGoNext}
         onClick={() => onPageChange((current) => Math.min(current + 1, totalPages - 1))}
-        className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-coyote/40 bg-field px-3 disabled:cursor-not-allowed disabled:opacity-40"
+        className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-field px-3 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:justify-end"
       >
         Next 5
         <ChevronRight size={17} aria-hidden="true" />
@@ -363,7 +363,7 @@ function PaginationControls({ page, records, onPageChange }) {
 function VerifiedEntriesTable({ logs, onSelectLog }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
-      <div className="overflow-x-auto">
+      <div className="hidden md:block">
         <table className="min-w-full divide-y divide-coyote/25">
           <thead className="bg-charcoal text-paper">
             <tr>
@@ -394,6 +394,32 @@ function VerifiedEntriesTable({ logs, onSelectLog }) {
           </tbody>
         </table>
       </div>
+      <div className="grid gap-3 p-3 md:hidden">
+        {logs.map((log) => (
+          <button
+            key={log.id}
+            type="button"
+            onClick={() => onSelectLog(log)}
+            className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-black text-ink">{log.marine}</p>
+                <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
+                {log.techniqueName ? <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName}</p> : null}
+              </div>
+              <span className="rounded-md bg-olive px-2 py-1 text-xs font-black text-white">Verified</span>
+            </div>
+            <dl className="mt-4 grid gap-3 text-sm">
+              <MobileDetail label="Date Verified" value={formatVerifiedDate(log)} />
+              <MobileDetail label="Training Date" value={formatDate(log.date)} />
+              <MobileDetail label="Time" value={formatLogTime(log)} />
+              <MobileDetail label="Target Belt" value={log.targetBelt || log.beltLevel} />
+              <MobileDetail label="Verified By" value={formatVerifier(log)} />
+            </dl>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -401,7 +427,7 @@ function VerifiedEntriesTable({ logs, onSelectLog }) {
 function ExtraHoursTable({ logs, onSelectLog }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
-      <div className="overflow-x-auto">
+      <div className="hidden md:block">
         <table className="min-w-full divide-y divide-coyote/25">
           <thead className="bg-charcoal text-paper">
             <tr>
@@ -433,6 +459,28 @@ function ExtraHoursTable({ logs, onSelectLog }) {
           </tbody>
         </table>
       </div>
+      <div className="grid gap-3 p-3 md:hidden">
+        {logs.map((log) => (
+          <button
+            key={log.id}
+            type="button"
+            onClick={() => onSelectLog(log)}
+            className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
+          >
+            <p className="text-sm font-black text-ink">{log.marine}</p>
+            <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
+            <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName || 'General training'}</p>
+            <dl className="mt-4 grid gap-3 text-sm">
+              <MobileDetail label="Date Verified" value={formatVerifiedDate(log)} />
+              <MobileDetail label="Original Belt" value={log.targetBelt || log.beltLevel} />
+              <MobileDetail label="Original Time" value={formatLogTime(log)} />
+              <MobileDetail label="Applied" value={formatAppliedTime(log)} />
+              <MobileDetail label="Extra Time" value={formatExtraTime(log)} />
+              <MobileDetail label="MAI" value={formatVerifier(log)} />
+            </dl>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -440,7 +488,7 @@ function ExtraHoursTable({ logs, onSelectLog }) {
 function HoursNeededTable({ rows }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
-      <div className="overflow-x-auto">
+      <div className="hidden md:block">
         <table className="min-w-full divide-y divide-coyote/25">
           <thead className="bg-charcoal text-paper">
             <tr>
@@ -466,6 +514,26 @@ function HoursNeededTable({ rows }) {
           </tbody>
         </table>
       </div>
+      <div className="grid gap-3 p-3 md:hidden">
+        {rows.map((row) => (
+          <article key={row.id} className="rounded-md border border-coyote/25 bg-field p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-black text-ink">{row.code}</p>
+                <p className="mt-1 text-sm leading-6 text-ink/70">{row.name}</p>
+              </div>
+              <span className={`rounded-md px-2 py-1 text-xs font-black ${row.isComplete ? 'bg-olive text-white' : 'bg-brass text-ink'}`}>
+                {row.isComplete ? 'Complete' : 'Needed'}
+              </span>
+            </div>
+            <dl className="mt-4 grid gap-3 text-sm">
+              <MobileDetail label="Required Time" value={formatMinutes(row.requiredMinutes)} />
+              <MobileDetail label="Completed" value={formatMinutes(Math.min(row.completedMinutes, row.requiredMinutes || row.completedMinutes))} />
+              <MobileDetail label="Time Needed" value={row.isComplete ? 'Complete' : formatMinutes(row.remainingMinutes)} />
+            </dl>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -476,6 +544,15 @@ function LogbookHeader({ children }) {
 
 function LogbookCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
+}
+
+function MobileDetail({ label, value }) {
+  return (
+    <div>
+      <dt className="text-xs font-bold uppercase tracking-wide text-ink/45">{label}</dt>
+      <dd className="mt-1 font-semibold text-ink">{value}</dd>
+    </div>
+  );
 }
 
 function getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs }) {
