@@ -40,6 +40,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
   const [errors, setErrors] = React.useState({});
   const [submittedLog, setSubmittedLog] = React.useState(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [mobileStep, setMobileStep] = React.useState(1);
   const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : targetOptions[0] || getTargetBelt(currentBelt);
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
@@ -107,6 +108,37 @@ export function SubmitMaiHoursForm({ embedded = false }) {
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
+  };
+
+  const validateMobileStep = () => {
+    const nextErrors = {};
+
+    if (mobileStep === 1) {
+      if (!form.date) nextErrors.date = 'Choose a training date.';
+      if (!targetBelt) nextErrors.targetBelt = 'Target belt could not be calculated from your current belt.';
+      if (!selectedTechnique) nextErrors.techniqueId = 'Choose a technique or tie-in.';
+    }
+
+    if (mobileStep === 2 && totalMinutes <= 0) {
+      nextErrors.time = 'Enter training time greater than zero.';
+    }
+
+    if (mobileStep === 3) {
+      if (!selectedMaiNumber) nextErrors.maiNumber = 'Choose an MAI or enter a new MAI code.';
+      if (selectedMaiNumber && !/^MAI-\d{4}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842.';
+      if (selectedMaiNumber?.toLowerCase() === maiUser?.maiNumber?.toLowerCase()) nextErrors.maiNumber = 'You cannot verify your own hours.';
+      if (selectedMaiNumber && /^MAI-\d{4}$/i.test(selectedMaiNumber) && !selectedMai) {
+        nextErrors.maiNumber = 'That MAI code does not match an active MAI account. Check the code and try again.';
+      }
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const goToNextMobileStep = () => {
+    if (!validateMobileStep()) return;
+    setMobileStep((current) => Math.min(current + 1, 4));
   };
 
   const submit = async (event) => {
@@ -179,7 +211,110 @@ export function SubmitMaiHoursForm({ embedded = false }) {
           </div>
         </section>
       ) : (
-        <form className={formClassName} onSubmit={submit}>
+        <>
+        <form className={`${formClassName} sm:hidden`} onSubmit={submit}>
+          {errors.form ? (
+            <div className="mb-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
+              {errors.form}
+            </div>
+          ) : null}
+
+          <MobileStepHeader currentStep={mobileStep} />
+
+          {mobileStep === 1 ? (
+            <div className="grid gap-5">
+              <Field label="Training date" name="date" type="date" value={form.date} onChange={updateField} error={errors.date} />
+              <label className="block">
+                <span className="text-sm font-bold text-ink">Target Belt</span>
+                <div className="mt-2 flex h-12 items-center gap-2 rounded-md border border-ink/15 bg-field px-3 text-base font-bold text-ink">
+                  <Lock size={17} aria-hidden="true" />
+                  {showTargetSelect ? (
+                    <select name="targetBelt" value={targetBelt} onChange={updateField} className="focus-ring h-10 flex-1 rounded-md border border-ink/15 bg-paper px-3 text-base font-bold text-ink">
+                      {targetOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  ) : targetBelt}
+                </div>
+                <p className="mt-2 text-sm leading-6 text-ink/60">Current belt: {currentBelt}.</p>
+                <ErrorText message={errors.targetBelt} />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-ink">Technique / Tie-In</span>
+                <select name="techniqueId" value={form.techniqueId} onChange={updateField} className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base">
+                  {targetRequirements.map((technique) => <option key={technique.id} value={technique.id}>{technique.code} - {technique.name}</option>)}
+                </select>
+                <ErrorText message={errors.techniqueId} />
+              </label>
+              {selectedTechnique ? (
+                <div className="rounded-md border border-coyote/35 bg-field p-4">
+                  <Summary label="Class code" value={selectedTechnique.code} />
+                  <div className="mt-3">
+                    <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {mobileStep === 2 ? (
+            <div className="grid gap-5">
+              <Field label="Hours" name="hours" type="number" min="0" step="1" value={form.hours} onChange={updateField} placeholder="1" error={errors.time} />
+              <Field label="Minutes" name="minutes" type="number" min="0" step="1" value={form.minutes} onChange={updateField} placeholder="30" hint={totalMinutes > 0 ? `Time will be saved as ${normalizedTime}.` : 'Example: 90 minutes will count as 1 hour 30 minutes.'} />
+            </div>
+          ) : null}
+
+          {mobileStep === 3 ? (
+            <div className="grid gap-5">
+              <label className="block">
+                <span className="text-sm font-bold text-ink">Verifying MAI</span>
+                <select name="maiSelection" value={form.maiSelection || previousMais[0]?.maiNumber || 'new'} onChange={updateField} className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base">
+                  {previousMais.map((mai) => <option key={mai.maiNumber} value={mai.maiNumber}>{mai.maiNumber} - {mai.name}</option>)}
+                  <option value="new">Enter New MAI Code</option>
+                </select>
+              </label>
+              {isNewMaiEntry ? (
+                <Field label="New MAI code" name="maiNumber" value={form.maiNumber} onChange={updateField} placeholder="MAI-0000" error={errors.maiNumber} />
+              ) : (
+                <ErrorText message={errors.maiNumber} />
+              )}
+              <div className="rounded-md border border-coyote/35 bg-field p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-ink"><Search size={17} aria-hidden="true" />MAI number confirmation</p>
+                {selectedMai ? (
+                  <p className="mt-2 text-sm leading-6 text-olive">This log will go to {selectedMai.maiNumber} {selectedMai.name}, {selectedMai.unit}.</p>
+                ) : (
+                  <p className="mt-2 text-sm leading-6 text-clay">No MAI match found yet. Check the number before submitting.</p>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {mobileStep === 4 ? (
+            <div className="rounded-md border border-coyote/35 bg-field p-4">
+              <p className="text-sm font-black uppercase tracking-wide text-clay">Review and Submit</p>
+              <dl className="mt-4 grid gap-4">
+                <Summary label="Training date" value={form.date} />
+                <Summary label="Target" value={targetBelt} />
+                <Summary label="Class code" value={selectedTechnique?.code || 'Not selected'} />
+                <Summary label="Technique" value={selectedTechnique?.name || 'Not selected'} />
+                <Summary label="Time" value={normalizedTime} />
+                <Summary label="Verifying MAI" value={selectedMai ? `${selectedMai.maiNumber} ${selectedMai.name}` : selectedMaiNumber || 'Not selected'} />
+              </dl>
+            </div>
+          ) : null}
+
+          <div className="sticky bottom-[136px] -mx-5 mt-6 grid gap-3 border-t border-coyote/25 bg-paper/95 px-5 py-3 backdrop-blur">
+            {mobileStep < 4 ? (
+              <button type="button" onClick={goToNextMobileStep} className="focus-ring inline-flex h-12 items-center justify-center rounded-md bg-olive px-4 text-sm font-black text-white">Next</button>
+            ) : (
+              <button type="submit" disabled={isSubmitting} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">
+                <Send size={17} aria-hidden="true" />
+                {isSubmitting ? 'Submitting...' : 'Submit for verification'}
+              </button>
+            )}
+            <button type="button" onClick={() => setMobileStep((current) => Math.max(current - 1, 1))} disabled={mobileStep === 1} className="focus-ring h-11 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-40">Back</button>
+          </div>
+        </form>
+
+        <form className={`${formClassName} hidden sm:block`} onSubmit={submit}>
           {errors.form ? (
             <div className="mb-4 rounded-md border border-clay/20 bg-clay/10 p-4 text-sm font-semibold text-clay">
               {errors.form}
@@ -334,8 +469,25 @@ export function SubmitMaiHoursForm({ embedded = false }) {
             </button>
           </div>
         </form>
+        </>
       )}
     </>
+  );
+}
+
+function MobileStepHeader({ currentStep }) {
+  const labels = ['Technique', 'Time', 'MAI Code', 'Review'];
+
+  return (
+    <div className="mb-5 rounded-md border border-coyote/35 bg-field p-4">
+      <p className="text-xs font-black uppercase tracking-wide text-clay">Step {currentStep} of 4</p>
+      <h2 className="mt-1 text-xl font-bold text-ink">{labels[currentStep - 1]}</h2>
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {labels.map((label, index) => (
+          <span key={label} className={`h-2 rounded-full ${index + 1 <= currentStep ? 'bg-olive' : 'bg-coyote/30'}`} />
+        ))}
+      </div>
+    </div>
   );
 }
 

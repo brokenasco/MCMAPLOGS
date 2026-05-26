@@ -16,7 +16,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-field text-ink">
       <Header />
-      <main className={session ? 'pb-20 lg:pb-0' : ''}>
+      <main className={session ? 'pb-36 lg:pb-0' : ''}>
         <Outlet />
       </main>
       {showWelcome ? <WelcomeModal onContinue={continueToDashboard} /> : null}

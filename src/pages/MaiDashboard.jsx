@@ -213,7 +213,35 @@ export default function MaiDashboard() {
           )}
         </div>
       </section>
+
+      <MobileStickyAction
+        label={pendingLogs.length ? 'Review Selected Logs' : 'Log My Hours'}
+        onClick={() => {
+          if (pendingLogs.length) {
+            setActivePanel('pending');
+            document.getElementById('pending-verification')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+          setActivePanel('log');
+          document.getElementById('submit-my-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
+      />
     </PageShell>
+  );
+}
+
+function MobileStickyAction({ label, onClick }) {
+  return (
+    <div className="fixed inset-x-0 bottom-[72px] z-20 border-t border-coyote/25 bg-paper/95 px-4 py-3 shadow-panel backdrop-blur sm:hidden">
+      <button
+        type="button"
+        onClick={onClick}
+        className="focus-ring inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-black text-white"
+      >
+        <PlusCircle size={18} aria-hidden="true" />
+        {label}
+      </button>
+    </div>
   );
 }
 

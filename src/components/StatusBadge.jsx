@@ -6,10 +6,14 @@ const styles = {
   Returned: 'bg-clay/15 text-clay ring-clay/40'
 };
 
+const labels = {
+  Returned: 'Needs Correction'
+};
+
 export default function StatusBadge({ status }) {
   return (
     <span className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wide ring-1 ${styles[status] || styles.Pending}`}>
-      {status}
+      {labels[status] || status}
     </span>
   );
 }

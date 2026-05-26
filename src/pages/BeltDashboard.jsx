@@ -29,6 +29,7 @@ export default function BeltDashboard() {
   const progress = React.useMemo(() => buildBeltProgress({ beltUser: progressUser, logs: beltLogs }), [beltLogs, progressUser]);
   const beltTrail = React.useMemo(() => getBeltTrail(currentBelt, progress.percent), [currentBelt, progress.percent]);
   const pendingLogs = beltLogs.filter((log) => log.status === 'Pending');
+  const returnedLogs = beltLogs.filter((log) => log.status === 'Returned');
   const recentLogs = beltLogs.slice(0, 6);
   const hasNoLogs = beltLogs.length === 0;
   const hasCompletedTargetBelt = isTargetBeltComplete(progress);
@@ -268,7 +269,33 @@ export default function BeltDashboard() {
         </div>
         <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)} />
       </section>
+
+      <MobileStickyAction
+        label={returnedLogs.length ? 'Fix Returned Log' : 'Submit Hours'}
+        onClick={() => {
+          if (returnedLogs.length) {
+            openReturnedEdit(returnedLogs[0]);
+            return;
+          }
+          openLogMyHours();
+        }}
+      />
     </PageShell>
+  );
+}
+
+function MobileStickyAction({ label, onClick }) {
+  return (
+    <div className="fixed inset-x-0 bottom-[72px] z-20 border-t border-coyote/25 bg-paper/95 px-4 py-3 shadow-panel backdrop-blur sm:hidden">
+      <button
+        type="button"
+        onClick={onClick}
+        className="focus-ring inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-black text-white"
+      >
+        <PlusCircle size={18} aria-hidden="true" />
+        {label}
+      </button>
+    </div>
   );
 }
 

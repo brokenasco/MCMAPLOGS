@@ -4,6 +4,7 @@ import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
+import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, sumLogMinutes } from '../lib/mcmapProgress.js';
@@ -443,7 +444,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
             onClick={() => onToggleMobileRecord(log.id)}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
-            {renderMobileLogSummary(log)}
+            {renderMobileLogSummary(log, expandedRecordId === log.id)}
             {expandedRecordId === log.id ? (
               <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
                 <MobileDetail label="Training Date" value={formatDate(log.date)} />
@@ -505,7 +506,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
             onClick={() => onToggleMobileRecord(log.id)}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
-            {renderMobileLogSummary(log)}
+            {renderMobileLogSummary(log, expandedRecordId === log.id)}
             {expandedRecordId === log.id ? (
               <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
                 <MobileDetail label="Original Belt" value={log.targetBelt || log.beltLevel} />
@@ -593,14 +594,22 @@ function LogbookCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
 }
 
-function renderMobileLogSummary(log) {
+function renderMobileLogSummary(log, isExpanded) {
   return (
     <div>
-      <p className="text-sm font-black text-ink">{log.marine || 'Training log'}</p>
-      <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
-      <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName || 'General training'}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-black text-ink">{log.marine || 'Training log'}</p>
+          <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
+          <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName || 'General training'}</p>
+        </div>
+        <StatusBadge status={log.status || 'Verified'} />
+      </div>
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-ink/50">
         Verified: {formatVerifiedDate(log)}
+      </p>
+      <p className="mt-3 text-sm font-black text-olive">
+        {isExpanded ? '▲ Hide Details' : '▼ View Details'}
       </p>
     </div>
   );
