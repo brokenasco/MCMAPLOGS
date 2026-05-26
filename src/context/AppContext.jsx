@@ -23,7 +23,10 @@ const subscriptionPlans = {
   }
 };
 
-const devTestMaiUserId = '18a9842e-84f8-46a8-806c-c2276a46c6f0';
+const devTestMaiUserIds = [
+  '18a9842e-84f8-46a8-806c-c2276a46c6f0',
+  '9fb3dac1-bfd7-440d-bbd4-9b625ec26dd6'
+];
 const paidMaiAccessStatuses = ['active', 'trialing', 'owner_free', 'lifetime_free'];
 const ownerMaiAccount = {
   id: '8c5a14d7-5f97-4020-ade5-de534b315287',
@@ -1630,7 +1633,7 @@ function hasLifetimeMaiAccess(profileData) {
   return Boolean(
     profileData?.lifetime_mai_access ||
     profileData?.dev_test_access ||
-    profileData?.id === devTestMaiUserId
+    devTestMaiUserIds.includes(profileData?.id)
   );
 }
 
