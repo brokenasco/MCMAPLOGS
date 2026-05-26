@@ -23,7 +23,8 @@ const subscriptionPlans = {
   }
 };
 
-const paidMaiAccessStatuses = ['active', 'trialing', 'owner_free'];
+const devTestMaiUserId = '18a9842e-84f8-46a8-806c-c2276a46c6f0';
+const paidMaiAccessStatuses = ['active', 'trialing', 'owner_free', 'lifetime_free'];
 const ownerMaiAccount = {
   id: '8c5a14d7-5f97-4020-ade5-de534b315287',
   name: 'Keaton Permenter (OWNER)',
@@ -110,7 +111,7 @@ export function AppProvider({ children }) {
     trialDays: currentPlan.trialDays || 0,
     label: currentPlan.label
   };
-  const hasPaidMaiAccess = activeRole !== 'MAI' || paidMaiAccessStatuses.includes(displaySubscription.status);
+  const hasPaidMaiAccess = activeRole !== 'MAI' || hasLifetimeMaiAccess(profile) || paidMaiAccessStatuses.includes(displaySubscription.status);
 
   React.useEffect(() => {
     if (!supabase) {
@@ -1464,13 +1465,26 @@ function mergeLogsById(...logGroups) {
 
 function getProfileSubscription(profileData) {
   const accountRole = getEffectiveAccountRole(profileData.account_type);
+  const hasLifetimeAccess = hasLifetimeMaiAccess(profileData);
 
   return {
-    status: accountRole === 'MAI' ? profileData.subscription_status || (profileData.account_type === 'Owner/Developer' ? 'owner_free' : 'unpaid') : 'free',
-    currentPeriodEnd: profileData.subscription_current_period_end,
-    cancelAtPeriodEnd: Boolean(profileData.subscription_cancel_at_period_end),
+    status: accountRole === 'MAI'
+      ? hasLifetimeAccess
+        ? 'lifetime_free'
+        : profileData.subscription_status || (profileData.account_type === 'Owner/Developer' ? 'owner_free' : 'unpaid')
+      : 'free',
+    currentPeriodEnd: hasLifetimeAccess ? null : profileData.subscription_current_period_end,
+    cancelAtPeriodEnd: hasLifetimeAccess ? false : Boolean(profileData.subscription_cancel_at_period_end),
     paymentMethod: null
   };
+}
+
+function hasLifetimeMaiAccess(profileData) {
+  return Boolean(
+    profileData?.lifetime_mai_access ||
+    profileData?.dev_test_access ||
+    profileData?.id === devTestMaiUserId
+  );
 }
 
 function getEffectiveAccountRole(accountType) {

@@ -67,6 +67,8 @@ Run `supabase/message-seen-at.sql` in the Supabase SQL editor before using persi
 
 Run `supabase/account-delete-message-references.sql` in the Supabase SQL editor before testing account deletion with internal messages. It prevents old message references from blocking account deletion.
 
+Run `supabase/dev-test-lifetime-mai-access.sql` in the Supabase SQL editor to grant the configured developer/test UID lifetime MAI access.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 60-day free trial, then bills $69.99/year.

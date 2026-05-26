@@ -8,6 +8,7 @@ export default function SubscriptionBanner() {
   const isMai = activeRole === 'MAI';
   const hasActiveMaiPlan = isMai && displaySubscription.status === 'active';
   const hasTrialingMaiPlan = isMai && displaySubscription.status === 'trialing';
+  const hasLifetimeMaiPlan = isMai && displaySubscription.status === 'lifetime_free';
 
   return (
     <div className="border-b border-coyote/30 bg-olive text-paper">
@@ -17,6 +18,8 @@ export default function SubscriptionBanner() {
             ? 'Belt User accounts are free.'
             : hasTrialingMaiPlan
               ? 'MAI 60-day free trial active. Then $69.99/year.'
+              : hasLifetimeMaiPlan
+              ? 'Lifetime MAI access active. No payment required.'
               : hasActiveMaiPlan
               ? 'MAI annual subscription active: $69.99/year.'
               : 'MAI access starts with a 60-day free trial, then $69.99/year.'}

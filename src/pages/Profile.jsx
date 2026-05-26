@@ -14,7 +14,8 @@ export default function Profile() {
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
   const isOwnerMai = displaySubscription.status === 'owner_free' || profile?.mai_number === 'MAI-0000' || profile?.account_type === 'Owner/Developer';
-  const accountRoleLabel = isOwnerMai ? 'Owner/Developer' : isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const isDevTestMai = profile?.id === devTestMaiUserId;
+  const accountRoleLabel = isDevTestMai ? 'MAI / Dev Test' : isOwnerMai ? 'Owner/Developer' : isMai ? 'Martial Arts Instructor' : 'Belt User';
   const currentBelt = profile?.belt_level || user.beltLevel || beltUser.beltLevel;
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
@@ -249,11 +250,14 @@ export default function Profile() {
 
 function getSubscriptionAccessLabel({ activeRole, displaySubscription }) {
   if (activeRole !== 'MAI') return 'Free Account';
+  if (displaySubscription.status === 'lifetime_free') return 'Lifetime MAI Access';
   if (displaySubscription.status === 'owner_free') return 'Full Access';
   if (displaySubscription.status === 'trialing') return 'Free Trial';
   if (displaySubscription.status === 'active') return 'Full Access';
   return 'Restricted Access';
 }
+
+const devTestMaiUserId = '18a9842e-84f8-46a8-806c-c2276a46c6f0';
 
 function Detail({ label, value }) {
   return (

@@ -18,12 +18,13 @@ export default function Subscription() {
   const isActiveMai = isMai && displaySubscription.status === 'active';
   const isTrialingMai = isMai && displaySubscription.status === 'trialing';
   const isOwnerMai = isMai && (displaySubscription.status === 'owner_free' || profile?.account_type === 'Owner/Developer');
+  const isLifetimeMai = isMai && displaySubscription.status === 'lifetime_free';
   const isCanceledMai = isMai && ['canceled', 'cancelled'].includes(displaySubscription.status);
   const isPastDueMai = isMai && ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(displaySubscription.status);
-  const hasMaiAccess = isActiveMai || isTrialingMai || isOwnerMai;
+  const hasMaiAccess = isActiveMai || isTrialingMai || isOwnerMai || isLifetimeMai;
   const isUpgradeFlow = activeRole === 'Belt User';
   const checkoutResult = searchParams.get('checkout');
-  const subscriptionStatus = getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai, isPastDueMai });
+  const subscriptionStatus = getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isLifetimeMai, isCanceledMai, isPastDueMai });
   const subscriptionStatusLabel = subscriptionStatus.label;
   const renewalLabel = getRenewalLabel({ displaySubscription, isActiveMai, isCanceledMai, isTrialingMai });
 
@@ -128,6 +129,8 @@ export default function Subscription() {
                 {isMai
                   ? isOwnerMai
                     ? 'Owner MAI access is unlocked without Stripe billing.'
+                    : isLifetimeMai
+                    ? 'Lifetime MAI access is unlocked without Stripe billing.'
                     : 'MAI accounts save time by reviewing, returning, signing, and exporting MCMAP records from one organized workspace.'
                   : 'Your Belt User account stays free. Upgrade this same account to MAI when you are ready to reduce paperwork and verify Marine training records.'}
               </p>
@@ -135,7 +138,13 @@ export default function Subscription() {
             <div className="rounded-md bg-field px-4 py-3 text-right">
               <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$69.99/year' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
-                {isOwnerMai ? 'owner access, no payment required' : isMai || isUpgradeFlow ? '$69.99 billed annually after 60-day trial' : 'no payment required'}
+                {isOwnerMai
+                  ? 'owner access, no payment required'
+                  : isLifetimeMai
+                  ? 'lifetime access, no payment required'
+                  : isMai || isUpgradeFlow
+                  ? '$69.99 billed annually after 60-day trial'
+                  : 'no payment required'}
               </p>
             </div>
           </div>
@@ -151,6 +160,8 @@ export default function Subscription() {
                 ? 'Start the 60-day MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
                 : isOwnerMai
                 ? 'This owner MAI account can use verification tools for free. No checkout or Stripe billing is required.'
+                : isLifetimeMai
+                ? 'This MAI account has lifetime access. No checkout, trial, or Stripe billing is required.'
                 : isTrialingMai
                   ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $69.99 per year for verification, exports, and reduced administrative work.`
                   : isActiveMai
@@ -179,7 +190,7 @@ export default function Subscription() {
                 {isRedirecting ? 'Opening Stripe...' : isUpgradeFlow ? 'Upgrade to MAI' : 'Resume Subscription'}
               </button>
             ) : null}
-            {isMai && hasMaiAccess && !isOwnerMai ? (
+            {isMai && hasMaiAccess && !isOwnerMai && !isLifetimeMai ? (
               <>
                 <button
                   type="button"
@@ -254,7 +265,7 @@ function SubscriptionDetail({ label, value }) {
   );
 }
 
-function getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isCanceledMai, isPastDueMai }) {
+function getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isActiveMai, isOwnerMai, isLifetimeMai, isCanceledMai, isPastDueMai }) {
   if (!isMai) {
     return {
       label: 'Free Account',
@@ -266,6 +277,13 @@ function getSubscriptionStatus({ displaySubscription, isMai, isTrialingMai, isAc
     return {
       label: 'Full Access',
       detail: 'Owner MAI access is active.'
+    };
+  }
+
+  if (isLifetimeMai) {
+    return {
+      label: 'Lifetime MAI Access',
+      detail: 'Permanent MAI access is active.'
     };
   }
 

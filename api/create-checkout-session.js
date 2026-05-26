@@ -46,6 +46,10 @@ export default async function handler(request, response) {
       return response.status(403).json({ error: 'This account cannot start MAI checkout.' });
     }
 
+    if (hasLifetimeMaiAccess(profile)) {
+      return response.status(400).json({ error: 'This account already has lifetime MAI access and does not need checkout.' });
+    }
+
     const origin = request.headers.origin || `https://${request.headers.host}`;
     const body = new URLSearchParams({
       mode: 'subscription',
@@ -132,7 +136,7 @@ async function getProfile(userId) {
   }
 
   const profileResponse = await fetch(
-    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,account_type,stripe_customer_id`,
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,account_type,stripe_customer_id,lifetime_mai_access,dev_test_access`,
     {
       headers: {
         apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -147,6 +151,14 @@ async function getProfile(userId) {
 
   const profiles = await profileResponse.json();
   return profiles[0] || null;
+}
+
+function hasLifetimeMaiAccess(profile) {
+  return Boolean(
+    profile?.lifetime_mai_access ||
+    profile?.dev_test_access ||
+    profile?.id === '18a9842e-84f8-46a8-806c-c2276a46c6f0'
+  );
 }
 
 function normalizeUrl(rawUrl) {
