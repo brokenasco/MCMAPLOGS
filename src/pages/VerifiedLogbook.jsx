@@ -129,6 +129,7 @@ function VerifiedCommandCenter({
   title
 }) {
   const [page, setPage] = React.useState(0);
+  const [expandedRecordId, setExpandedRecordId] = React.useState('');
   const isMobile = useIsMobileLogbook();
   const pageSize = isMobile ? mobilePageSize : desktopPageSize;
   const verifiedMinutes = sumLogMinutes(logs);
@@ -144,7 +145,12 @@ function VerifiedCommandCenter({
 
   React.useEffect(() => {
     setPage(0);
+    setExpandedRecordId('');
   }, [activeView, dateRange.from, dateRange.to, logs.length, extraLogs.length, hoursNeededRows.length]);
+
+  const toggleExpandedRecord = (recordId) => {
+    setExpandedRecordId((current) => (current === recordId ? '' : recordId));
+  };
 
   const buttonCount = supportsHoursNeeded ? 4 : 3;
 
@@ -268,24 +274,43 @@ function VerifiedCommandCenter({
         <div className="min-h-[360px]">
           {activeView === 'entries' ? (
             activeRecords.length ? (
-              <VerifiedEntriesTable logs={pagedRecords} onSelectLog={onSelectLog} />
+              <VerifiedEntriesTable
+                expandedRecordId={expandedRecordId}
+                logs={pagedRecords}
+                onSelectLog={onSelectLog}
+                onToggleMobileRecord={toggleExpandedRecord}
+              />
             ) : (
               <EmptyState title="No verified entries found" text="Change the date filter or verify logs to see entries here." />
             )
           ) : activeView === 'extra' ? (
             activeRecords.length ? (
-              <ExtraHoursTable logs={pagedRecords} onSelectLog={onSelectLog} />
+              <ExtraHoursTable
+                expandedRecordId={expandedRecordId}
+                logs={pagedRecords}
+                onSelectLog={onSelectLog}
+                onToggleMobileRecord={toggleExpandedRecord}
+              />
             ) : (
               <EmptyState title="No extra verified hours found" text="Overflow time appears here when verified logs exceed a requirement's remaining time." />
             )
           ) : activeView === 'needed' ? (
             activeRecords.length ? (
-              <HoursNeededTable rows={pagedRecords} />
+              <HoursNeededTable
+                expandedRecordId={expandedRecordId}
+                onToggleMobileRecord={toggleExpandedRecord}
+                rows={pagedRecords}
+              />
             ) : (
               <EmptyState title="No target-belt requirements found" text="Hours needed will appear when a target belt has structured requirements." />
             )
           ) : activeRecords.length ? (
-            <VerifiedEntriesTable logs={pagedRecords} onSelectLog={onSelectLog} />
+            <VerifiedEntriesTable
+              expandedRecordId={expandedRecordId}
+              logs={pagedRecords}
+              onSelectLog={onSelectLog}
+              onToggleMobileRecord={toggleExpandedRecord}
+            />
           ) : (
             <EmptyState title="No verified hours found" text="Change the date filter or verify logs to see hour records here." />
           )}
@@ -376,7 +401,7 @@ function useIsMobileLogbook() {
   return isMobile;
 }
 
-function VerifiedEntriesTable({ logs, onSelectLog }) {
+function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRecord }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="hidden md:block">
@@ -415,24 +440,21 @@ function VerifiedEntriesTable({ logs, onSelectLog }) {
           <button
             key={log.id}
             type="button"
-            onClick={() => onSelectLog(log)}
+            onClick={() => onToggleMobileRecord(log.id)}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-black text-ink">{log.marine}</p>
-                <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
-                {log.techniqueName ? <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName}</p> : null}
-              </div>
-              <span className="rounded-md bg-olive px-2 py-1 text-xs font-black text-white">Verified</span>
-            </div>
-            <dl className="mt-4 grid gap-3 text-sm">
-              <MobileDetail label="Date Verified" value={formatVerifiedDate(log)} />
-              <MobileDetail label="Training Date" value={formatDate(log.date)} />
-              <MobileDetail label="Time" value={formatLogTime(log)} />
-              <MobileDetail label="Target Belt" value={log.targetBelt || log.beltLevel} />
-              <MobileDetail label="Verified By" value={formatVerifier(log)} />
-            </dl>
+            {renderMobileLogSummary(log)}
+            {expandedRecordId === log.id ? (
+              <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
+                <MobileDetail label="Training Date" value={formatDate(log.date)} />
+                <MobileDetail label="Verified Hours" value={formatLogTime(log)} />
+                <MobileDetail label="Belt" value={log.targetBelt || log.beltLevel} />
+                <MobileDetail label="Verified By" value={formatVerifier(log)} />
+                <MobileDetail label="Time Applied" value={formatAppliedTime(log)} />
+                <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
+                <MobileDetail label="Source" value={formatLogSource(log, 'Verified Entry')} />
+              </dl>
+            ) : null}
           </button>
         ))}
       </div>
@@ -440,7 +462,7 @@ function VerifiedEntriesTable({ logs, onSelectLog }) {
   );
 }
 
-function ExtraHoursTable({ logs, onSelectLog }) {
+function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRecord }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="hidden md:block">
@@ -480,20 +502,20 @@ function ExtraHoursTable({ logs, onSelectLog }) {
           <button
             key={log.id}
             type="button"
-            onClick={() => onSelectLog(log)}
+            onClick={() => onToggleMobileRecord(log.id)}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
-            <p className="text-sm font-black text-ink">{log.marine}</p>
-            <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
-            <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName || 'General training'}</p>
-            <dl className="mt-4 grid gap-3 text-sm">
-              <MobileDetail label="Date Verified" value={formatVerifiedDate(log)} />
-              <MobileDetail label="Original Belt" value={log.targetBelt || log.beltLevel} />
-              <MobileDetail label="Original Time" value={formatLogTime(log)} />
-              <MobileDetail label="Applied" value={formatAppliedTime(log)} />
-              <MobileDetail label="Extra Time" value={formatExtraTime(log)} />
-              <MobileDetail label="MAI" value={formatVerifier(log)} />
-            </dl>
+            {renderMobileLogSummary(log)}
+            {expandedRecordId === log.id ? (
+              <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
+                <MobileDetail label="Original Belt" value={log.targetBelt || log.beltLevel} />
+                <MobileDetail label="Original Time" value={formatLogTime(log)} />
+                <MobileDetail label="Time Applied" value={formatAppliedTime(log)} />
+                <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
+                <MobileDetail label="Verified By" value={formatVerifier(log)} />
+                <MobileDetail label="Source" value={formatLogSource(log, 'Extra Verified Hours')} />
+              </dl>
+            ) : null}
           </button>
         ))}
       </div>
@@ -501,7 +523,7 @@ function ExtraHoursTable({ logs, onSelectLog }) {
   );
 }
 
-function HoursNeededTable({ rows }) {
+function HoursNeededTable({ expandedRecordId, onToggleMobileRecord, rows }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="hidden md:block">
@@ -532,22 +554,31 @@ function HoursNeededTable({ rows }) {
       </div>
       <div className="grid gap-3 p-3 md:hidden">
         {rows.map((row) => (
-          <article key={row.id} className="rounded-md border border-coyote/25 bg-field p-4">
+          <button
+            key={row.id}
+            type="button"
+            onClick={() => onToggleMobileRecord(row.id)}
+            className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-black text-ink">{row.code}</p>
-                <p className="mt-1 text-sm leading-6 text-ink/70">{row.name}</p>
+                <p className="text-sm font-black text-ink">Hours Needed</p>
+                <p className="mt-1 text-sm font-semibold text-ink">{row.code}</p>
+                <p className="mt-1 text-xs leading-5 text-ink/60">{row.name}</p>
               </div>
               <span className={`rounded-md px-2 py-1 text-xs font-black ${row.isComplete ? 'bg-olive text-white' : 'bg-brass text-ink'}`}>
                 {row.isComplete ? 'Complete' : 'Needed'}
               </span>
             </div>
-            <dl className="mt-4 grid gap-3 text-sm">
-              <MobileDetail label="Required Time" value={formatMinutes(row.requiredMinutes)} />
-              <MobileDetail label="Completed" value={formatMinutes(Math.min(row.completedMinutes, row.requiredMinutes || row.completedMinutes))} />
-              <MobileDetail label="Time Needed" value={row.isComplete ? 'Complete' : formatMinutes(row.remainingMinutes)} />
-            </dl>
-          </article>
+            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-ink/50">Progress requirement</p>
+            {expandedRecordId === row.id ? (
+              <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
+                <MobileDetail label="Required Time" value={formatMinutes(row.requiredMinutes)} />
+                <MobileDetail label="Completed" value={formatMinutes(Math.min(row.completedMinutes, row.requiredMinutes || row.completedMinutes))} />
+                <MobileDetail label="Time Needed" value={row.isComplete ? 'Complete' : formatMinutes(row.remainingMinutes)} />
+              </dl>
+            ) : null}
+          </button>
         ))}
       </div>
     </div>
@@ -560,6 +591,19 @@ function LogbookHeader({ children }) {
 
 function LogbookCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
+}
+
+function renderMobileLogSummary(log) {
+  return (
+    <div>
+      <p className="text-sm font-black text-ink">{log.marine || 'Training log'}</p>
+      <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
+      <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName || 'General training'}</p>
+      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-ink/50">
+        Verified: {formatVerifiedDate(log)}
+      </p>
+    </div>
+  );
 }
 
 function MobileDetail({ label, value }) {
@@ -757,6 +801,10 @@ function formatVerifier(log) {
   if (log.source === 'Account Creation' || log.source === 'Account Creation Backfill') return 'Upon Account Creation';
   if (log.verificationSource === 'Account Creation') return 'Upon Account Creation';
   return log.verifiedBy ? `${log.verifiedBy} ${log.verifiedByMaiNumber || ''}`.trim() : 'Verified';
+}
+
+function formatLogSource(log, fallback) {
+  return log.source || log.verificationSource || fallback;
 }
 
 function formatDate(date) {

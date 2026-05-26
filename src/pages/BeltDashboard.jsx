@@ -122,7 +122,12 @@ export default function BeltDashboard() {
       ) : (
         <section className="mb-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-4 grid gap-3 sm:hidden">
+            {getMobileBeltTrail(beltTrail, progress.targetBelt).map((item) => (
+              <BeltTrailItem key={item.belt} item={item} />
+            ))}
+          </div>
+          <div className="mt-4 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-5">
             {beltTrail.map((item) => (
               <BeltTrailItem key={item.belt} item={item} />
             ))}
@@ -388,6 +393,26 @@ function BeltTrailItem({ item }) {
       <p className="mt-2 text-xs font-bold uppercase tracking-wide">{item.label}</p>
     </div>
   );
+}
+
+function getMobileBeltTrail(beltTrail, targetBelt) {
+  if (targetBelt === 'Additional MCMAP Hours') {
+    const blackBelt = beltTrail.find((item) => item.belt === 'Black 1st Degree') || beltTrail[beltTrail.length - 1];
+    return [
+      blackBelt,
+      { belt: 'Additional MCMAP Hours', status: 'Current', label: 'Logging' }
+    ].filter(Boolean);
+  }
+
+  const targetIndex = beltTrail.findIndex((item) => item.status === 'Current');
+  const startIndex = Math.max(targetIndex - 1, 0);
+  const mobileTrail = beltTrail.slice(startIndex, startIndex + 3);
+
+  if (mobileTrail.length < 3 && mobileTrail.at(-1)?.belt === 'Black 1st Degree') {
+    mobileTrail.push({ belt: 'Additional MCMAP Hours', status: 'Locked', label: 'Next' });
+  }
+
+  return mobileTrail;
 }
 
 function PendingBeltLogs({ logs, onCancelPending, onEditPending, onSelectLog }) {
