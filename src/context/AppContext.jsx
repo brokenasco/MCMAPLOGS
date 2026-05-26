@@ -778,6 +778,7 @@ export function AppProvider({ children }) {
   const findMaiByNumber = (maiNumber = '') =>
     maiDirectory.find((mai) =>
       mai.isActive !== false &&
+      isRealMaiOption(mai) &&
       mai.maiNumber?.trim().toLowerCase() === maiNumber.trim().toLowerCase()
     ) || null;
 
@@ -1670,7 +1671,7 @@ function getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThread
 }
 
 function buildThreadForMai({ targetMaiNumber, beltUser, maiDirectory }) {
-  const mai = maiDirectory.find((item) => item.maiNumber?.toLowerCase() === targetMaiNumber?.toLowerCase());
+  const mai = maiDirectory.find((item) => isRealMaiOption(item) && item.maiNumber?.toLowerCase() === targetMaiNumber?.toLowerCase());
   if (!mai) return null;
 
   return {
@@ -1699,7 +1700,7 @@ function buildMaiToMaiThread({ targetMaiNumber, maiUser, maiDirectory }) {
   const cleanMaiNumber = targetMaiNumber?.trim();
   if (!cleanMaiNumber || cleanMaiNumber.toLowerCase() === maiUser.maiNumber?.toLowerCase()) return null;
 
-  const recipientMai = maiDirectory.find((item) => item.maiNumber?.toLowerCase() === cleanMaiNumber.toLowerCase());
+  const recipientMai = maiDirectory.find((item) => isRealMaiOption(item) && item.maiNumber?.toLowerCase() === cleanMaiNumber.toLowerCase());
   if (!recipientMai?.id) return null;
 
   return {
@@ -1714,6 +1715,17 @@ function buildMaiToMaiThread({ targetMaiNumber, maiUser, maiDirectory }) {
     senderMaiNumber: maiUser.maiNumber,
     messages: []
   };
+}
+
+function isRealMaiOption(mai) {
+  const name = mai?.name || mai?.fullName || '';
+  const maiNumber = mai?.maiNumber || mai?.mai_code || '';
+
+  return Boolean(
+    maiNumber &&
+    name.trim().toLowerCase() !== 'upon account creation' &&
+    maiNumber.trim().toLowerCase() !== 'upon account creation'
+  );
 }
 
 function findExistingMaiToMaiThread({ currentMaiNumber, targetMaiNumber, threads }) {

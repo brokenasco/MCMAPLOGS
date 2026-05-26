@@ -500,6 +500,7 @@ function getPreviousMais(logs, findMaiByNumber, currentMaiNumber) {
   logs
     .filter((log) => log.maiNumber)
     .forEach((log) => {
+      if (isAccountCreationVerifier(log)) return;
       if (log.maiNumber?.toLowerCase() === currentMaiNumber?.toLowerCase()) return;
 
       const mai = findMaiByNumber(log.maiNumber);
@@ -515,6 +516,16 @@ function getPreviousMais(logs, findMaiByNumber, currentMaiNumber) {
     });
 
   return [...byNumber.values()];
+}
+
+function isAccountCreationVerifier(log) {
+  return (
+    log.source === 'Account Creation' ||
+    log.source === 'Account Creation Backfill' ||
+    log.verificationSource === 'Account Creation' ||
+    log.assignedMaiName?.trim().toLowerCase() === 'upon account creation' ||
+    log.verifiedBy?.trim().toLowerCase() === 'upon account creation'
+  );
 }
 
 function formatMaiDisplay(log) {
