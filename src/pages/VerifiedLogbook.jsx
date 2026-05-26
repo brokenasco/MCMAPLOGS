@@ -8,7 +8,8 @@ import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, sumLogMinutes } from '../lib/mcmapProgress.js';
 
-const pageSize = 5;
+const desktopPageSize = 5;
+const mobilePageSize = 2;
 
 export default function VerifiedLogbook() {
   const { activeRole, assignedMaiLogs, beltLogs, beltUser, profile } = useApp();
@@ -128,6 +129,8 @@ function VerifiedCommandCenter({
   title
 }) {
   const [page, setPage] = React.useState(0);
+  const isMobile = useIsMobileLogbook();
+  const pageSize = isMobile ? mobilePageSize : desktopPageSize;
   const verifiedMinutes = sumLogMinutes(logs);
   const extraLogs = logs.filter((log) => getExtraMinutes(log) > 0);
   const extraMinutes = extraLogs.reduce((total, log) => total + getExtraMinutes(log), 0);
@@ -293,7 +296,7 @@ function VerifiedCommandCenter({
         ) : null}
       </section>
 
-      <PaginationControls page={page} records={activeRecords} onPageChange={setPage} />
+      <PaginationControls page={page} pageSize={pageSize} records={activeRecords} onPageChange={setPage} />
     </section>
   );
 }
@@ -320,7 +323,7 @@ function CommandActionButton({ active, detail, icon: Icon, label, onClick }) {
   );
 }
 
-function PaginationControls({ page, records, onPageChange }) {
+function PaginationControls({ page, pageSize, records, onPageChange }) {
   const totalPages = Math.max(Math.ceil(records.length / pageSize), 1);
   const canGoPrevious = page > 0;
   const canGoNext = page + 1 < totalPages;
@@ -336,7 +339,7 @@ function PaginationControls({ page, records, onPageChange }) {
         className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-field px-3 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:justify-start"
       >
         <ChevronLeft size={17} aria-hidden="true" />
-        Previous 5
+        Previous {pageSize}
       </button>
       <span className="text-center">
         Page {page + 1} of {totalPages}
@@ -347,11 +350,30 @@ function PaginationControls({ page, records, onPageChange }) {
         onClick={() => onPageChange((current) => Math.min(current + 1, totalPages - 1))}
         className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-coyote/40 bg-field px-3 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:justify-end"
       >
-        Next 5
+        Next {pageSize}
         <ChevronRight size={17} aria-hidden="true" />
       </button>
     </div>
   );
+}
+
+function useIsMobileLogbook() {
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 639px)').matches;
+  });
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const updateMobileState = () => setIsMobile(mediaQuery.matches);
+
+    updateMobileState();
+    mediaQuery.addEventListener('change', updateMobileState);
+
+    return () => mediaQuery.removeEventListener('change', updateMobileState);
+  }, []);
+
+  return isMobile;
 }
 
 function VerifiedEntriesTable({ logs, onSelectLog }) {
