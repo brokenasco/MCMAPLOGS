@@ -1,6 +1,13 @@
 import React from 'react';
 import { currentBeltUser, currentMai, messageThreads as mockMessageThreads, trainingLogs } from '../data/mockData.js';
-import { additionalMcmapHoursTarget, beltProgression, earnedBeltProgression, getBeltRequirements, noMcmapBelt } from '../data/mcmapReference.js';
+import {
+  additionalMcmapHoursTarget,
+  beltProgression,
+  earnedBeltProgression,
+  getBeltRequirements,
+  isAdditionalHoursTechnique,
+  noMcmapBelt
+} from '../data/mcmapReference.js';
 import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
@@ -212,30 +219,32 @@ export function AppProvider({ children }) {
 
     const createdAt = new Date().toISOString();
     const records = beltsToSeed.flatMap((beltName) =>
-      getBeltRequirements(beltName).map((requirement) => ({
-        belt_user_id: profileData.id,
-        marine_name: profileData.full_name,
-        date: createdAt.slice(0, 10),
-        hours: Number((requirement.requiredMinutes / 60).toFixed(2)),
-        minutes: requirement.requiredMinutes,
-        belt_level: beltName,
-        target_belt: beltName,
-        class_code: requirement.code,
-        technique_name: requirement.name,
-        submitter_role: profileData.account_type,
-        assigned_mai_user_id: null,
-        assigned_mai_name: 'Upon Account Creation',
-        description: `${requirement.code}: ${requirement.name}`,
-        mai_number: null,
-        status: 'Verified',
-        verified_by: null,
-        verified_at: createdAt,
-        applied_minutes: requirement.requiredMinutes,
-        extra_minutes: 0,
-        source: 'Account Creation',
-        verification_source: 'Account Creation',
-        created_at: createdAt
-      }))
+      getBeltRequirements(beltName)
+        .filter((requirement) => !isAdditionalHoursTechnique(requirement))
+        .map((requirement) => ({
+          belt_user_id: profileData.id,
+          marine_name: profileData.full_name,
+          date: createdAt.slice(0, 10),
+          hours: Number((requirement.requiredMinutes / 60).toFixed(2)),
+          minutes: requirement.requiredMinutes,
+          belt_level: beltName,
+          target_belt: beltName,
+          class_code: requirement.code,
+          technique_name: requirement.name,
+          submitter_role: profileData.account_type,
+          assigned_mai_user_id: null,
+          assigned_mai_name: 'Upon Account Creation',
+          description: `${requirement.code}: ${requirement.name}`,
+          mai_number: null,
+          status: 'Verified',
+          verified_by: null,
+          verified_at: createdAt,
+          applied_minutes: requirement.requiredMinutes,
+          extra_minutes: 0,
+          source: 'Account Creation',
+          verification_source: 'Account Creation',
+          created_at: createdAt
+        }))
     );
 
     const { error: insertError } = await supabase

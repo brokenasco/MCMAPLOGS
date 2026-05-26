@@ -3,7 +3,15 @@ import { CheckCircle2, Lock, Search, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { formatMinutes, getBeltRequirements, getTargetBelt, getTargetBeltOptions, isAdditionalMcmapTarget } from '../data/mcmapReference.js';
+import {
+  additionalMcmapHoursTarget,
+  formatMinutes,
+  getBeltRequirements,
+  getTargetBelt,
+  getTargetBeltOptions,
+  isAdditionalHoursTechnique,
+  isAdditionalMcmapTarget
+} from '../data/mcmapReference.js';
 
 function buildInitialForm(currentBelt) {
   const targetBelt = getTargetBeltOptions(currentBelt)[0] || getTargetBelt(currentBelt);
@@ -44,6 +52,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
   const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : targetOptions[0] || getTargetBelt(currentBelt);
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
+  const logTargetBelt = isAdditionalHoursTechnique(selectedTechnique) ? additionalMcmapHoursTarget : targetBelt;
   const previousMais = React.useMemo(
     () => getPreviousMais(beltLogs, findMaiByNumber, maiUser?.maiNumber),
     [beltLogs, findMaiByNumber, maiUser?.maiNumber]
@@ -152,8 +161,8 @@ export function SubmitMaiHoursForm({ embedded = false }) {
         date: form.date,
         hours: Number((totalMinutes / 60).toFixed(2)),
         minutes: totalMinutes,
-        beltLevel: targetBelt,
-        targetBelt,
+        beltLevel: logTargetBelt,
+        targetBelt: logTargetBelt,
         classCode: selectedTechnique.code,
         techniqueName: selectedTechnique.name,
         description: `${selectedTechnique.code}: ${selectedTechnique.name}`,
@@ -246,10 +255,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
               </label>
               {selectedTechnique ? (
                 <div className="rounded-md border border-coyote/35 bg-field p-4">
-                  <Summary label="Class code" value={selectedTechnique.code} />
-                  <div className="mt-3">
-                    <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
-                  </div>
+                  <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
                 </div>
               ) : null}
             </div>
@@ -292,8 +298,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
               <p className="text-sm font-black uppercase tracking-wide text-clay">Review and Submit</p>
               <dl className="mt-4 grid gap-4">
                 <Summary label="Training date" value={form.date} />
-                <Summary label="Target" value={targetBelt} />
-                <Summary label="Class code" value={selectedTechnique?.code || 'Not selected'} />
+                <Summary label="Target" value={logTargetBelt} />
                 <Summary label="Technique" value={selectedTechnique?.name || 'Not selected'} />
                 <Summary label="Time" value={normalizedTime} />
                 <Summary label="Verifying MAI" value={selectedMai ? `${selectedMai.maiNumber} ${selectedMai.name}` : selectedMaiNumber || 'Not selected'} />
@@ -397,8 +402,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
             <div className="rounded-md border border-coyote/35 bg-field p-4 md:col-span-2">
               <p className="text-sm font-bold text-ink">Selected class requirement</p>
               {selectedTechnique ? (
-                <dl className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <Summary label="Class code" value={selectedTechnique.code} />
+                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
                   <Summary label="Logged now" value={normalizedTime} />
                 </dl>

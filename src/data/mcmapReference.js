@@ -2,6 +2,9 @@ export const noMcmapBelt = 'No MCMAP Belt';
 export const beltProgression = [noMcmapBelt, 'Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
 export const earnedBeltProgression = beltProgression.filter((belt) => belt !== noMcmapBelt);
 export const additionalMcmapHoursTarget = 'Additional MCMAP Hours';
+export const weaponsFreeSparringIntegration = item('ADDL-MCMAP-006', 'Weapons-Free Sparring / Integration', '0:00', {
+  forceAdditionalHours: true
+});
 
 export const beltReference = {
   'Tan Belt': [
@@ -111,19 +114,23 @@ export function getTargetBeltOptions(currentBelt) {
 
 export function getBeltRequirements(targetBelt) {
   if (targetBelt === additionalMcmapHoursTarget) {
-    return [
+    return withUniversalAdditionalOption([
       item('ADDL-MCMAP-0001', 'Additional MCMAP sustainment training', '0:00'),
       item('ADDL-MCMAP-0002', 'Additional free sparring', '0:00'),
       item('ADDL-MCMAP-0003', 'Additional combat conditioning', '0:00'),
       item('ADDL-MCMAP-0004', 'Additional integration training', '0:00'),
       item('ADDL-MCMAP-0005', 'Additional instructor development', '0:00')
-    ];
+    ]);
   }
-  return beltReference[targetBelt] || [];
+  return withUniversalAdditionalOption(beltReference[targetBelt] || []);
 }
 
 export function isAdditionalMcmapTarget(targetBelt) {
   return targetBelt === additionalMcmapHoursTarget;
+}
+
+export function isAdditionalHoursTechnique(technique) {
+  return Boolean(technique?.forceAdditionalHours) || technique?.code === weaponsFreeSparringIntegration.code;
 }
 
 export function formatMinutes(totalMinutes) {
@@ -139,13 +146,19 @@ export function formatMinutes(totalMinutes) {
   return '0 minutes';
 }
 
-function item(code, name, time) {
+function item(code, name, time, options = {}) {
   return {
     id: `${code}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
     code,
     name,
-    requiredMinutes: parseTime(time)
+    requiredMinutes: parseTime(time),
+    ...options
   };
+}
+
+function withUniversalAdditionalOption(requirements) {
+  if (requirements.some((requirement) => requirement.code === weaponsFreeSparringIntegration.code)) return requirements;
+  return [...requirements, weaponsFreeSparringIntegration];
 }
 
 function parseTime(time) {

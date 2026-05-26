@@ -1,10 +1,18 @@
-import { additionalMcmapHoursTarget, beltProgression, earnedBeltProgression, getBeltRequirements, getTargetBelt, noMcmapBelt } from '../data/mcmapReference.js';
+import {
+  additionalMcmapHoursTarget,
+  beltProgression,
+  earnedBeltProgression,
+  getBeltRequirements,
+  getTargetBelt,
+  isAdditionalHoursTechnique,
+  noMcmapBelt
+} from '../data/mcmapReference.js';
 
 export function buildBeltProgress({ beltUser, logs }) {
   const currentBelt = normalizeBeltName(beltUser.beltLevel);
   const targetBelt = getTargetBelt(currentBelt);
   const hasReachedBlackBelt = currentBelt === 'Black 1st Degree';
-  const requirements = getBeltRequirements(targetBelt);
+  const requirements = getBeltRequirements(targetBelt).filter((requirement) => !isAdditionalHoursTechnique(requirement));
   const completedByRequirement = new Map();
 
   logs
@@ -53,13 +61,17 @@ export function buildTotalMcmapHours({ beltUser, logs }) {
   const targetBeltVerifiedMinutes = sumLogMinutes(
     logs.filter((log) => log.status === 'Verified' && matchesTargetBelt(log, targetBelt))
   );
+  const additionalVerifiedMinutes = targetBelt === additionalMcmapHoursTarget
+    ? 0
+    : sumLogMinutes(logs.filter((log) => log.status === 'Verified' && matchesTargetBelt(log, additionalMcmapHoursTarget)));
 
   return {
     targetBelt,
     completedBelts,
     completedBeltMinutes,
     targetBeltVerifiedMinutes,
-    totalMinutes: completedBeltMinutes + targetBeltVerifiedMinutes
+    additionalVerifiedMinutes,
+    totalMinutes: completedBeltMinutes + targetBeltVerifiedMinutes + additionalVerifiedMinutes
   };
 }
 
@@ -96,7 +108,9 @@ export function getAppliedLogMinutes(log) {
 }
 
 function getRequiredMinutesForBelt(belt) {
-  return getBeltRequirements(belt).reduce((total, requirement) => total + requirement.requiredMinutes, 0);
+  return getBeltRequirements(belt)
+    .filter((requirement) => !isAdditionalHoursTechnique(requirement))
+    .reduce((total, requirement) => total + requirement.requiredMinutes, 0);
 }
 
 function getRequirementKey(code, name) {

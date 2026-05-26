@@ -1,6 +1,14 @@
 import React from 'react';
 import { Lock, Search, Send } from 'lucide-react';
-import { formatMinutes, getBeltRequirements, getTargetBelt, getTargetBeltOptions, isAdditionalMcmapTarget } from '../data/mcmapReference.js';
+import {
+  additionalMcmapHoursTarget,
+  formatMinutes,
+  getBeltRequirements,
+  getTargetBelt,
+  getTargetBeltOptions,
+  isAdditionalHoursTechnique,
+  isAdditionalMcmapTarget
+} from '../data/mcmapReference.js';
 
 export default function LogEditForm({ beltUser, findMaiByNumber, log, mode = 'edit', onCancel, onSubmit }) {
   const targetOptions = React.useMemo(() => getTargetBeltOptions(beltUser.beltLevel), [beltUser.beltLevel]);
@@ -13,6 +21,7 @@ export default function LogEditForm({ beltUser, findMaiByNumber, log, mode = 'ed
   const targetBelt = targetOptions.includes(form.targetBelt) ? form.targetBelt : initialTargetBelt;
   const requirements = getBeltRequirements(targetBelt);
   const selectedTechnique = requirements.find((technique) => technique.id === form.techniqueId) || requirements[0];
+  const logTargetBelt = isAdditionalHoursTechnique(selectedTechnique) ? additionalMcmapHoursTarget : targetBelt;
   const selectedMaiNumber = form.maiNumber.trim().toUpperCase();
   const matchedMai = selectedMaiNumber ? findMaiByNumber(selectedMaiNumber) : null;
   const totalMinutes = getTotalMinutes(form.hours, form.minutes);
@@ -59,8 +68,8 @@ export default function LogEditForm({ beltUser, findMaiByNumber, log, mode = 'ed
 
     try {
       await onSubmit({
-        targetBelt,
-        beltLevel: targetBelt,
+        targetBelt: logTargetBelt,
+        beltLevel: logTargetBelt,
         classCode: selectedTechnique.code,
         techniqueName: selectedTechnique.name,
         description: `${selectedTechnique.code}: ${selectedTechnique.name}`,
@@ -133,8 +142,7 @@ export default function LogEditForm({ beltUser, findMaiByNumber, log, mode = 'ed
           >
             {requirements.map((technique) => (
               <option key={technique.id} value={technique.id}>
-                {technique.code} - {technique.name}
-                {technique.requiredMinutes ? ` (${formatMinutes(technique.requiredMinutes)})` : ' (No progression requirement)'}
+                {technique.name}
               </option>
             ))}
           </select>
