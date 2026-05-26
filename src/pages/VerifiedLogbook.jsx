@@ -137,6 +137,7 @@ function VerifiedCommandCenter({
   const supportsHoursNeeded = hoursNeededRows.length > 0;
   const activeRecords = getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs });
   const pagedRecords = activeRecords.slice(page * pageSize, page * pageSize + pageSize);
+  const viewStats = getViewStats({ activeRecords, activeView, extraMinutes, latestVerified, logs, verifiedMinutes });
 
   React.useEffect(() => {
     setPage(0);
@@ -254,50 +255,43 @@ function VerifiedCommandCenter({
         ) : null}
       </div>
 
-      {activeView === 'entries' ? (
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1fr_380px]">
-          {activeRecords.length ? (
-            <VerifiedEntriesTable logs={pagedRecords} onSelectLog={onSelectLog} />
-          ) : (
-            <EmptyState title="No verified entries found" text="Change the date filter or verify logs to see entries here." />
-          )}
-          <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
-        </section>
-      ) : activeView === 'extra' ? (
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1fr_380px]">
-          {activeRecords.length ? (
-            <ExtraHoursTable logs={pagedRecords} onSelectLog={onSelectLog} />
-          ) : (
-            <EmptyState title="No extra verified hours found" text="Overflow time appears here when verified logs exceed a requirement's remaining time." />
-          )}
-          <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
-        </section>
-      ) : activeView === 'needed' ? (
-        <section className="mt-5">
-          {activeRecords.length ? (
-            <HoursNeededTable rows={pagedRecords} />
-          ) : (
-            <EmptyState title="No target-belt requirements found" text="Hours needed will appear when a target belt has structured requirements." />
-          )}
-        </section>
-      ) : (
-        <section className="mt-5 space-y-5">
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard label="Verified hours" value={formatMinutes(verifiedMinutes)} detail="Within selected date range" />
-            <StatCard label="Verified entries" value={logs.length} detail="Signed records" />
-            <StatCard
-              label="Latest verified"
-              value={latestVerified ? formatVerifiedDate(latestVerified) : 'None'}
-              detail={latestVerified ? shortTechnique(latestVerified) : 'No verified entries yet'}
-            />
-          </div>
-          {activeRecords.length ? (
+      <section className="mt-5 min-h-[560px] space-y-5 rounded-md border border-coyote/20 bg-field/35 p-0 sm:min-h-[620px]">
+        <div className="grid gap-4 md:grid-cols-3">
+          {viewStats.map((stat) => (
+            <StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} />
+          ))}
+        </div>
+
+        <div className="min-h-[360px]">
+          {activeView === 'entries' ? (
+            activeRecords.length ? (
+              <VerifiedEntriesTable logs={pagedRecords} onSelectLog={onSelectLog} />
+            ) : (
+              <EmptyState title="No verified entries found" text="Change the date filter or verify logs to see entries here." />
+            )
+          ) : activeView === 'extra' ? (
+            activeRecords.length ? (
+              <ExtraHoursTable logs={pagedRecords} onSelectLog={onSelectLog} />
+            ) : (
+              <EmptyState title="No extra verified hours found" text="Overflow time appears here when verified logs exceed a requirement's remaining time." />
+            )
+          ) : activeView === 'needed' ? (
+            activeRecords.length ? (
+              <HoursNeededTable rows={pagedRecords} />
+            ) : (
+              <EmptyState title="No target-belt requirements found" text="Hours needed will appear when a target belt has structured requirements." />
+            )
+          ) : activeRecords.length ? (
             <VerifiedEntriesTable logs={pagedRecords} onSelectLog={onSelectLog} />
           ) : (
             <EmptyState title="No verified hours found" text="Change the date filter or verify logs to see hour records here." />
           )}
-        </section>
-      )}
+        </div>
+
+        {activeView === 'entries' || activeView === 'extra' || activeView === 'hours' ? (
+          <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
+        ) : null}
+      </section>
 
       <PaginationControls page={page} records={activeRecords} onPageChange={setPage} />
     </section>
@@ -573,6 +567,45 @@ function getViewTitle(activeView) {
   if (activeView === 'extra') return 'Extra verified hour history';
   if (activeView === 'needed') return 'Target belt hours needed';
   return 'Verified hour totals';
+}
+
+function getViewStats({ activeRecords, activeView, extraMinutes, latestVerified, logs, verifiedMinutes }) {
+  if (activeView === 'extra') {
+    const latestExtra = activeRecords
+      .slice()
+      .sort((a, b) => new Date(getVerifiedDateValue(b) || 0) - new Date(getVerifiedDateValue(a) || 0))[0];
+
+    return [
+      { label: 'Extra verified hours', value: formatMinutes(extraMinutes), detail: 'Overflow time preserved' },
+      { label: 'Extra entries', value: activeRecords.length, detail: 'Verified overflow records' },
+      {
+        label: 'Latest extra',
+        value: latestExtra ? formatVerifiedDate(latestExtra) : 'None',
+        detail: latestExtra ? shortTechnique(latestExtra) : 'No extra verified hours yet'
+      }
+    ];
+  }
+
+  if (activeView === 'needed') {
+    const completeRows = activeRecords.filter((row) => row.isComplete).length;
+    const neededMinutes = activeRecords.reduce((total, row) => total + Math.max(row.remainingMinutes || 0, 0), 0);
+
+    return [
+      { label: 'Requirements', value: activeRecords.length, detail: 'Current target belt items' },
+      { label: 'Complete', value: completeRows, detail: 'Requirements fully satisfied' },
+      { label: 'Time still needed', value: formatMinutes(neededMinutes), detail: 'Verified hours only' }
+    ];
+  }
+
+  return [
+    { label: 'Verified hours', value: formatMinutes(verifiedMinutes), detail: 'Within selected date range' },
+    { label: 'Verified entries', value: logs.length, detail: 'Signed records' },
+    {
+      label: 'Latest verified',
+      value: latestVerified ? formatVerifiedDate(latestVerified) : 'None',
+      detail: latestVerified ? shortTechnique(latestVerified) : 'No verified entries yet'
+    }
+  ];
 }
 
 function getVerifiedLogs(logs) {
