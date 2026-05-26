@@ -693,7 +693,8 @@ export function AppProvider({ children }) {
       belt_level: beltLevel,
       unit: role === 'MAI' ? currentMai.unit : currentBeltUser.unit,
       mai_number: maiNumber,
-      subscription_status: role === 'MAI' ? 'unpaid' : 'free'
+      subscription_status: role === 'MAI' ? 'unpaid' : 'free',
+      welcome_seen: false
     };
 
     if (data.session) {
@@ -734,6 +735,32 @@ export function AppProvider({ children }) {
     setSession(data.session);
     const signedInProfile = await loadProfileAndLogs(data.user.id);
     return signedInProfile;
+  };
+
+  const markWelcomeSeen = async () => {
+    if (!profile) return;
+
+    const updatedProfile = {
+      ...profile,
+      welcome_seen: true
+    };
+
+    if (!supabase || !currentUserId) {
+      applyProfile(updatedProfile);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ welcome_seen: true })
+      .eq('id', currentUserId);
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+
+    applyProfile(updatedProfile);
   };
 
   const requestPasswordReset = async (email) => {
@@ -1214,6 +1241,7 @@ export function AppProvider({ children }) {
     deleteAccount,
     updateAccount,
     advanceBeltUser,
+    markWelcomeSeen,
     refreshAccount,
     getFreshAccessToken
   };

@@ -61,6 +61,8 @@ Run `supabase/extra-verified-hours.sql` in the Supabase SQL editor before using 
 
 Run `supabase/mai-to-mai-messages.sql` in the Supabase SQL editor before using MAI-to-MAI messaging. It adds MAI-to-MAI thread fields and updates message permissions so MAIs can start conversations by MAI code.
 
+Run `supabase/welcome-message.sql` in the Supabase SQL editor before using the one-time founder welcome message. It adds a `welcome_seen` flag to `profiles`.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 60-day free trial, then bills $69.99/year.

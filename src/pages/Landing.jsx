@@ -78,6 +78,10 @@ export default function Landing() {
               <PathCard key={path.title} path={path} />
             ))}
           </div>
+          <div className="mt-5 inline-flex items-center gap-2 rounded-md border border-paper/15 bg-paper/10 px-3 py-2 text-sm font-bold text-paper/75">
+            <ShieldCheck size={16} aria-hidden="true" />
+            Built by Marines. Active Duty Owned & Operated.
+          </div>
         </div>
       </section>
 
