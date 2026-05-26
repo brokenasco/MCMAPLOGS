@@ -75,6 +75,8 @@ Run `supabase/belt-user-message-seen-fix.sql` in the Supabase SQL editor to back
 
 Run `supabase/prior-belt-logbook-seed.sql` in the Supabase SQL editor to automatically seed verified prior-belt logbook entries when accounts are created.
 
+Run `supabase/start-message-by-mai-code.sql` in the Supabase SQL editor to allow users to start message threads by entering an active MAI code.
+
 ## Billing notes
 
 Stripe Checkout is used only for MAI annual billing. Belt User accounts are free. MAI checkout starts a 60-day free trial, then bills $69.99/year.
