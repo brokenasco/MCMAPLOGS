@@ -1,65 +1,153 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
+import { useApp } from '../context/AppContext.jsx';
 
-const lessons = [
+const mobileLessons = [
   {
-    title: 'How to Submit Hours',
-    summary: 'Learn how Belt Users submit training time for MAI verification.',
+    title: 'Using the Mobile Dashboard',
+    summary: 'Use the phone dashboard without hunting through the page.',
     steps: [
-      'Open Submit Hours from the dashboard or logbook navigation.',
-      'Your target belt is selected automatically. It is always one belt above the belt you currently hold.',
-      'Choose the technique or tie-in from the dropdown. The list only shows requirements for your current target belt.',
-      'Enter hours and minutes separately. For example, 1 hour and 30 minutes should be entered as 1 and 30.',
-      'Enter the MAI number for the instructor who should verify the log.',
-      'After submission, the log is marked Pending. It does not count toward verified hours until an MAI signs it.'
+      'Use the bottom navigation bar to move between Dashboard, Logbook, Messages, Profile, and Help.',
+      'The dashboard places the most important action first, such as Submit Hours, Fix Returned Log, or Pending Verification.',
+      'Use the sticky action button near the bottom of the screen to jump directly to the matching section.',
+      'Use the mobile command center buttons to switch between pending logs and Log My Hours.',
+      'Belt Path is shortened on phones so you only see your current belt, next belt, and the belt after that.'
     ]
   },
   {
-    title: 'How Verification Works',
-    summary: 'Learn what happens after a log is sent to an MAI.',
+    title: 'Submitting Hours on Mobile',
+    summary: 'Submit MCMAP hours using the step-by-step phone form.',
     steps: [
-      'The log routes to the MAI number entered by the Belt User.',
-      'A Pending log is waiting for MAI review and does not count toward verified hours.',
-      'A Verified log has been approved and signed by an MAI. That time counts toward the selected class code.',
-      'A Returned log needs correction. The Belt User should read the note, fix the issue, and resubmit.',
-      'Returned logs do not count toward verified hours or Total MCMAP Hours.'
+      'Step 1: Choose the technique or tie-in. The app shows only the items for your current target belt.',
+      'Step 2: Enter hours and minutes separately.',
+      'Step 3: Select a previously used MAI or enter a new MAI code.',
+      'Step 4: Review the summary, then submit for verification.',
+      'After submitting, the log stays pending until an MAI verifies it.'
     ]
   },
   {
-    title: 'Understanding Total MCMAP Hours',
-    summary: 'Learn how the app calculates the overall MCMAP hour total.',
+    title: 'Viewing Logs on Mobile',
+    summary: 'Read logbook records as compact cards.',
     steps: [
-      'Total MCMAP Hours includes the required hours for belts the Marine has already completed.',
-      'It also includes verified logs for the belt currently being attempted.',
-      'The current target belt is one belt above the Marine’s current belt.',
-      'Submitted but unverified logs are not included.',
-      'Returned logs are not included.',
-      'This keeps the total focused on completed belt work and MAI-approved current belt progress.'
+      'Mobile logbooks use cards instead of wide tables.',
+      'Each card shows the Marine name, class code, technique or tie-in, date verified, and status badge.',
+      'Tap View Details to expand a card and see hours, verifier, MAI code, signature, source, and extra details.',
+      'Tap Hide Details to collapse the card again.',
+      'Mobile logbooks show fewer records per page so you do not have to scroll as far.'
+    ]
+  },
+  {
+    title: 'Using Messages on Mobile',
+    summary: 'Open conversations one at a time on a phone.',
+    steps: [
+      'Open Messages from the bottom navigation bar.',
+      'Tap a name in the inbox to open that conversation.',
+      'Use Start New Message to enter an MAI code and begin a conversation.',
+      'Inside a thread, each message shows when it was sent and whether it has been seen.',
+      'Unread message badges disappear after you open the conversation.'
+    ]
+  },
+  {
+    title: 'Using Mobile Filters',
+    summary: 'Filter logbook records by verified date on a phone.',
+    steps: [
+      'Open Logbook from the bottom navigation bar.',
+      'Choose the command center view you want, such as Verified Entries, Verified Hours, Extra Verified Hours, or Hours Needed.',
+      'Tap Filter to open the date controls.',
+      'Select a From Date and To Date.',
+      'Use PDF or Print after filtering if you need a copy of the selected records.'
     ]
   }
 ];
 
+const desktopLessons = [
+  {
+    title: 'Using the Desktop Dashboard',
+    summary: 'Use the full dashboard command center.',
+    steps: [
+      'Use the top navigation to move between Dashboard, Logbook, Messages, Profile, and Help.',
+      'The Dashboard command center shows your current belt, working-toward belt, and progress.',
+      'Use Logs Pending Verification to review pending logs.',
+      'Use Log My Hours to open the hour submission area.',
+      'Desktop pages show more information at once, so records and details may appear side by side.'
+    ]
+  },
+  {
+    title: 'Submitting Hours on Desktop',
+    summary: 'Use the full-page Submit Hours form.',
+    steps: [
+      'Open Log My Hours from the dashboard command center.',
+      'Confirm the target belt shown by the app.',
+      'Choose the technique or tie-in from the dropdown.',
+      'Enter hours and minutes.',
+      'Select a previously used MAI or choose Enter New MAI Code, then submit for verification.'
+    ]
+  },
+  {
+    title: 'Using the Desktop Logbook',
+    summary: 'Understand the Logbook command center tabs.',
+    steps: [
+      'Verified Entries shows signed log records.',
+      'Verified Hours shows totals for verified records.',
+      'Extra Verified Hours shows overflow time that was preserved after a requirement was completed.',
+      'Hours Needed shows what remains for the current target belt.',
+      'Use Filter to select a verified-date range, then use PDF or Print if you need an export.'
+    ]
+  },
+  {
+    title: 'Using Messages on Desktop',
+    summary: 'Use the inbox and conversation layout.',
+    steps: [
+      'Open Messages from the top navigation.',
+      'The inbox list appears on the left.',
+      'The selected conversation opens on the right.',
+      'Each message shows sent and seen timestamps.',
+      'Unread badges only show when a message has not been opened by you.'
+    ]
+  },
+  {
+    title: 'Managing Account and Subscription',
+    summary: 'Find profile, billing, and access controls.',
+    steps: [
+      'Open Profile from the top navigation.',
+      'Review your account details, belt level, MAI number, and subscription status.',
+      'Use Manage Subscription to upgrade, cancel, or resume MAI access when available.',
+      'Belt Users can upgrade to MAI without creating a new account.',
+      'Account deletion is available from Edit Account Details and requires confirmation.'
+    ]
+  }
+];
+
+const roleLessons = {
+  'Belt User': [
+    'Log training hours and submit them to an MAI for verification.',
+    'Track your current belt progress from the dashboard.',
+    'Fix returned logs from the dashboard when correction is required.',
+    'Use the Logbook to review verified entries, verified hours, extra hours, and hours still needed.',
+    'After completing required verified hours, schedule your belt advancement test with an MAI.'
+  ],
+  MAI: [
+    'Review pending logs from the dashboard and quickly verify or return them.',
+    'Return logs with a clear correction note when something needs to be fixed.',
+    'Submit your own MCMAP hours to another MAI for verification.',
+    'Use the MAI Logbook as verifier to track logs you signed for others.',
+    'Use the Student Logbook to track your own submitted and verified training hours.'
+  ]
+};
+
 const faqs = [
   {
     question: 'What is an MAI number?',
-    answer:
-      'It is the number assigned to an MAI account. Belt Users enter it on a log so the right MAI can sign and verify the training.'
+    answer: 'It is the number assigned to an MAI account. Belt Users enter it on a log so the right MAI can sign and verify the training.'
   },
   {
     question: 'Why is my log pending?',
-    answer:
-      'Pending means the log has been submitted and is waiting for an MAI to review it. It is not counted as verified yet.'
+    answer: 'Pending means the log has been submitted and is waiting for an MAI to review it. It is not counted as verified yet.'
   },
   {
-    question: 'What happens if my log is returned?',
-    answer:
-      'The MAI will include a short correction note. Open your Belt User dashboard, fix the returned log, and resubmit it.'
-  },
-  {
-    question: 'Can I edit a verified log?',
-    answer:
-      'Verified logs are treated as signed records. Admin corrections should keep an audit trail.'
+    question: 'What happens if my log needs correction?',
+    answer: 'The MAI will include a short correction note. Open your dashboard, fix the returned log, and resubmit it.'
   }
 ];
 
@@ -79,20 +167,29 @@ const examples = [
 ];
 
 export default function Help() {
+  const { activeRole, session } = useApp();
+  const isMobile = useIsMobileHelp();
+  const lessons = isMobile ? mobileLessons : desktopLessons;
+  const heading = isMobile ? 'Mobile Help Guide' : 'Desktop Help Guide';
   const [activeLesson, setActiveLesson] = React.useState(lessons[0].title);
   const selectedLesson = lessons.find((lesson) => lesson.title === activeLesson) || lessons[0];
+  const roleTips = roleLessons[activeRole] || roleLessons['Belt User'];
+
+  React.useEffect(() => {
+    setActiveLesson(lessons[0].title);
+  }, [lessons]);
 
   return (
     <PageShell
       eyebrow="Help"
-      title="How MCMAP Logbook Works"
-      description="Simple answers for Belt Users and MAIs using the logbook."
+      title={heading}
+      description="Simple lessons based on the layout you are using right now."
     >
       <section className="mb-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
         <p className="text-sm font-bold uppercase tracking-wide text-clay">Learn</p>
-        <h2 className="mt-1 text-2xl font-bold text-ink">Website classes</h2>
+        <h2 className="mt-1 text-2xl font-bold text-ink">{heading}</h2>
         <p className="mt-2 text-sm leading-6 text-ink/65">
-          Select a lesson to learn one part of the logbook at a time.
+          These lessons match the {isMobile ? 'mobile' : 'desktop'} layout currently shown on your screen.
         </p>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-[300px_1fr]">
@@ -102,7 +199,7 @@ export default function Help() {
                 key={lesson.title}
                 type="button"
                 onClick={() => setActiveLesson(lesson.title)}
-                className={`focus-ring rounded-md border px-4 py-3 text-left ${
+                className={`focus-ring min-h-12 rounded-md border px-4 py-3 text-left ${
                   activeLesson === lesson.title
                     ? 'border-olive bg-olive text-white'
                     : 'border-coyote/35 bg-field text-ink hover:bg-paper'
@@ -132,6 +229,20 @@ export default function Help() {
         </div>
       </section>
 
+      {session ? (
+        <section className="mb-8 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
+          <p className="text-sm font-bold uppercase tracking-wide text-clay">{activeRole} guide</p>
+          <h2 className="mt-1 text-2xl font-bold text-ink">What matters for your account</h2>
+          <div className="mt-4 grid gap-3">
+            {roleTips.map((tip) => (
+              <div key={tip} className="rounded-md border border-coyote/25 bg-field p-4 text-sm font-semibold leading-6 text-ink/75">
+                {tip}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="grid gap-4">
           {faqs.map((item) => (
@@ -153,13 +264,32 @@ export default function Help() {
             ))}
           </div>
           <Link
-            to="/belt/submit"
-            className="focus-ring mt-5 inline-flex h-10 w-full items-center justify-center rounded-md bg-olive px-4 text-sm font-bold text-white"
+            to={activeRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard'}
+            className="focus-ring mt-5 inline-flex h-11 w-full items-center justify-center rounded-md bg-olive px-4 text-sm font-bold text-white"
           >
-            Submit training hours
+            Open dashboard
           </Link>
         </aside>
       </div>
     </PageShell>
   );
+}
+
+function useIsMobileHelp() {
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 639px)').matches;
+  });
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const updateMobileState = () => setIsMobile(mediaQuery.matches);
+
+    updateMobileState();
+    mediaQuery.addEventListener('change', updateMobileState);
+
+    return () => mediaQuery.removeEventListener('change', updateMobileState);
+  }, []);
+
+  return isMobile;
 }
