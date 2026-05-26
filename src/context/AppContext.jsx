@@ -76,10 +76,11 @@ export function AppProvider({ children }) {
     () => [currentUserId, currentMessageKey].filter(Boolean),
     [currentUserId, currentMessageKey]
   );
+  const visibleLogs = logs.filter((log) => !log.archived);
   const beltLogs = currentUserId
-    ? logs.filter((log) => log.beltUserId === currentUserId)
-    : logs.filter((log) => log.marine === beltUser.name);
-  const assignedMaiLogs = logs.filter((log) =>
+    ? visibleLogs.filter((log) => log.beltUserId === currentUserId)
+    : visibleLogs.filter((log) => log.marine === beltUser.name);
+  const assignedMaiLogs = visibleLogs.filter((log) =>
     (currentUserId && log.assignedMaiUserId === currentUserId) || log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()
   );
   const maiSubmittedLogs = logs.filter((log) =>
@@ -267,6 +268,7 @@ export function AppProvider({ children }) {
     const { data, error } = await supabase
       .from('training_logs')
       .select('*')
+      .or('archived.is.false,archived.is.null')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -281,7 +283,7 @@ export function AppProvider({ children }) {
       const { data: assignedData, error: assignedError } = await supabase
         .from('training_logs')
         .select('*')
-        .or(`assigned_mai_user_id.eq.${profileData.id},mai_number.eq.${profileData.mai_number}`)
+        .or(`and(assigned_mai_user_id.eq.${profileData.id},or(archived.is.false,archived.is.null)),and(mai_number.eq.${profileData.mai_number},or(archived.is.false,archived.is.null))`)
         .order('created_at', { ascending: false });
 
       if (!assignedError && assignedData) {
@@ -1426,7 +1428,8 @@ function mapLogFromSupabase(row) {
     submittedAt: row.created_at?.slice(0, 10),
     verifiedAt: row.verified_at?.slice(0, 10),
     verifiedBy: row.source === 'Account Creation' || row.source === 'Account Creation Backfill' || row.verification_source === 'Account Creation' ? 'Upon Account Creation' : row.verified_by ? 'Verified MAI' : null,
-    verifiedByMaiNumber: row.verified_by ? row.mai_number : null
+    verifiedByMaiNumber: row.verified_by ? row.mai_number : null,
+    archived: Boolean(row.archived)
   };
 }
 
