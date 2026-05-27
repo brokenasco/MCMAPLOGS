@@ -56,6 +56,7 @@ export default function VerifiedLogbook() {
           entriesLabel="Verified Entries as MAI"
           extraLabel="Extra Verified Hours as MAI"
           hoursLabel="Verified Hours as MAI"
+          dedupeTeachingHours
           logs={verifiedAsMai}
           onDateRangeChange={setMaiVerificationRange}
           onSelectLog={setSelectedLog}
@@ -116,6 +117,7 @@ export default function VerifiedLogbook() {
 function VerifiedCommandCenter({
   activeView,
   dateRange,
+  dedupeTeachingHours = false,
   entriesLabel,
   extraLabel,
   hoursLabel,
@@ -133,14 +135,15 @@ function VerifiedCommandCenter({
   const [expandedRecordId, setExpandedRecordId] = React.useState('');
   const isMobile = useIsMobileLogbook();
   const pageSize = isMobile ? mobilePageSize : desktopPageSize;
-  const verifiedMinutes = sumLogMinutes(logs);
-  const extraLogs = logs.filter((log) => getExtraMinutes(log) > 0);
+  const teachingHourLogs = dedupeTeachingHours ? dedupeMaiInstructionPeriods(logs) : logs;
+  const verifiedMinutes = sumLogMinutes(teachingHourLogs);
+  const extraLogs = teachingHourLogs.filter((log) => getExtraMinutes(log) > 0);
   const extraMinutes = extraLogs.reduce((total, log) => total + getExtraMinutes(log), 0);
-  const latestVerified = logs
+  const latestVerified = teachingHourLogs
     .slice()
     .sort((a, b) => new Date(getVerifiedDateValue(b) || 0) - new Date(getVerifiedDateValue(a) || 0))[0];
   const supportsHoursNeeded = hoursNeededRows.length > 0;
-  const activeRecords = getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs });
+  const activeRecords = getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs, teachingHourLogs });
   const pagedRecords = activeRecords.slice(page * pageSize, page * pageSize + pageSize);
   const viewStats = getViewStats({ activeRecords, activeView, extraMinutes, latestVerified, logs, verifiedMinutes });
 
@@ -201,7 +204,9 @@ function VerifiedCommandCenter({
             <p className="mt-2 text-sm leading-6 text-ink/65">
               {activeView === 'needed'
                 ? 'Shows what is still needed for the current target belt. Only verified hours count.'
-                : 'Filtered by date verified. Pending, returned, and canceled logs are not included.'}
+                : dedupeTeachingHours && activeView !== 'entries'
+                  ? 'Filtered by date verified. Matching student submissions are combined into one instructional period for MAI teaching hours.'
+                  : 'Filtered by date verified. Pending, returned, and canceled logs are not included.'}
             </p>
           </div>
           <div className="grid gap-3 sm:flex sm:flex-wrap sm:justify-end">
@@ -421,7 +426,10 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
           <tbody className="divide-y divide-coyote/20">
             {logs.map((log) => (
               <tr key={log.id} className="cursor-pointer align-top hover:bg-field/70" onClick={() => onSelectLog(log)}>
-                <LogbookCell className="font-semibold text-ink">{log.marine}</LogbookCell>
+                <LogbookCell className="font-semibold text-ink">
+                  {log.marine}
+                  {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
+                </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{formatDate(log.date)}</LogbookCell>
                 <LogbookCell>
@@ -454,6 +462,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
                 <MobileDetail label="Time Applied" value={formatAppliedTime(log)} />
                 <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Verified Entry')} />
+                {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
               </dl>
             ) : null}
           </button>
@@ -484,7 +493,10 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
           <tbody className="divide-y divide-coyote/20">
             {logs.map((log) => (
               <tr key={log.id} className="cursor-pointer align-top hover:bg-field/70" onClick={() => onSelectLog(log)}>
-                <LogbookCell className="font-semibold text-ink">{log.marine}</LogbookCell>
+                <LogbookCell className="font-semibold text-ink">
+                  {log.marine}
+                  {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
+                </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
                 <LogbookCell>{log.techniqueName || 'General training'}</LogbookCell>
@@ -515,6 +527,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
                 <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
                 <MobileDetail label="Verified By" value={formatVerifier(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Extra Verified Hours')} />
+                {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
               </dl>
             ) : null}
           </button>
@@ -624,10 +637,63 @@ function MobileDetail({ label, value }) {
   );
 }
 
-function getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs }) {
+function getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs, teachingHourLogs }) {
   if (activeView === 'extra') return extraLogs;
   if (activeView === 'needed') return hoursNeededRows;
+  if (activeView === 'hours') return teachingHourLogs;
   return logs;
+}
+
+function dedupeMaiInstructionPeriods(logs) {
+  const periods = new Map();
+
+  logs.forEach((log) => {
+    const key = getInstructionPeriodKey(log);
+    const current = periods.get(key);
+
+    if (!current) {
+      periods.set(key, {
+        ...log,
+        id: `instruction-period-${key}`,
+        combinedStudentCount: 1,
+        combinedStudentNames: [log.marine].filter(Boolean)
+      });
+      return;
+    }
+
+    const currentMinutes = getLogMinutesValue(current);
+    const nextMinutes = getLogMinutesValue(log);
+    const currentAppliedMinutes = Number(current.appliedMinutes ?? currentMinutes);
+    const nextAppliedMinutes = Number(log.appliedMinutes ?? nextMinutes);
+    const currentExtraMinutes = getExtraMinutes(current);
+    const nextExtraMinutes = getExtraMinutes(log);
+
+    periods.set(key, {
+      ...current,
+      minutes: Math.max(currentMinutes, nextMinutes),
+      hours: Number((Math.max(currentMinutes, nextMinutes) / 60).toFixed(2)),
+      appliedMinutes: Math.max(currentAppliedMinutes, nextAppliedMinutes),
+      extraMinutes: Math.max(currentExtraMinutes, nextExtraMinutes),
+      combinedStudentCount: current.combinedStudentCount + 1,
+      combinedStudentNames: [...new Set([...current.combinedStudentNames, log.marine].filter(Boolean))]
+    });
+  });
+
+  return [...periods.values()].map((period) => ({
+    ...period,
+    marine: period.combinedStudentCount > 1 ? `${period.combinedStudentCount} students` : period.marine,
+    instructionPeriodNote: period.combinedStudentCount > 1
+      ? 'Multiple student submissions combined into one instructional period.'
+      : ''
+  }));
+}
+
+function getInstructionPeriodKey(log) {
+  const verifier = (log.assignedMaiUserId || log.verifiedByMaiNumber || log.maiNumber || 'unknown-mai').toLowerCase();
+  const classCode = (log.classCode || 'general').trim().toLowerCase();
+  const trainingDate = (log.date || '').slice(0, 10);
+
+  return `${verifier}::${classCode}::${trainingDate}`;
 }
 
 function getViewLabel(activeView, labels) {
@@ -827,6 +893,10 @@ function formatDate(date) {
 
 function formatLogTime(log) {
   return formatMinutes(Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60)));
+}
+
+function getLogMinutesValue(log) {
+  return Number(log.minutes ?? Math.round(Number(log.hours || 0) * 60));
 }
 
 function formatAppliedTime(log) {
