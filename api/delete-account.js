@@ -21,6 +21,7 @@ export default async function handler(request, response) {
       });
     }
 
+    const deletedAccountEmail = user.email || '';
     const profile = await getProfile(user.id);
 
     if (profile?.stripe_subscription_id) {
@@ -35,7 +36,9 @@ export default async function handler(request, response) {
     await deleteProfile(user.id);
     await deleteAuthUser(user.id);
 
-    return response.status(200).json({ ok: true });
+    const deletionEmailSent = await sendAccountDeletionEmail(deletedAccountEmail);
+
+    return response.status(200).json({ ok: true, deletionEmailSent });
   } catch (error) {
     return response.status(500).json({ error: error.message || 'Unable to delete this account.' });
   }
@@ -253,6 +256,53 @@ async function deleteAuthUser(userId) {
   if (!deleteResponse.ok && deleteResponse.status !== 404) {
     const errorText = await deleteResponse.text();
     throw new Error(errorText || 'Unable to delete the login account.');
+  }
+}
+
+async function sendAccountDeletionEmail(email) {
+  if (!email || !process.env.RESEND_API_KEY) {
+    console.error('Account deletion confirmation email was not sent because Resend settings or recipient email are missing.');
+    return false;
+  }
+
+  const from = process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM || 'MCMAP Logs Support <support@mcmaplogs.com>';
+
+  try {
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from,
+        to: email,
+        subject: 'Your MCMAP Logs Account Has Been Deleted',
+        text: [
+          'Your MCMAP Logs account deletion request has been completed.',
+          '',
+          'If you deleted your account, no further action is required.',
+          '',
+          "Please note: verified logs that were previously signed by an MAI may remain preserved in that MAI's Logbook so the MAI does not lose verified teaching-hour credit.",
+          '',
+          'If you did not request this deletion, please contact support immediately.',
+          '',
+          'Respectfully,',
+          'MCMAP Logs Support'
+        ].join('\n')
+      })
+    });
+
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error('Account deletion confirmation email failed:', errorText);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Account deletion confirmation email failed:', error);
+    return false;
   }
 }
 

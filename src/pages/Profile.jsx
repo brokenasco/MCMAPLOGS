@@ -74,7 +74,13 @@ export default function Profile() {
     setDeleteMessage('');
 
     try {
-      await deleteAccount();
+      const result = await deleteAccount();
+      sessionStorage.setItem(
+        'mcmap-account-deletion-message',
+        result.deletionEmailSent
+          ? 'Your account has been deleted. A confirmation email has been sent. Please check your inbox and Spam/Junk folder.'
+          : 'Your account has been deleted. We were unable to send a confirmation email, but the deletion was completed.'
+      );
       navigate('/');
     } catch (error) {
       setDeleteMessage(error.message || 'Account could not be deleted. Try again.');

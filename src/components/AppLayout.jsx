@@ -6,7 +6,16 @@ import { useApp } from '../context/AppContext.jsx';
 export default function AppLayout() {
   const navigate = useNavigate();
   const { activeRole, markWelcomeSeen, profile, session } = useApp();
+  const [accountDeletionMessage, setAccountDeletionMessage] = React.useState('');
   const showWelcome = Boolean(profile && profile.welcome_seen === false);
+
+  React.useEffect(() => {
+    const deletionMessage = sessionStorage.getItem('mcmap-account-deletion-message');
+    if (!deletionMessage) return;
+
+    setAccountDeletionMessage(deletionMessage);
+    sessionStorage.removeItem('mcmap-account-deletion-message');
+  }, []);
 
   const continueToDashboard = async () => {
     await markWelcomeSeen();
@@ -17,6 +26,22 @@ export default function AppLayout() {
     <div className="min-h-screen bg-field text-ink">
       <Header />
       <main className={session ? 'pb-36 lg:pb-0' : ''}>
+        {accountDeletionMessage ? (
+          <div className="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold leading-6 text-olive">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <p>{accountDeletionMessage}</p>
+                <button
+                  type="button"
+                  onClick={() => setAccountDeletionMessage('')}
+                  className="focus-ring inline-flex h-9 items-center justify-center rounded-md border border-olive/30 bg-paper px-3 text-xs font-bold text-olive"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <Outlet />
       </main>
       {showWelcome ? <WelcomeModal onContinue={continueToDashboard} /> : null}
