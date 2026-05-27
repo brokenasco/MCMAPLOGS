@@ -20,9 +20,27 @@ const roleLinks = {
   ]
 };
 
+const mobileRoleLinks = {
+  'Belt User': [
+    { label: 'Dashboard', to: '/belt/dashboard', icon: LayoutDashboard },
+    { label: 'Log Hours', to: '/belt/submit', icon: UserPlus },
+    { label: 'Logbook', to: '/logbook/verified', icon: BookOpenCheck },
+    { label: 'Progress', to: '/belt/dashboard', icon: ShieldCheck },
+    { label: 'Profile', to: '/profile', icon: UserCircle }
+  ],
+  MAI: [
+    { label: 'Dashboard', to: '/mai/dashboard', icon: LayoutDashboard },
+    { label: 'Pending', to: '/mai/dashboard', icon: ShieldCheck },
+    { label: 'Records', to: '/logbook/verified', icon: BookOpenCheck },
+    { label: 'Stats', to: '/logbook/verified', icon: CircleHelp },
+    { label: 'Profile', to: '/profile', icon: UserCircle }
+  ]
+};
+
 export default function Header() {
   const { activeRole, session, signOut, unreadMessageCount } = useApp();
   const navLinks = roleLinks[activeRole];
+  const mobileNavLinks = mobileRoleLinks[activeRole] || navLinks;
 
   return (
     <header className="sticky top-0 z-20 border-b border-coyote/30 bg-charcoal text-paper shadow-panel">
@@ -90,13 +108,13 @@ export default function Header() {
       {session ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-coyote/30 bg-charcoal px-2 py-2 shadow-panel lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
-          {navLinks.map((link) => (
+          {mobileNavLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `focus-ring flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-[11px] font-bold ${
-                  isActive ? 'bg-paper text-olive' : 'text-paper/70'
+                `focus-ring flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-[11px] font-bold transition ${
+                  isActive && shouldShowMobileActiveState(activeRole, link.label) ? 'bg-paper text-olive shadow-sm' : 'text-paper/70'
                 }`
               }
             >
@@ -108,6 +126,12 @@ export default function Header() {
       ) : null}
     </header>
   );
+}
+
+function shouldShowMobileActiveState(activeRole, label) {
+  if (activeRole === 'Belt User' && label === 'Progress') return false;
+  if (activeRole === 'MAI' && (label === 'Pending' || label === 'Stats')) return false;
+  return true;
 }
 
 function MobileNavLabel({ icon: Icon, label, unread }) {
