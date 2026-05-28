@@ -25,7 +25,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-field text-ink">
       <Header />
-      <main className={session ? 'pb-36 lg:pb-0' : ''}>
+      <main className={session ? 'pb-64 lg:pb-0' : ''}>
         {accountDeletionMessage ? (
           <div className="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold leading-6 text-olive">

@@ -25,13 +25,13 @@ const mobileRoleLinks = {
     { label: 'Dashboard', to: '/belt/dashboard', icon: LayoutDashboard },
     { label: 'Log Hours', to: '/belt/submit', icon: UserPlus },
     { label: 'Logbook', to: '/logbook/verified', icon: BookOpenCheck },
-    { label: 'Progress', to: '/belt/dashboard', icon: ShieldCheck },
+    { label: 'Stats', to: '/logbook/verified', icon: ShieldCheck },
     { label: 'Profile', to: '/profile', icon: UserCircle }
   ],
   MAI: [
     { label: 'Dashboard', to: '/mai/dashboard', icon: LayoutDashboard },
     { label: 'Pending', to: '/mai/dashboard', icon: ShieldCheck },
-    { label: 'Records', to: '/logbook/verified', icon: BookOpenCheck },
+    { label: 'Logbook', to: '/logbook/verified', icon: BookOpenCheck },
     { label: 'Stats', to: '/logbook/verified', icon: CircleHelp },
     { label: 'Profile', to: '/profile', icon: UserCircle }
   ]
@@ -110,7 +110,7 @@ export default function Header() {
         <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
           {mobileNavLinks.map((link) => (
             <NavLink
-              key={link.to}
+              key={`${link.label}-${link.to}`}
               to={link.to}
               className={({ isActive }) =>
                 `focus-ring flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-[11px] font-bold transition ${
@@ -129,7 +129,7 @@ export default function Header() {
 }
 
 function shouldShowMobileActiveState(activeRole, label) {
-  if (activeRole === 'Belt User' && label === 'Progress') return false;
+  if (activeRole === 'Belt User' && label === 'Stats') return false;
   if (activeRole === 'MAI' && (label === 'Pending' || label === 'Stats')) return false;
   return true;
 }
