@@ -241,7 +241,7 @@ export default function MaiDashboard() {
 
 function MobileStickyAction({ label, onClick }) {
   return (
-    <div className="fixed inset-x-0 bottom-[84px] z-20 border-y border-coyote/25 bg-paper/95 px-4 py-3 shadow-panel backdrop-blur sm:hidden">
+    <div className="fixed inset-x-0 bottom-[84px] z-20 border-t border-coyote/25 bg-paper/95 px-4 py-3 shadow-panel backdrop-blur sm:hidden">
       <button
         type="button"
         onClick={onClick}

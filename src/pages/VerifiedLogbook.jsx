@@ -429,6 +429,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
                 <LogbookCell className="font-semibold text-ink">
                   {log.marine}
                   {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
+                  <StudentListToggle students={log.combinedStudentNames} />
                 </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{formatDate(log.date)}</LogbookCell>
@@ -463,6 +464,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
                 <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Verified Entry')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
+                <StudentListToggle students={log.combinedStudentNames} />
               </dl>
             ) : null}
           </button>
@@ -496,6 +498,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
                 <LogbookCell className="font-semibold text-ink">
                   {log.marine}
                   {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
+                  <StudentListToggle students={log.combinedStudentNames} />
                 </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
@@ -528,6 +531,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
                 <MobileDetail label="Verified By" value={formatVerifier(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Extra Verified Hours')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
+                <StudentListToggle students={log.combinedStudentNames} />
               </dl>
             ) : null}
           </button>
@@ -633,6 +637,36 @@ function MobileDetail({ label, value }) {
     <div>
       <dt className="text-xs font-bold uppercase tracking-wide text-ink/45">{label}</dt>
       <dd className="mt-1 font-semibold text-ink">{value}</dd>
+    </div>
+  );
+}
+
+function StudentListToggle({ students = [] }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  if (!students || students.length <= 1) return null;
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          setIsOpen((current) => !current);
+        }}
+        className="focus-ring inline-flex h-9 items-center justify-center rounded-md border border-coyote/35 bg-field px-3 text-xs font-black text-ink hover:bg-paper"
+      >
+        {isOpen ? 'Hide Students' : 'Show Students'}
+      </button>
+      {isOpen ? (
+        <div className="mt-2 grid gap-2 rounded-md border border-coyote/25 bg-paper p-2">
+          {students.map((student) => (
+            <div key={student} className="rounded-md bg-field px-3 py-2 text-xs font-bold text-ink">
+              {student}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

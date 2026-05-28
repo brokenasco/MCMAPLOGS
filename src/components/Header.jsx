@@ -30,9 +30,9 @@ const mobileRoleLinks = {
   ],
   MAI: [
     { label: 'Dashboard', to: '/mai/dashboard', icon: LayoutDashboard },
-    { label: 'Pending', to: '/mai/dashboard', icon: ShieldCheck },
     { label: 'Logbook', to: '/logbook/verified', icon: BookOpenCheck },
-    { label: 'Stats', to: '/logbook/verified', icon: CircleHelp },
+    { label: 'Help', to: '/help', icon: CircleHelp },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Profile', to: '/profile', icon: UserCircle }
   ]
 };
@@ -106,8 +106,8 @@ export default function Header() {
         </div>
       </div>
       {session ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-coyote/30 bg-charcoal px-2 py-2 shadow-panel lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
+        <div className="fixed inset-x-0 bottom-0 z-30 h-[84px] border-t border-coyote/30 bg-charcoal px-2 py-2 shadow-panel lg:hidden">
+        <div className={`mx-auto grid h-full max-w-xl gap-1 ${mobileNavLinks.length === 4 ? 'grid-cols-4' : 'grid-cols-5'}`}>
           {mobileNavLinks.map((link) => (
             <NavLink
               key={`${link.label}-${link.to}`}
@@ -130,7 +130,6 @@ export default function Header() {
 
 function shouldShowMobileActiveState(activeRole, label) {
   if (activeRole === 'Belt User' && label === 'Stats') return false;
-  if (activeRole === 'MAI' && (label === 'Pending' || label === 'Stats')) return false;
   return true;
 }
 
