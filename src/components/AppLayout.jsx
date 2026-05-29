@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function AppLayout() {
   const navigate = useNavigate();
-  const { activeRole, markWelcomeSeen, profile, session } = useApp();
+  const { achievementToasts, activeRole, dismissAchievementToast, markWelcomeSeen, profile, session } = useApp();
   const [accountDeletionMessage, setAccountDeletionMessage] = React.useState('');
   const showWelcome = Boolean(profile && profile.welcome_seen === false);
 
@@ -44,6 +44,28 @@ export default function AppLayout() {
         ) : null}
         <Outlet />
       </main>
+      {achievementToasts.length ? (
+        <div className="fixed bottom-28 right-4 z-50 grid w-[calc(100%-2rem)] max-w-sm gap-3 sm:bottom-6">
+          {achievementToasts.slice(-3).map((toast) => (
+            <div key={toast.id} className="rounded-md border border-brass/40 bg-charcoal p-4 text-paper shadow-panel">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-wide text-brass">Achievement unlocked</p>
+                  <p className="mt-1 text-sm leading-6 text-paper/80">{toast.message}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => dismissAchievementToast(toast.id)}
+                  className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-md border border-paper/20 text-sm font-bold text-paper"
+                  aria-label="Dismiss achievement notification"
+                >
+                  X
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {showWelcome ? <WelcomeModal onContinue={continueToDashboard} /> : null}
       <footer className="border-t border-coyote/30 bg-charcoal px-4 py-5 text-paper sm:px-6 lg:px-8">
         <p className="mx-auto max-w-7xl text-xs leading-5 text-paper/65">

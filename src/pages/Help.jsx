@@ -58,6 +58,17 @@ const mobileLessons = [
       'Select a From Date and To Date.',
       'Use PDF or Print after filtering if you need a copy of the selected records.'
     ]
+  },
+  {
+    title: 'Achievements',
+    summary: 'Understand badges, hidden achievements, and unlock messages.',
+    steps: [
+      'Achievements reward consistent training, martial development, education, and participation in the MCMAP community.',
+      'Some achievements are visible from the start, while others remain hidden until earned.',
+      'Achievements unlock automatically after verified logs, belt advancement, study completion, login checks, and recalculations.',
+      'When you unlock an achievement, you receive a notification and an internal achievement message.',
+      'Open Profile, then Achievements, to view unlocked badges, locked badge progress, and unlock dates.'
+    ]
   }
 ];
 
@@ -115,6 +126,17 @@ const desktopLessons = [
       'Use Manage Subscription to upgrade, cancel, or resume MAI access when available.',
       'Belt Users can upgrade to MAI without creating a new account.',
       'Account deletion is available from Edit Account Details and requires confirmation.'
+    ]
+  },
+  {
+    title: 'Achievements',
+    summary: 'Understand badges, hidden achievements, and unlock messages.',
+    steps: [
+      'Achievements reward consistent training, martial development, education, and participation in the MCMAP community.',
+      'Some achievements are visible from the start, while others remain hidden until earned.',
+      'Achievements unlock automatically after verified logs, belt advancement, study completion, login checks, and recalculations.',
+      'When you unlock an achievement, you receive a notification and an internal achievement message.',
+      'Open Profile, then Achievements, to view unlocked badges, locked badge progress, and unlock dates.'
     ]
   }
 ];

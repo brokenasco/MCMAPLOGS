@@ -1,5 +1,6 @@
 import React from 'react';
 import { currentBeltUser, currentMai, messageThreads as mockMessageThreads, trainingLogs } from '../data/mockData.js';
+import { achievements, evaluateAchievements, getAchievementById } from '../data/achievements.js';
 import {
   additionalMcmapHoursTarget,
   beltProgression,
@@ -57,6 +58,8 @@ export function AppProvider({ children }) {
   const [session, setSession] = React.useState(null);
   const [logs, setLogs] = React.useState(trainingLogs);
   const [messageThreads, setMessageThreads] = React.useState(mockMessageThreads);
+  const [userAchievements, setUserAchievements] = React.useState([]);
+  const [achievementToasts, setAchievementToasts] = React.useState([]);
   const [loading, setLoading] = React.useState(Boolean(supabase));
   const [authMessage, setAuthMessage] = React.useState('');
   const [savedDraft, setSavedDraft] = React.useState(() => {
@@ -152,6 +155,8 @@ export function AppProvider({ children }) {
       setProfile(null);
       setLogs(trainingLogs);
       setMessageThreads(mockMessageThreads);
+      setUserAchievements([]);
+      setAchievementToasts([]);
       setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
       setMaiDirectory(fallbackMaiDirectory);
     }
@@ -180,7 +185,28 @@ export function AppProvider({ children }) {
     applyProfile(profileData);
     await loadMaiDirectory(profileData);
     await seedPriorBeltLogs(profileData);
-    await loadLogs(profileData);
+    const loadedLogs = await loadLogs(profileData);
+    const loadedAchievements = await loadAchievements(profileData.id);
+    setUserAchievements(loadedAchievements);
+    const newAchievements = await evaluateAndSaveAchievements({
+      userId: profileData.id,
+      profileData,
+      source: 'login',
+      sourceLogs: loadedLogs.filter((log) => log.beltUserId === profileData.id)
+    });
+    if (newAchievements.length) {
+      setUserAchievements((current) => mergeAchievements(current, newAchievements));
+      if (currentUserId !== profileData.id) {
+        setAchievementToasts((current) => [
+          ...current,
+          ...newAchievements.map((unlock) => ({
+            id: `${unlock.achievementId}-${unlock.unlockedAt}`,
+            achievementId: unlock.achievementId,
+            message: `Congratulations! You unlocked "${getAchievementById(unlock.achievementId)?.name || 'Achievement'}". Go check it out in your Profile under Achievements.`
+          }))
+        ]);
+      }
+    }
     await loadMessages(profileData);
     return profileData;
   }
@@ -301,6 +327,7 @@ export function AppProvider({ children }) {
     }
 
     setLogs(loadedLogs);
+    return loadedLogs;
   }
 
   async function loadMessages(profileData = profile) {
@@ -316,6 +343,116 @@ export function AppProvider({ children }) {
     }
 
     setMessageThreads(data.map(mapThreadFromSupabase));
+  }
+
+  async function loadAchievements(userId = currentUserId) {
+    if (!userId) return [];
+
+    if (!supabase) {
+      const storedAchievements = getStoredAchievements(userId);
+      setUserAchievements(storedAchievements);
+      return storedAchievements;
+    }
+
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .select('achievement_id,unlocked_at,unlock_source')
+      .eq('user_id', userId);
+
+    if (error) {
+      if (userId === currentUserId) setUserAchievements([]);
+      return [];
+    }
+
+    const mappedAchievements = data.map(mapUserAchievement);
+    if (userId === currentUserId) setUserAchievements(mappedAchievements);
+    return mappedAchievements;
+  }
+
+  async function evaluateAndSaveAchievements({ userId, profileData = profile, source = 'system', sourceLogs = null } = {}) {
+    if (!userId) return [];
+
+    const logsForUser = sourceLogs || await loadAchievementLogs(userId);
+    const existingAchievements = supabase ? await loadAchievements(userId) : getStoredAchievements(userId);
+    const existingIds = new Set(existingAchievements.map((item) => item.achievementId));
+    const { unlockedIds } = evaluateAchievements({ logs: logsForUser, profile: profileData });
+    const unlockedAt = new Date().toISOString();
+    const newUnlocks = unlockedIds
+      .filter((achievementId) => !existingIds.has(achievementId))
+      .map((achievementId) => ({
+        achievementId,
+        unlockedAt,
+        unlockSource: source
+      }));
+
+    if (!newUnlocks.length) return [];
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('user_achievements')
+        .upsert(
+          newUnlocks.map((unlock) => ({
+            user_id: userId,
+            achievement_id: unlock.achievementId,
+            unlocked_at: unlock.unlockedAt,
+            unlock_source: unlock.unlockSource
+          })),
+          { onConflict: 'user_id,achievement_id' }
+        );
+
+      if (error) {
+        setAuthMessage(error.message);
+        return [];
+      }
+    } else {
+      setStoredAchievements(userId, [...existingAchievements, ...newUnlocks]);
+    }
+
+    await createAchievementNotifications({ userId, unlocks: newUnlocks });
+
+    if (userId === currentUserId) {
+      const nextAchievements = [...existingAchievements, ...newUnlocks];
+      setUserAchievements(nextAchievements);
+      setAchievementToasts((current) => [
+        ...current,
+        ...newUnlocks.map((unlock) => ({
+          id: `${unlock.achievementId}-${unlock.unlockedAt}`,
+          achievementId: unlock.achievementId,
+          message: `Congratulations! You unlocked "${getAchievementById(unlock.achievementId)?.name || 'Achievement'}". Go check it out in your Profile under Achievements.`
+        }))
+      ]);
+    }
+
+    return newUnlocks;
+  }
+
+  async function loadAchievementLogs(userId) {
+    if (!supabase) return logs.filter((log) => log.beltUserId === userId || (!currentUserId && log.marine === beltUser.name));
+
+    const { data, error } = await supabase
+      .from('training_logs')
+      .select('*')
+      .eq('belt_user_id', userId)
+      .or('archived.is.false,archived.is.null');
+
+    if (error || !data) return logs.filter((log) => log.beltUserId === userId);
+    return data.map(mapLogFromSupabase);
+  }
+
+  async function createAchievementNotifications({ userId, unlocks }) {
+    if (!unlocks.length) return;
+
+    if (!supabase) return;
+
+    await supabase
+      .from('achievement_notifications')
+      .insert(
+        unlocks.map((unlock) => ({
+          user_id: userId,
+          achievement_id: unlock.achievementId,
+          message: `Congratulations! You unlocked "${getAchievementById(unlock.achievementId)?.name || 'Achievement'}". Go check it out in your Profile under Achievements.`
+        }))
+      );
   }
 
   async function loadMaiDirectory(profileData = profile) {
@@ -630,9 +767,11 @@ export function AppProvider({ children }) {
 
   const verifyLog = async (logId) => {
     const logToVerify = logs.find((log) => log.id === logId);
-    if (logToVerify?.submitterRole === 'MAI' && logToVerify?.beltUserId === currentUserId) {
-      setAuthMessage('MAIs cannot verify their own submitted hours.');
-      throw new Error('MAIs cannot verify their own submitted hours.');
+    const isSelfSubmittedMaiLog = logToVerify?.submitterRole === 'MAI' && logToVerify?.beltUserId === currentUserId;
+    const isAdditionalHoursLog = logToVerify?.targetBelt === additionalMcmapHoursTarget || logToVerify?.beltLevel === additionalMcmapHoursTarget;
+    if (isSelfSubmittedMaiLog && !isAdditionalHoursLog) {
+      setAuthMessage('Required belt hours must be verified by another MAI. Self-verification is only allowed for Additional MCMAP Hours.');
+      throw new Error('Required belt hours must be verified by another MAI. Self-verification is only allowed for Additional MCMAP Hours.');
     }
 
     const logsForOverflow = supabase && logToVerify?.beltUserId
@@ -641,21 +780,26 @@ export function AppProvider({ children }) {
     const overflow = calculateVerificationOverflow(logToVerify, logsForOverflow);
 
     if (!supabase || !currentUserId) {
+      const verifiedLog = {
+        ...logToVerify,
+        status: 'Verified',
+        verifiedAt: new Date().toISOString().slice(0, 10),
+        verifiedBy: maiUser.name,
+        verifiedByMaiNumber: maiUser.maiNumber,
+        appliedMinutes: overflow.appliedMinutes,
+        extraMinutes: overflow.extraMinutes
+      };
       setLogs((currentLogs) =>
         currentLogs.map((log) =>
-          log.id === logId
-            ? {
-                ...log,
-                status: 'Verified',
-                verifiedAt: new Date().toISOString().slice(0, 10),
-                verifiedBy: maiUser.name,
-                verifiedByMaiNumber: maiUser.maiNumber,
-                appliedMinutes: overflow.appliedMinutes,
-                extraMinutes: overflow.extraMinutes
-              }
-            : log
+          log.id === logId ? verifiedLog : log
         )
       );
+      await evaluateAndSaveAchievements({
+        userId: verifiedLog.beltUserId || currentUserId,
+        profileData: profile,
+        source: 'log_verified',
+        sourceLogs: mergeLogsById(logsForOverflow, [verifiedLog])
+      });
       return;
     }
 
@@ -675,6 +819,20 @@ export function AppProvider({ children }) {
       return;
     }
 
+    await evaluateAndSaveAchievements({
+      userId: logToVerify.beltUserId,
+      profileData: logToVerify.beltUserId === currentUserId ? profile : {},
+      source: 'log_verified',
+      sourceLogs: mergeLogsById(logsForOverflow, [{
+        ...logToVerify,
+        status: 'Verified',
+        verifiedAt: new Date().toISOString().slice(0, 10),
+        verifiedBy: maiUser.name,
+        verifiedByMaiNumber: maiUser.maiNumber,
+        appliedMinutes: overflow.appliedMinutes,
+        extraMinutes: overflow.extraMinutes
+      }])
+    });
     await loadLogs();
   };
 
@@ -1313,6 +1471,10 @@ export function AppProvider({ children }) {
     return loadProfileAndLogs(currentUserId);
   };
 
+  const dismissAchievementToast = (toastId) => {
+    setAchievementToasts((current) => current.filter((toast) => toast.id !== toastId));
+  };
+
   const getFreshAccessToken = async () => {
     if (!supabase) return session?.access_token || '';
 
@@ -1371,6 +1533,9 @@ export function AppProvider({ children }) {
     maiSubmittedLogs,
     messageThreads: visibleMessageThreads,
     unreadMessageCount,
+    achievements,
+    userAchievements,
+    achievementToasts,
     pendingLogs,
     verifiedLogs,
     returnedLogs,
@@ -1404,7 +1569,8 @@ export function AppProvider({ children }) {
     advanceBeltUser,
     markWelcomeSeen,
     refreshAccount,
-    getFreshAccessToken
+    getFreshAccessToken,
+    dismissAchievementToast
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -1442,6 +1608,38 @@ function mapLogFromSupabase(row) {
     verifiedByMaiNumber: row.verified_by ? row.mai_number : null,
     archived: Boolean(row.archived)
   };
+}
+
+function mapUserAchievement(row) {
+  return {
+    achievementId: row.achievement_id,
+    unlockedAt: row.unlocked_at,
+    unlockSource: row.unlock_source || 'system'
+  };
+}
+
+function mergeAchievements(currentAchievements, newAchievements) {
+  const byId = new Map();
+  [...currentAchievements, ...newAchievements].forEach((achievement) => {
+    byId.set(achievement.achievementId, achievement);
+  });
+  return [...byId.values()];
+}
+
+function getStoredAchievements(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(`mcmap-achievements-${userId}`)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function setStoredAchievements(userId, achievementsToStore) {
+  try {
+    localStorage.setItem(`mcmap-achievements-${userId}`, JSON.stringify(achievementsToStore));
+  } catch {
+    // Local storage is optional for the mock/demo environment.
+  }
 }
 
 function buildLogHistoryEntry(action, previousLog, updates) {
