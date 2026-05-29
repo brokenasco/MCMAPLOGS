@@ -29,7 +29,7 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { evaluateAchievements } from '../data/achievements.js';
+import { achievements as fallbackAchievements, evaluateAchievements } from '../data/achievements.js';
 import { formatMinutes, getTargetBelt } from '../data/mcmapReference.js';
 
 export default function Profile() {
@@ -64,7 +64,9 @@ export default function Profile() {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [profileSection, setProfileSection] = React.useState('account');
   const canDelete = deleteText === 'DELETE';
-  const unlockedAchievementIds = new Set(userAchievements.map((achievement) => achievement.achievementId));
+  const achievementDefinitions = Array.isArray(achievements) && achievements.length ? achievements : fallbackAchievements;
+  const unlockedAchievements = Array.isArray(userAchievements) ? userAchievements : [];
+  const unlockedAchievementIds = new Set(unlockedAchievements.map((achievement) => achievement.achievementId));
   const achievementProgress = React.useMemo(
     () => evaluateAchievements({ logs: beltLogs, profile }).progress,
     [beltLogs, profile]
@@ -161,10 +163,10 @@ export default function Profile() {
 
       {profileSection === 'achievements' ? (
         <AchievementsSection
-          achievements={achievements}
+          achievements={achievementDefinitions}
           progress={achievementProgress}
           unlockedAchievementIds={unlockedAchievementIds}
-          userAchievements={userAchievements}
+          userAchievements={unlockedAchievements}
         />
       ) : (
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
@@ -351,6 +353,7 @@ function Detail({ label, value }) {
 
 function AchievementsSection({ achievements, progress, unlockedAchievementIds, userAchievements }) {
   const unlockLookup = new Map(userAchievements.map((achievement) => [achievement.achievementId, achievement]));
+  const visibleAchievements = Array.isArray(achievements) && achievements.length ? achievements : fallbackAchievements;
 
   return (
     <section className="rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
@@ -363,12 +366,12 @@ function AchievementsSection({ achievements, progress, unlockedAchievementIds, u
           </p>
         </div>
         <p className="text-sm font-bold text-olive">
-          {userAchievements.length} of {achievements.length} unlocked
+          {userAchievements.length} of {visibleAchievements.length} unlocked
         </p>
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {achievements.map((achievement) => {
+        {visibleAchievements.map((achievement) => {
           const unlocked = unlockedAchievementIds.has(achievement.id);
           const unlock = unlockLookup.get(achievement.id);
           const visibleName = achievement.hidden && !unlocked ? 'Hidden Achievement' : achievement.name;
