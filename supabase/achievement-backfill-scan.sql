@@ -15,6 +15,9 @@ with verified_logs as (
   where tl.belt_user_id is not null
     and tl.status = 'Verified'
     and coalesce(tl.archived, false) = false
+    and coalesce(tl.source, '') not in ('Account Creation', 'Account Creation Backfill')
+    and coalesce(tl.verification_source, '') <> 'Account Creation'
+    and lower(coalesce(tl.assigned_mai_name, '')) <> 'upon account creation'
 ),
 pending_logs as (
   select

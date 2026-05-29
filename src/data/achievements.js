@@ -158,7 +158,7 @@ const brownBeltIndex = 4;
 const beltOrder = ['No MCMAP Belt', 'Tan Belt', 'Gray Belt', 'Green Belt', 'Brown Belt', 'Black 1st Degree'];
 
 export function evaluateAchievements({ logs = [], profile = {} }) {
-  const verifiedLogs = logs.filter((log) => log.status === 'Verified');
+  const verifiedLogs = logs.filter((log) => log.status === 'Verified' && !isAccountCreationLog(log));
   const allVerifiedMinutes = sumMinutes(verifiedLogs);
   const studyLogs = verifiedLogs.filter(isStudyLog);
   const warriorStudies = new Set(studyLogs.map((log) => normalizeStudyName(log.techniqueName || log.description || log.classCode)));
@@ -215,6 +215,16 @@ export function evaluateAchievements({ logs = [], profile = {} }) {
 
 export function getAchievementById(id) {
   return achievements.find((achievement) => achievement.id === id);
+}
+
+function isAccountCreationLog(log) {
+  return (
+    log.source === 'Account Creation' ||
+    log.source === 'Account Creation Backfill' ||
+    log.verificationSource === 'Account Creation' ||
+    log.assignedMaiName?.trim().toLowerCase() === 'upon account creation' ||
+    log.verifiedBy?.trim().toLowerCase() === 'upon account creation'
+  );
 }
 
 function sumMinutes(logs) {
