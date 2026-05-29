@@ -26,6 +26,7 @@ export default function VerifiedLogbook() {
   const [maiVerificationRange, setMaiVerificationRange] = React.useState({ from: '', to: '' });
   const [maiStudentRange, setMaiStudentRange] = React.useState({ from: '', to: '' });
   const [beltRange, setBeltRange] = React.useState({ from: '', to: '' });
+  const [maiVerificationStudentFilter, setMaiVerificationStudentFilter] = React.useState('');
 
   const beltProgressUser = React.useMemo(
     () => ({ ...beltUser, beltLevel: profile?.belt_level || beltUser.beltLevel }),
@@ -60,10 +61,12 @@ export default function VerifiedLogbook() {
           logs={verifiedAsMai}
           onDateRangeChange={setMaiVerificationRange}
           onSelectLog={setSelectedLog}
+          onStudentFilterChange={setMaiVerificationStudentFilter}
           onToggleFilter={() => setShowMaiVerificationFilter((current) => !current)}
           onViewChange={setMaiVerificationView}
           selectedLog={selectedLog}
           showDateFilter={showMaiVerificationFilter}
+          studentFilter={maiVerificationStudentFilter}
           title="MAI Verification Command Center"
         />
 
@@ -125,17 +128,20 @@ function VerifiedCommandCenter({
   logs,
   onDateRangeChange,
   onSelectLog,
+  onStudentFilterChange,
   onToggleFilter,
   onViewChange,
   selectedLog,
   showDateFilter,
+  studentFilter = '',
   title
 }) {
   const [page, setPage] = React.useState(0);
   const [expandedRecordId, setExpandedRecordId] = React.useState('');
   const isMobile = useIsMobileLogbook();
   const pageSize = isMobile ? mobilePageSize : desktopPageSize;
-  const teachingHourLogs = dedupeTeachingHours ? dedupeMaiInstructionPeriods(logs) : logs;
+  const filteredLogs = dedupeTeachingHours ? filterByStudentName(logs, studentFilter) : logs;
+  const teachingHourLogs = dedupeTeachingHours ? dedupeMaiInstructionPeriods(filteredLogs) : filteredLogs;
   const verifiedMinutes = sumLogMinutes(teachingHourLogs);
   const extraLogs = teachingHourLogs.filter((log) => getExtraMinutes(log) > 0);
   const extraMinutes = extraLogs.reduce((total, log) => total + getExtraMinutes(log), 0);
@@ -143,14 +149,14 @@ function VerifiedCommandCenter({
     .slice()
     .sort((a, b) => new Date(getVerifiedDateValue(b) || 0) - new Date(getVerifiedDateValue(a) || 0))[0];
   const supportsHoursNeeded = hoursNeededRows.length > 0;
-  const activeRecords = getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs, teachingHourLogs });
+  const activeRecords = getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs: filteredLogs, teachingHourLogs });
   const pagedRecords = activeRecords.slice(page * pageSize, page * pageSize + pageSize);
-  const viewStats = getViewStats({ activeRecords, activeView, extraMinutes, latestVerified, logs, verifiedMinutes });
+  const viewStats = getViewStats({ activeRecords, activeView, extraMinutes, latestVerified, logs: filteredLogs, verifiedMinutes });
 
   React.useEffect(() => {
     setPage(0);
     setExpandedRecordId('');
-  }, [activeView, dateRange.from, dateRange.to, logs.length, extraLogs.length, hoursNeededRows.length]);
+  }, [activeView, dateRange.from, dateRange.to, studentFilter, filteredLogs.length, extraLogs.length, hoursNeededRows.length]);
 
   const toggleExpandedRecord = (recordId) => {
     setExpandedRecordId((current) => (current === recordId ? '' : recordId));
@@ -165,7 +171,7 @@ function VerifiedCommandCenter({
         <div className={`mt-5 grid gap-3 ${buttonCount === 4 ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3'}`}>
           <CommandActionButton
             active={activeView === 'entries'}
-            detail={`${logs.length} verified ${logs.length === 1 ? 'entry' : 'entries'}`}
+            detail={`${filteredLogs.length} verified ${filteredLogs.length === 1 ? 'entry' : 'entries'}`}
             icon={CheckCircle2}
             label={entriesLabel}
             onClick={() => onViewChange('entries')}
@@ -240,7 +246,9 @@ function VerifiedCommandCenter({
         </div>
 
         {showDateFilter && activeView !== 'needed' ? (
-          <div className="mt-5 grid gap-4 rounded-md border border-coyote/30 bg-field p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div className={`mt-5 grid gap-4 rounded-md border border-coyote/30 bg-field p-4 sm:items-end ${
+            dedupeTeachingHours ? 'sm:grid-cols-[1fr_1fr_1fr_auto]' : 'sm:grid-cols-[1fr_1fr_auto]'
+          }`}>
             <label className="block">
               <span className="text-sm font-bold text-ink">From Date</span>
               <input
@@ -259,9 +267,24 @@ function VerifiedCommandCenter({
                 className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
               />
             </label>
+            {dedupeTeachingHours ? (
+              <label className="block">
+                <span className="text-sm font-bold text-ink">Student Name</span>
+                <input
+                  type="search"
+                  value={studentFilter}
+                  onChange={(event) => onStudentFilterChange?.(event.target.value)}
+                  className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 bg-paper px-3 text-sm"
+                  placeholder="Search Joseph"
+                />
+              </label>
+            ) : null}
             <button
               type="button"
-              onClick={() => onDateRangeChange({ from: '', to: '' })}
+              onClick={() => {
+                onDateRangeChange({ from: '', to: '' });
+                onStudentFilterChange?.('');
+              }}
               className="focus-ring h-11 rounded-md border border-ink/15 bg-paper px-4 text-sm font-bold text-ink"
             >
               Clear
@@ -429,7 +452,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
                 <LogbookCell className="font-semibold text-ink">
                   {log.marine}
                   {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
-                  <StudentListToggle students={log.combinedStudentNames} />
+                  <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
                 </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{formatDate(log.date)}</LogbookCell>
@@ -447,10 +470,12 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
       </div>
       <div className="grid gap-3 p-3 md:hidden">
         {logs.map((log) => (
-          <button
+          <div
             key={log.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onToggleMobileRecord(log.id)}
+            onKeyDown={(event) => handleMobileRecordKeyDown(event, () => onToggleMobileRecord(log.id))}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
             {renderMobileLogSummary(log, expandedRecordId === log.id)}
@@ -464,10 +489,10 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
                 <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Verified Entry')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
-                <StudentListToggle students={log.combinedStudentNames} />
+                <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
               </dl>
             ) : null}
-          </button>
+          </div>
         ))}
       </div>
     </div>
@@ -498,7 +523,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
                 <LogbookCell className="font-semibold text-ink">
                   {log.marine}
                   {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
-                  <StudentListToggle students={log.combinedStudentNames} />
+                  <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
                 </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
@@ -515,10 +540,12 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
       </div>
       <div className="grid gap-3 p-3 md:hidden">
         {logs.map((log) => (
-          <button
+          <div
             key={log.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onToggleMobileRecord(log.id)}
+            onKeyDown={(event) => handleMobileRecordKeyDown(event, () => onToggleMobileRecord(log.id))}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
             {renderMobileLogSummary(log, expandedRecordId === log.id)}
@@ -531,10 +558,10 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
                 <MobileDetail label="Verified By" value={formatVerifier(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Extra Verified Hours')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
-                <StudentListToggle students={log.combinedStudentNames} />
+                <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
               </dl>
             ) : null}
-          </button>
+          </div>
         ))}
       </div>
     </div>
@@ -643,8 +670,11 @@ function MobileDetail({ label, value }) {
 
 function StudentListToggle({ students = [] }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const normalizedStudents = students.map((student) =>
+    typeof student === 'string' ? { name: student, belt: '' } : student
+  );
 
-  if (!students || students.length <= 1) return null;
+  if (!normalizedStudents || normalizedStudents.length <= 1) return null;
 
   return (
     <div className="mt-3">
@@ -660,15 +690,22 @@ function StudentListToggle({ students = [] }) {
       </button>
       {isOpen ? (
         <div className="mt-2 grid gap-2 rounded-md border border-coyote/25 bg-paper p-2">
-          {students.map((student) => (
-            <div key={student} className="rounded-md bg-field px-3 py-2 text-xs font-bold text-ink">
-              {student}
+          {normalizedStudents.map((student) => (
+            <div key={`${student.name}-${student.belt}`} className="rounded-md bg-field px-3 py-2 text-xs font-bold text-ink">
+              <p>{student.name}</p>
+              {student.belt ? <p className="mt-1 font-semibold text-ink/55">{student.belt}</p> : null}
             </div>
           ))}
         </div>
       ) : null}
     </div>
   );
+}
+
+function handleMobileRecordKeyDown(event, action) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  action();
 }
 
 function getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs, teachingHourLogs }) {
@@ -690,6 +727,7 @@ function dedupeMaiInstructionPeriods(logs) {
         ...log,
         id: `instruction-period-${key}`,
         combinedStudentCount: 1,
+        combinedStudents: [getStudentSummary(log)].filter((student) => student.name),
         combinedStudentNames: [log.marine].filter(Boolean)
       });
       return;
@@ -709,6 +747,7 @@ function dedupeMaiInstructionPeriods(logs) {
       appliedMinutes: Math.max(currentAppliedMinutes, nextAppliedMinutes),
       extraMinutes: Math.max(currentExtraMinutes, nextExtraMinutes),
       combinedStudentCount: current.combinedStudentCount + 1,
+      combinedStudents: dedupeStudents([...current.combinedStudents, getStudentSummary(log)]),
       combinedStudentNames: [...new Set([...current.combinedStudentNames, log.marine].filter(Boolean))]
     });
   });
@@ -720,6 +759,25 @@ function dedupeMaiInstructionPeriods(logs) {
       ? 'Multiple student submissions combined into one instructional period.'
       : ''
   }));
+}
+
+function getStudentSummary(log) {
+  return {
+    name: log.marine || 'Unknown student',
+    belt: log.targetBelt || log.beltLevel || ''
+  };
+}
+
+function dedupeStudents(students) {
+  const byStudent = new Map();
+
+  students
+    .filter((student) => student?.name)
+    .forEach((student) => {
+      byStudent.set(`${student.name}::${student.belt}`.toLowerCase(), student);
+    });
+
+  return [...byStudent.values()];
 }
 
 function getInstructionPeriodKey(log) {
@@ -796,6 +854,21 @@ function filterByVerifiedDate(logs, dateRange) {
     if (dateRange.from && verifiedDate < dateRange.from) return false;
     if (dateRange.to && verifiedDate > dateRange.to) return false;
     return true;
+  });
+}
+
+function filterByStudentName(logs, studentFilter) {
+  const query = studentFilter.trim().toLowerCase();
+  if (!query) return logs;
+
+  return logs.filter((log) => {
+    const names = [
+      log.marine,
+      ...(log.combinedStudents || []).map((student) => student.name),
+      ...(log.combinedStudentNames || [])
+    ];
+
+    return names.some((name) => String(name || '').toLowerCase().includes(query));
   });
 }
 
