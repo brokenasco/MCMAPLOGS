@@ -33,7 +33,7 @@ export default function SubmitMaiHours() {
     <PageShell
       eyebrow="MAI"
       title="Submit MCMAP Hours"
-      description="Select the technique or tie-in you trained. Your hours must be verified by another MAI before they count."
+      description="Select the technique or tie-in you trained. Required belt hours must be verified by another MAI. Additional MCMAP Hours may be self-verified."
     >
       <SubmitMaiHoursForm />
     </PageShell>
@@ -53,13 +53,19 @@ export function SubmitMaiHoursForm({ embedded = false }) {
   const targetRequirements = getBeltRequirements(targetBelt);
   const selectedTechnique = targetRequirements.find((technique) => technique.id === form.techniqueId) || targetRequirements[0];
   const logTargetBelt = isAdditionalHoursTechnique(selectedTechnique) ? additionalMcmapHoursTarget : targetBelt;
+  const isAdditionalHoursLog = logTargetBelt === additionalMcmapHoursTarget;
   const previousMais = React.useMemo(
     () => getPreviousMais(beltLogs, findMaiByNumber, maiUser?.maiNumber),
     [beltLogs, findMaiByNumber, maiUser?.maiNumber]
   );
-  const isNewMaiEntry = form.maiSelection === 'new' || !previousMais.length;
+  const verifierOptions = React.useMemo(
+    () => (isAdditionalHoursLog ? getSelfVerifierOptions(previousMais, findMaiByNumber, maiUser) : previousMais),
+    [findMaiByNumber, isAdditionalHoursLog, maiUser, previousMais]
+  );
+  const isNewMaiEntry = form.maiSelection === 'new' || !verifierOptions.length;
   const selectedMaiNumber = isNewMaiEntry ? form.maiNumber.trim().toUpperCase() : form.maiSelection;
   const selectedMai = selectedMaiNumber ? findMaiByNumber(selectedMaiNumber) : null;
+  const isSelfVerifier = selectedMaiNumber?.toLowerCase() === maiUser?.maiNumber?.toLowerCase();
   const totalMinutes = getTotalMinutes(form.hours, form.minutes);
   const normalizedTime = formatMinutes(totalMinutes);
   const showTargetSelect = targetOptions.length > 1 || isAdditionalMcmapTarget(targetBelt);
@@ -81,20 +87,20 @@ export function SubmitMaiHoursForm({ embedded = false }) {
         ...current,
         targetBelt: nextTargetBelt,
         techniqueId: nextRequirements[0]?.id || '',
-        maiSelection: current.maiSelection || previousMais[0]?.maiNumber || 'new'
+        maiSelection: current.maiSelection || verifierOptions[0]?.maiNumber || 'new'
       };
     });
-  }, [currentBelt, targetOptions, previousMais]);
+  }, [currentBelt, targetOptions, verifierOptions]);
 
   React.useEffect(() => {
     setForm((current) => {
       if (current.maiSelection) return current;
       return {
         ...current,
-        maiSelection: previousMais[0]?.maiNumber || 'new'
+        maiSelection: verifierOptions[0]?.maiNumber || 'new'
       };
     });
-  }, [previousMais]);
+  }, [verifierOptions]);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -110,7 +116,9 @@ export function SubmitMaiHoursForm({ embedded = false }) {
     if (totalMinutes <= 0) nextErrors.time = 'Enter training time greater than zero.';
     if (!selectedMaiNumber) nextErrors.maiNumber = 'Choose an MAI or enter a new MAI code.';
     if (selectedMaiNumber && !/^MAI-\d{4}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842.';
-    if (selectedMaiNumber?.toLowerCase() === maiUser?.maiNumber?.toLowerCase()) nextErrors.maiNumber = 'You cannot verify your own hours.';
+    if (isSelfVerifier && !isAdditionalHoursLog) {
+      nextErrors.maiNumber = 'Required belt hours must be verified by another MAI. Self-verification is only allowed for Additional MCMAP Hours.';
+    }
     if (selectedMaiNumber && /^MAI-\d{4}$/i.test(selectedMaiNumber) && !selectedMai) {
       nextErrors.maiNumber = 'That MAI code does not match an active MAI account. Check the code and try again.';
     }
@@ -135,7 +143,9 @@ export function SubmitMaiHoursForm({ embedded = false }) {
     if (mobileStep === 3) {
       if (!selectedMaiNumber) nextErrors.maiNumber = 'Choose an MAI or enter a new MAI code.';
       if (selectedMaiNumber && !/^MAI-\d{4}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842.';
-      if (selectedMaiNumber?.toLowerCase() === maiUser?.maiNumber?.toLowerCase()) nextErrors.maiNumber = 'You cannot verify your own hours.';
+      if (isSelfVerifier && !isAdditionalHoursLog) {
+        nextErrors.maiNumber = 'Required belt hours must be verified by another MAI. Self-verification is only allowed for Additional MCMAP Hours.';
+      }
       if (selectedMaiNumber && /^MAI-\d{4}$/i.test(selectedMaiNumber) && !selectedMai) {
         nextErrors.maiNumber = 'That MAI code does not match an active MAI account. Check the code and try again.';
       }
@@ -272,8 +282,8 @@ export function SubmitMaiHoursForm({ embedded = false }) {
             <div className="grid gap-5">
               <label className="block">
                 <span className="text-sm font-bold text-ink">Verifying MAI</span>
-                <select name="maiSelection" value={form.maiSelection || previousMais[0]?.maiNumber || 'new'} onChange={updateField} className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base">
-                  {previousMais.map((mai) => <option key={mai.maiNumber} value={mai.maiNumber}>{mai.maiNumber} - {mai.name}</option>)}
+                <select name="maiSelection" value={form.maiSelection || verifierOptions[0]?.maiNumber || 'new'} onChange={updateField} className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base">
+                  {verifierOptions.map((mai) => <option key={mai.maiNumber} value={mai.maiNumber}>{mai.maiNumber} - {mai.name}</option>)}
                   <option value="new">Enter New MAI Code</option>
                 </select>
               </label>
@@ -414,11 +424,11 @@ export function SubmitMaiHoursForm({ embedded = false }) {
                 <span className="text-sm font-bold text-ink">Verifying MAI</span>
                 <select
                   name="maiSelection"
-                  value={form.maiSelection || previousMais[0]?.maiNumber || 'new'}
+                  value={form.maiSelection || verifierOptions[0]?.maiNumber || 'new'}
                   onChange={updateField}
                   className="focus-ring mt-2 h-12 w-full rounded-md border border-ink/15 bg-paper px-3 text-base"
                 >
-                  {previousMais.map((mai) => (
+                  {verifierOptions.map((mai) => (
                     <option key={mai.maiNumber} value={mai.maiNumber}>
                       {mai.maiNumber} - {mai.name}
                     </option>
@@ -426,7 +436,7 @@ export function SubmitMaiHoursForm({ embedded = false }) {
                   <option value="new">Enter New MAI Code</option>
                 </select>
                 <p className="mt-2 text-sm leading-6 text-ink/60">
-                  Previously used MAIs come from your past submitted logs. MAIs must select another MAI.
+                  Previously used MAIs come from your past submitted logs. Additional MCMAP Hours may be self-verified; required belt hours must go to another MAI.
                 </p>
               </label>
               {isNewMaiEntry ? (
@@ -518,6 +528,26 @@ function getPreviousMais(logs, findMaiByNumber, currentMaiNumber) {
         });
       }
     });
+
+  return [...byNumber.values()];
+}
+
+function getSelfVerifierOptions(previousMais, findMaiByNumber, maiUser) {
+  const byNumber = new Map();
+  const selfMai =
+    findMaiByNumber(maiUser?.maiNumber) || {
+      maiNumber: maiUser?.maiNumber,
+      name: maiUser?.name || 'My MAI account',
+      unit: maiUser?.unit || ''
+    };
+
+  if (selfMai?.maiNumber) {
+    byNumber.set(selfMai.maiNumber, selfMai);
+  }
+
+  previousMais.forEach((mai) => {
+    if (mai?.maiNumber) byNumber.set(mai.maiNumber, mai);
+  });
 
   return [...byNumber.values()];
 }

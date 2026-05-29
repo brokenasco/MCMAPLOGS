@@ -479,9 +479,11 @@ export function AppProvider({ children }) {
 
   const submitMaiLog = async (log) => {
     const matchedMai = findMaiByNumber(log.maiNumber);
+    const isSelfVerification = log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase();
+    const isAdditionalHoursLog = log.targetBelt === additionalMcmapHoursTarget || log.beltLevel === additionalMcmapHoursTarget;
 
-    if (log.maiNumber?.toLowerCase() === maiUser.maiNumber?.toLowerCase()) {
-      throw new Error('Choose another MAI for verification. MAIs cannot verify their own hours.');
+    if (isSelfVerification && !isAdditionalHoursLog) {
+      throw new Error('Required belt hours must be verified by another MAI. Self-verification is only allowed for Additional MCMAP Hours.');
     }
 
     if (!matchedMai?.id && supabase) {
