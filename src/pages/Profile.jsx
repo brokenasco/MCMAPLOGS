@@ -11,7 +11,7 @@ import {
   Droplet,
   GraduationCap,
   Link2,
-  Map,
+  Map as MapIcon,
   Medal,
   Pencil,
   Save,
@@ -464,7 +464,7 @@ function AchievementIcon({ name }) {
     crosshair: Crosshair,
     calendar: Calendar,
     clock: Clock3,
-    map: Map
+    map: MapIcon
   };
   const Icon = icons[name] || Award;
   return <Icon {...iconProps} />;
