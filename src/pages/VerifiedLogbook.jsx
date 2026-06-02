@@ -152,6 +152,7 @@ function VerifiedCommandCenter({
   const activeRecords = getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs: filteredLogs, teachingHourLogs });
   const pagedRecords = activeRecords.slice(page * pageSize, page * pageSize + pageSize);
   const viewStats = getViewStats({ activeRecords, activeView, extraMinutes, latestVerified, logs: filteredLogs, verifiedMinutes });
+  const individualStudentsVerified = dedupeTeachingHours ? countIndividualStudentsVerified(filteredLogs) : null;
 
   React.useEffect(() => {
     setPage(0);
@@ -289,6 +290,16 @@ function VerifiedCommandCenter({
             >
               Clear
             </button>
+          </div>
+        ) : null}
+
+        {dedupeTeachingHours && activeView !== 'needed' ? (
+          <div className="mt-5 rounded-md border border-olive/25 bg-olive/10 p-4">
+            <p className="text-sm font-black uppercase tracking-wide text-olive">Filtered Results</p>
+            <div className="mt-2 grid gap-2 text-sm font-semibold text-ink/75 sm:grid-cols-2">
+              <p>Date Range: {formatDateRange(dateRange)}</p>
+              <p>Individual Students Verified: {individualStudentsVerified}</p>
+            </div>
           </div>
         ) : null}
       </div>
@@ -870,6 +881,36 @@ function filterByStudentName(logs, studentFilter) {
 
     return names.some((name) => String(name || '').toLowerCase().includes(query));
   });
+}
+
+function countIndividualStudentsVerified(logs) {
+  const students = new Set();
+
+  logs
+    .filter((log) => log.status === 'Verified' && !isAccountCreationLog(log))
+    .forEach((log) => {
+      const studentKey = log.beltUserId || log.marine;
+      if (studentKey) students.add(String(studentKey).toLowerCase());
+    });
+
+  return students.size;
+}
+
+function isAccountCreationLog(log) {
+  return (
+    log.source === 'Account Creation' ||
+    log.source === 'Account Creation Backfill' ||
+    log.verificationSource === 'Account Creation' ||
+    log.assignedMaiName?.trim().toLowerCase() === 'upon account creation' ||
+    log.verifiedBy?.trim().toLowerCase() === 'upon account creation'
+  );
+}
+
+function formatDateRange(dateRange) {
+  if (dateRange.from && dateRange.to) return `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`;
+  if (dateRange.from) return `${formatDate(dateRange.from)} - Present`;
+  if (dateRange.to) return `Through ${formatDate(dateRange.to)}`;
+  return 'All verified dates';
 }
 
 function openPrintableReport({ activeView, records, title, exportMode }) {
