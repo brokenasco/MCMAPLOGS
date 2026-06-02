@@ -40,8 +40,8 @@ export default function Profile() {
     profile,
     beltUser,
     maiUser,
+    assignedMaiLogs,
     beltLogs,
-    pendingLogs,
     verifiedLogs,
     userAchievements,
     displaySubscription,
@@ -70,6 +70,10 @@ export default function Profile() {
   const achievementProgress = React.useMemo(
     () => evaluateAchievements({ logs: beltLogs, profile }).progress,
     [beltLogs, profile]
+  );
+  const totalStudentsTaught = React.useMemo(
+    () => countTotalStudentsTaught(assignedMaiLogs),
+    [assignedMaiLogs]
   );
 
   React.useEffect(() => {
@@ -299,7 +303,7 @@ export default function Profile() {
         <section>
           <div className="grid gap-4 md:grid-cols-3">
             <StatCard label="My logs" value={beltLogs.length} detail="Belt User submissions" />
-            <StatCard label="Pending queue" value={pendingLogs.length} detail="MAI review" />
+            <StatCard label="Total Students Taught" value={totalStudentsTaught} detail="Unique verified Marines" />
             <StatCard label="Verified logs" value={verifiedLogs.length} detail="Signed records" />
           </div>
 
@@ -348,6 +352,29 @@ function Detail({ label, value }) {
       <dt className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</dt>
       <dd className="mt-1 text-sm font-semibold text-ink">{value}</dd>
     </div>
+  );
+}
+
+function countTotalStudentsTaught(logs = []) {
+  const students = new Set();
+
+  logs
+    .filter((log) => log.status === 'Verified' && !isAccountCreationLog(log))
+    .forEach((log) => {
+      const studentKey = log.beltUserId || log.marine;
+      if (studentKey) students.add(String(studentKey).toLowerCase());
+    });
+
+  return students.size;
+}
+
+function isAccountCreationLog(log) {
+  return (
+    log.source === 'Account Creation' ||
+    log.source === 'Account Creation Backfill' ||
+    log.verificationSource === 'Account Creation' ||
+    log.assignedMaiName?.trim().toLowerCase() === 'upon account creation' ||
+    log.verifiedBy?.trim().toLowerCase() === 'upon account creation'
   );
 }
 
