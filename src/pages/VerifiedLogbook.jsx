@@ -6,17 +6,24 @@ import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { formatMinutes } from '../data/mcmapReference.js';
+import {
+  additionalMcmapHoursTarget,
+  beltProgression,
+  formatMinutes,
+  getBeltRequirements,
+  isAdditionalHoursTechnique
+} from '../data/mcmapReference.js';
 import { buildBeltProgress, sumLogMinutes } from '../lib/mcmapProgress.js';
 
 const desktopPageSize = 5;
 const mobilePageSize = 2;
 
 export default function VerifiedLogbook() {
-  const { activeRole, assignedMaiLogs, beltLogs, beltUser, profile } = useApp();
+  const { activeRole, assignedMaiLogs, beltLogs, beltUser, logs: allLogs, profile } = useApp();
   const isMai = activeRole === 'MAI';
 
   const [selectedLog, setSelectedLog] = React.useState(null);
+  const [selectedStudent, setSelectedStudent] = React.useState(null);
   const [maiVerificationView, setMaiVerificationView] = React.useState('entries');
   const [maiStudentView, setMaiStudentView] = React.useState('entries');
   const [beltView, setBeltView] = React.useState('entries');
@@ -39,6 +46,7 @@ export default function VerifiedLogbook() {
 
   React.useEffect(() => {
     setSelectedLog(null);
+    setSelectedStudent(null);
   }, [activeRole, maiVerificationView, maiStudentView, beltView]);
 
   if (isMai) {
@@ -59,13 +67,16 @@ export default function VerifiedLogbook() {
           hoursLabel="Verified Hours as MAI"
           dedupeTeachingHours
           logs={verifiedAsMai}
+          allLogs={allLogs}
           onDateRangeChange={setMaiVerificationRange}
           onSelectLog={setSelectedLog}
+          onSelectStudent={setSelectedStudent}
           onStudentFilterChange={setMaiVerificationStudentFilter}
           onToggleFilter={() => setShowMaiVerificationFilter((current) => !current)}
           onViewChange={setMaiVerificationView}
           selectedLog={selectedLog}
           showDateFilter={showMaiVerificationFilter}
+          studentProgress={selectedStudent}
           studentFilter={maiVerificationStudentFilter}
           title="MAI Verification Command Center"
         />
@@ -77,6 +88,7 @@ export default function VerifiedLogbook() {
           extraLabel="Extra Verified Hours as Student"
           hoursLabel="Verified Hours as Student"
           logs={verifiedAsStudent}
+          allLogs={allLogs}
           onDateRangeChange={setMaiStudentRange}
           onSelectLog={setSelectedLog}
           onToggleFilter={() => setShowMaiStudentFilter((current) => !current)}
@@ -105,6 +117,7 @@ export default function VerifiedLogbook() {
         hoursLabel="Verified Hours"
         hoursNeededRows={beltProgress.rows}
         logs={verifiedBeltLogs}
+        allLogs={allLogs}
         onDateRangeChange={setBeltRange}
         onSelectLog={setSelectedLog}
         onToggleFilter={() => setShowBeltFilter((current) => !current)}
@@ -119,6 +132,7 @@ export default function VerifiedLogbook() {
 
 function VerifiedCommandCenter({
   activeView,
+  allLogs = [],
   dateRange,
   dedupeTeachingHours = false,
   entriesLabel,
@@ -128,11 +142,13 @@ function VerifiedCommandCenter({
   logs,
   onDateRangeChange,
   onSelectLog,
+  onSelectStudent,
   onStudentFilterChange,
   onToggleFilter,
   onViewChange,
   selectedLog,
   showDateFilter,
+  studentProgress,
   studentFilter = '',
   title
 }) {
@@ -318,6 +334,7 @@ function VerifiedCommandCenter({
                 expandedRecordId={expandedRecordId}
                 logs={pagedRecords}
                 onSelectLog={onSelectLog}
+                onSelectStudent={dedupeTeachingHours ? onSelectStudent : null}
                 onToggleMobileRecord={toggleExpandedRecord}
               />
             ) : (
@@ -329,6 +346,7 @@ function VerifiedCommandCenter({
                 expandedRecordId={expandedRecordId}
                 logs={pagedRecords}
                 onSelectLog={onSelectLog}
+                onSelectStudent={dedupeTeachingHours ? onSelectStudent : null}
                 onToggleMobileRecord={toggleExpandedRecord}
               />
             ) : (
@@ -349,6 +367,7 @@ function VerifiedCommandCenter({
               expandedRecordId={expandedRecordId}
               logs={pagedRecords}
               onSelectLog={onSelectLog}
+              onSelectStudent={dedupeTeachingHours ? onSelectStudent : null}
               onToggleMobileRecord={toggleExpandedRecord}
             />
           ) : (
@@ -358,6 +377,13 @@ function VerifiedCommandCenter({
 
         {activeView === 'entries' || activeView === 'extra' || activeView === 'hours' ? (
           <LogDetailPanel log={selectedLog} onClose={() => onSelectLog(null)} />
+        ) : null}
+        {studentProgress ? (
+          <StudentProgressModal
+            allLogs={allLogs}
+            onClose={() => onSelectStudent(null)}
+            student={studentProgress}
+          />
         ) : null}
       </section>
 
@@ -441,7 +467,7 @@ function useIsMobileLogbook() {
   return isMobile;
 }
 
-function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRecord }) {
+function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onSelectStudent, onToggleMobileRecord }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="hidden md:block">
@@ -461,9 +487,9 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
             {logs.map((log) => (
               <tr key={log.id} className="cursor-pointer align-top hover:bg-field/70" onClick={() => onSelectLog(log)}>
                 <LogbookCell className="font-semibold text-ink">
-                  {log.marine}
+                  <StudentNameButton log={log} onSelectStudent={onSelectStudent} />
                   {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
-                  <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
+                  <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
                 </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{formatDate(log.date)}</LogbookCell>
@@ -489,7 +515,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
             onKeyDown={(event) => handleMobileRecordKeyDown(event, () => onToggleMobileRecord(log.id))}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
-            {renderMobileLogSummary(log, expandedRecordId === log.id)}
+            {renderMobileLogSummary(log, expandedRecordId === log.id, onSelectStudent)}
             {expandedRecordId === log.id ? (
               <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
                 <MobileDetail label="Training Date" value={formatDate(log.date)} />
@@ -500,7 +526,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
                 <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Verified Entry')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
-                <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
+                <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
               </dl>
             ) : null}
           </div>
@@ -510,7 +536,7 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onToggleMob
   );
 }
 
-function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRecord }) {
+function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onSelectStudent, onToggleMobileRecord }) {
   return (
     <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
       <div className="hidden md:block">
@@ -532,9 +558,9 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
             {logs.map((log) => (
               <tr key={log.id} className="cursor-pointer align-top hover:bg-field/70" onClick={() => onSelectLog(log)}>
                 <LogbookCell className="font-semibold text-ink">
-                  {log.marine}
+                  <StudentNameButton log={log} onSelectStudent={onSelectStudent} />
                   {log.instructionPeriodNote ? <span className="mt-1 block text-xs font-normal leading-5 text-ink/55">{log.instructionPeriodNote}</span> : null}
-                  <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
+                  <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
                 </LogbookCell>
                 <LogbookCell>{formatVerifiedDate(log)}</LogbookCell>
                 <LogbookCell>{log.targetBelt || log.beltLevel}</LogbookCell>
@@ -559,7 +585,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
             onKeyDown={(event) => handleMobileRecordKeyDown(event, () => onToggleMobileRecord(log.id))}
             className="focus-ring rounded-md border border-coyote/25 bg-field p-4 text-left"
           >
-            {renderMobileLogSummary(log, expandedRecordId === log.id)}
+            {renderMobileLogSummary(log, expandedRecordId === log.id, onSelectStudent)}
             {expandedRecordId === log.id ? (
               <dl className="mt-4 grid gap-3 border-t border-coyote/25 pt-4 text-sm">
                 <MobileDetail label="Original Belt" value={log.targetBelt || log.beltLevel} />
@@ -569,7 +595,7 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onToggleMobileRe
                 <MobileDetail label="Verified By" value={formatVerifier(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Extra Verified Hours')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
-                <StudentListToggle students={log.combinedStudents || log.combinedStudentNames} />
+                <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
               </dl>
             ) : null}
           </div>
@@ -649,12 +675,12 @@ function LogbookCell({ children, className = '' }) {
   return <td className={`px-4 py-4 text-sm text-ink/75 ${className}`}>{children}</td>;
 }
 
-function renderMobileLogSummary(log, isExpanded) {
+function renderMobileLogSummary(log, isExpanded, onSelectStudent) {
   return (
     <div>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-black text-ink">{log.marine || 'Training log'}</p>
+          <StudentNameButton log={log} onSelectStudent={onSelectStudent} />
           <p className="mt-1 text-sm font-semibold text-ink">{log.classCode || 'General'}</p>
           <p className="mt-1 text-xs leading-5 text-ink/60">{log.techniqueName || 'General training'}</p>
         </div>
@@ -670,6 +696,27 @@ function renderMobileLogSummary(log, isExpanded) {
   );
 }
 
+function StudentNameButton({ log, onSelectStudent }) {
+  const student = getStudentSummary(log);
+
+  if (!onSelectStudent || !student.name || log.combinedStudentCount > 1) {
+    return <span className="text-sm font-black text-ink">{log.marine || 'Training log'}</span>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelectStudent(student);
+      }}
+      className="focus-ring min-h-11 rounded-md text-left text-sm font-black text-olive underline-offset-4 hover:underline"
+    >
+      {student.name}
+    </button>
+  );
+}
+
 function MobileDetail({ label, value }) {
   return (
     <div>
@@ -679,7 +726,166 @@ function MobileDetail({ label, value }) {
   );
 }
 
-function StudentListToggle({ students = [] }) {
+function StudentProgressModal({ allLogs, onClose, student }) {
+  const progress = React.useMemo(
+    () => buildStudentProgressDetails({ allLogs, student }),
+    [allLogs, student]
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/70 px-3 py-6 backdrop-blur-sm">
+      <section className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-md border border-coyote/35 bg-paper shadow-panel">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-coyote/25 bg-paper p-5">
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-clay">Student Progress</p>
+            <h2 className="mt-1 text-2xl font-black text-ink">{progress.name}</h2>
+            <p className="mt-2 text-sm font-semibold text-ink/65">
+              Current belt: {progress.currentBelt}. Working toward: {progress.targetBelt}.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="focus-ring h-11 rounded-md border border-coyote/35 bg-field px-4 text-sm font-black text-ink"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="grid gap-5 p-5">
+          <div className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ProgressMetric label="Current Belt" value={progress.currentBelt} />
+              <ProgressMetric label="Working Toward" value={progress.targetBelt} />
+              <ProgressMetric label="Target Verified" value={formatMinutes(progress.completedMinutes)} />
+              <ProgressMetric label="Still Needed" value={formatMinutes(progress.remainingMinutes)} />
+            </div>
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-wide text-paper/65">
+                <span>Overall Belt Progress</span>
+                <span>{progress.percent}% Complete</span>
+              </div>
+              <div className="mt-2 h-3 overflow-hidden rounded-full bg-paper/20">
+                <div className="h-full rounded-full bg-brass" style={{ width: `${progress.percent}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <StatCard label="Total required" value={formatMinutes(progress.requiredMinutes)} detail="Current target belt" />
+            <StatCard label="Complete techniques" value={`${progress.completedCount} of ${progress.totalCount}`} detail="Verified hours only" />
+            <StatCard label="Additional MCMAP Hours" value={formatMinutes(progress.additionalMinutes)} detail="Extra verified time kept separate" />
+          </div>
+
+          {progress.targetBelt === additionalMcmapHoursTarget ? (
+            <div className="rounded-md border border-olive/25 bg-olive/10 p-4">
+              <p className="font-black text-olive">Additional MCMAP Hours</p>
+              <p className="mt-2 text-sm leading-6 text-ink/70">
+                This student has achieved Black 1st Degree. Verified hours continue to count toward total MCMAP hours, but they are not tied to another belt requirement.
+              </p>
+            </div>
+          ) : (
+            <TechniqueProgressTable rows={progress.rows} />
+          )}
+
+          <div className="rounded-md border border-coyote/35 bg-field p-4">
+            <p className="text-sm font-black uppercase tracking-wide text-clay">Additional MCMAP Hours</p>
+            {progress.additionalEntries.length ? (
+              <div className="mt-3 grid gap-3">
+                {progress.additionalEntries.map((entry) => (
+                  <div key={entry.id} className="rounded-md border border-coyote/25 bg-paper p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-black text-ink">{entry.techniqueName || 'Additional MCMAP Hours'}</p>
+                        <p className="mt-1 text-sm font-semibold text-ink/60">{entry.classCode || 'ADDL-MCMAP'}</p>
+                      </div>
+                      <p className="text-sm font-black text-olive">{formatMinutes(entry.minutes)}</p>
+                    </div>
+                    <p className="mt-2 text-xs font-bold uppercase tracking-wide text-ink/45">
+                      Verified: {formatVerifiedDate(entry)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm leading-6 text-ink/65">No additional verified hours found for this student yet.</p>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ProgressMetric({ label, value }) {
+  return (
+    <div className="rounded-md border border-paper/10 bg-paper/10 p-4">
+      <p className="text-xs font-black uppercase tracking-wide text-paper/55">{label}</p>
+      <p className="mt-2 text-xl font-black text-paper">{value}</p>
+    </div>
+  );
+}
+
+function TechniqueProgressTable({ rows }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-coyote/35 bg-paper shadow-sm">
+      <div className="hidden md:block">
+        <table className="min-w-full divide-y divide-coyote/25">
+          <thead className="bg-charcoal text-paper">
+            <tr>
+              <LogbookHeader>Class Code</LogbookHeader>
+              <LogbookHeader>Technique / Tie-In</LogbookHeader>
+              <LogbookHeader>Required Time</LogbookHeader>
+              <LogbookHeader>Completed</LogbookHeader>
+              <LogbookHeader>Still Needed</LogbookHeader>
+              <LogbookHeader>Status</LogbookHeader>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-coyote/20">
+            {rows.map((row) => (
+              <tr key={row.id} className="align-top">
+                <LogbookCell className="font-semibold text-ink">{row.code}</LogbookCell>
+                <LogbookCell>{row.name}</LogbookCell>
+                <LogbookCell>{formatMinutes(row.requiredMinutes)}</LogbookCell>
+                <LogbookCell>{formatMinutes(row.cappedMinutes)}</LogbookCell>
+                <LogbookCell className={row.isComplete ? 'font-bold text-olive' : 'font-bold text-clay'}>
+                  {row.isComplete ? '0 minutes' : formatMinutes(row.remainingMinutes)}
+                </LogbookCell>
+                <LogbookCell>
+                  <span className={`rounded-md px-2 py-1 text-xs font-black ${row.isComplete ? 'bg-olive text-white' : 'bg-brass text-ink'}`}>
+                    {row.isComplete ? 'Complete' : 'In Progress'}
+                  </span>
+                </LogbookCell>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="grid gap-3 p-3 md:hidden">
+        {rows.map((row) => (
+          <div key={row.id} className="rounded-md border border-coyote/25 bg-field p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-ink">{row.code}</p>
+                <p className="mt-1 text-sm leading-5 text-ink/65">{row.name}</p>
+              </div>
+              <span className={`rounded-md px-2 py-1 text-xs font-black ${row.isComplete ? 'bg-olive text-white' : 'bg-brass text-ink'}`}>
+                {row.isComplete ? 'Complete' : 'In Progress'}
+              </span>
+            </div>
+            <dl className="mt-4 grid gap-3 text-sm">
+              <MobileDetail label="Required Time" value={formatMinutes(row.requiredMinutes)} />
+              <MobileDetail label="Completed" value={formatMinutes(row.cappedMinutes)} />
+              <MobileDetail label="Still Needed" value={row.isComplete ? '0 minutes' : formatMinutes(row.remainingMinutes)} />
+            </dl>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StudentListToggle({ onSelectStudent, students = [] }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const normalizedStudents = students.map((student) =>
     typeof student === 'string' ? { name: student, belt: '' } : student
@@ -702,8 +908,21 @@ function StudentListToggle({ students = [] }) {
       {isOpen ? (
         <div className="mt-2 grid gap-2 rounded-md border border-coyote/25 bg-paper p-2">
           {normalizedStudents.map((student) => (
-            <div key={`${student.name}-${student.belt}`} className="rounded-md bg-field px-3 py-2 text-xs font-bold text-ink">
-              <p>{student.name}</p>
+            <div key={`${student.id || student.name}-${student.belt}`} className="rounded-md bg-field px-3 py-2 text-xs font-bold text-ink">
+              {onSelectStudent ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelectStudent(student);
+                  }}
+                  className="focus-ring min-h-11 rounded-md text-left font-black text-olive underline-offset-4 hover:underline"
+                >
+                  {student.name}
+                </button>
+              ) : (
+                <p>{student.name}</p>
+              )}
               {student.belt ? <p className="mt-1 font-semibold text-ink/55">{student.belt}</p> : null}
             </div>
           ))}
@@ -724,6 +943,149 @@ function getActiveRecords({ activeView, extraLogs, hoursNeededRows, logs, teachi
   if (activeView === 'needed') return hoursNeededRows;
   if (activeView === 'hours') return teachingHourLogs;
   return logs;
+}
+
+function buildStudentProgressDetails({ allLogs, student }) {
+  const studentLogs = getStudentLogsForProgress({ allLogs, student });
+  const targetBelt = getStudentTargetBelt({ student, studentLogs });
+  const currentBelt = getCurrentBeltFromTarget(targetBelt);
+  const verifiedLogs = studentLogs.filter((log) => log.status === 'Verified' && !log.archived && !isAccountCreationLog(log));
+  const requirements = targetBelt === additionalMcmapHoursTarget
+    ? []
+    : getBeltRequirements(targetBelt).filter((requirement) => !isAdditionalHoursTechnique(requirement));
+  const completedByRequirement = new Map();
+  const additionalEntries = [];
+
+  verifiedLogs.forEach((log) => {
+    const extraMinutes = getExtraMinutes(log);
+
+    if (isAdditionalProgressLog(log)) {
+      additionalEntries.push({
+        ...log,
+        id: `${log.id}-additional`,
+        minutes: getLogMinutesValue(log)
+      });
+      return;
+    }
+
+    if (extraMinutes > 0) {
+      additionalEntries.push({
+        ...log,
+        id: `${log.id}-extra`,
+        minutes: extraMinutes,
+        techniqueName: log.techniqueName || 'Extra verified hours'
+      });
+    }
+
+    if (!matchesProgressTarget(log, targetBelt)) return;
+    const key = getProgressRequirementKey(log.classCode, log.techniqueName);
+    const appliedMinutes = Number(log.appliedMinutes ?? getLogMinutesValue(log));
+    completedByRequirement.set(key, (completedByRequirement.get(key) || 0) + appliedMinutes);
+  });
+
+  const rows = requirements.map((requirement) => {
+    const completedMinutes = completedByRequirement.get(getProgressRequirementKey(requirement.code, requirement.name)) || 0;
+    const cappedMinutes = requirement.requiredMinutes ? Math.min(completedMinutes, requirement.requiredMinutes) : completedMinutes;
+    const remainingMinutes = requirement.requiredMinutes ? Math.max(requirement.requiredMinutes - completedMinutes, 0) : 0;
+
+    return {
+      ...requirement,
+      completedMinutes,
+      cappedMinutes,
+      remainingMinutes,
+      isComplete: requirement.requiredMinutes ? completedMinutes >= requirement.requiredMinutes : completedMinutes > 0
+    };
+  });
+
+  const requiredMinutes = rows.reduce((total, row) => total + row.requiredMinutes, 0);
+  const completedMinutes = rows.reduce((total, row) => total + row.cappedMinutes, 0);
+  const additionalMinutes = additionalEntries.reduce((total, entry) => total + getLogMinutesValue(entry), 0);
+
+  return {
+    additionalEntries: additionalEntries.sort((a, b) => new Date(getVerifiedDateValue(b) || 0) - new Date(getVerifiedDateValue(a) || 0)),
+    additionalMinutes,
+    completedCount: rows.filter((row) => row.isComplete).length,
+    completedMinutes: targetBelt === additionalMcmapHoursTarget ? sumLogMinutes(verifiedLogs) : completedMinutes,
+    currentBelt,
+    name: student?.name || 'Student',
+    percent: targetBelt === additionalMcmapHoursTarget || !requiredMinutes
+      ? 100
+      : Math.min(Math.round((completedMinutes / requiredMinutes) * 100), 100),
+    remainingMinutes: targetBelt === additionalMcmapHoursTarget ? 0 : Math.max(requiredMinutes - completedMinutes, 0),
+    requiredMinutes,
+    rows,
+    targetBelt,
+    totalCount: rows.length
+  };
+}
+
+function getStudentLogsForProgress({ allLogs, student }) {
+  const studentId = student?.id;
+  const studentName = student?.name?.trim().toLowerCase();
+
+  return allLogs.filter((log) => {
+    if (log.archived) return false;
+    if (studentId && log.beltUserId) return log.beltUserId === studentId;
+    return studentName && log.marine?.trim().toLowerCase() === studentName;
+  });
+}
+
+function getStudentTargetBelt({ student, studentLogs }) {
+  if (student?.belt === additionalMcmapHoursTarget) return additionalMcmapHoursTarget;
+
+  const selectedBelt = normalizeProgressBelt(student?.belt);
+  if (beltProgression.includes(selectedBelt) && selectedBelt !== beltProgression[0]) return selectedBelt;
+
+  const latestTargetLog = studentLogs
+    .filter((log) => log.status === 'Verified' && !isAccountCreationLog(log))
+    .slice()
+    .sort((a, b) => new Date(getVerifiedDateValue(b) || b.submittedAt || b.date || 0) - new Date(getVerifiedDateValue(a) || a.submittedAt || a.date || 0))
+    .find((log) => log.targetBelt || log.beltLevel);
+
+  if (latestTargetLog?.targetBelt === additionalMcmapHoursTarget) return additionalMcmapHoursTarget;
+
+  const latestTarget = normalizeProgressBelt(latestTargetLog?.targetBelt || latestTargetLog?.beltLevel);
+  return beltProgression.includes(latestTarget) && latestTarget !== beltProgression[0] ? latestTarget : 'Tan Belt';
+}
+
+function getCurrentBeltFromTarget(targetBelt) {
+  if (targetBelt === additionalMcmapHoursTarget) return 'Black 1st Degree';
+  const targetIndex = beltProgression.indexOf(targetBelt);
+  if (targetIndex <= 0) return beltProgression[0];
+  return beltProgression[targetIndex - 1];
+}
+
+function matchesProgressTarget(log, targetBelt) {
+  if (targetBelt === additionalMcmapHoursTarget) return isAdditionalProgressLog(log);
+  return normalizeProgressBelt(log.targetBelt || log.beltLevel) === targetBelt && !isAdditionalProgressLog(log);
+}
+
+function isAdditionalProgressLog(log) {
+  const classCode = String(log.classCode || '').trim().toLowerCase();
+  const techniqueName = String(log.techniqueName || '').trim().toLowerCase();
+
+  return (
+    log.targetBelt === additionalMcmapHoursTarget ||
+    log.beltLevel === additionalMcmapHoursTarget ||
+    classCode.startsWith('addl-mcmap') ||
+    techniqueName === 'weapons-free sparring / integration'
+  );
+}
+
+function getProgressRequirementKey(code, name) {
+  return `${code || ''}::${name || ''}`.toLowerCase();
+}
+
+function normalizeProgressBelt(beltName = '') {
+  const normalized = String(beltName).toLowerCase();
+  if (normalized.includes('additional')) return additionalMcmapHoursTarget;
+  if (normalized.includes('no mcmap') || normalized.includes('no belt') || normalized === 'none') return beltProgression[0];
+  if (normalized.includes('tan')) return 'Tan Belt';
+  if (normalized.includes('gray') || normalized.includes('grey')) return 'Gray Belt';
+  if (normalized.includes('green')) return 'Green Belt';
+  if (normalized.includes('brown')) return 'Brown Belt';
+  if (normalized.includes('black')) return 'Black 1st Degree';
+  return beltProgression[0];
 }
 
 function dedupeMaiInstructionPeriods(logs) {
@@ -774,6 +1136,7 @@ function dedupeMaiInstructionPeriods(logs) {
 
 function getStudentSummary(log) {
   return {
+    id: log.beltUserId || '',
     name: log.marine || 'Unknown student',
     belt: log.targetBelt || log.beltLevel || ''
   };
@@ -785,7 +1148,8 @@ function dedupeStudents(students) {
   students
     .filter((student) => student?.name)
     .forEach((student) => {
-      byStudent.set(`${student.name}::${student.belt}`.toLowerCase(), student);
+      const key = student.id || `${student.name}::${student.belt}`.toLowerCase();
+      byStudent.set(key, student);
     });
 
   return [...byStudent.values()];
