@@ -192,7 +192,7 @@ export function AppProvider({ children }) {
       userId: profileData.id,
       profileData,
       source: 'login',
-      sourceLogs: loadedLogs.filter((log) => log.beltUserId === profileData.id)
+      sourceLogs: loadedLogs
     });
     if (newAchievements.length) {
       setUserAchievements((current) => mergeAchievements(current, newAchievements));

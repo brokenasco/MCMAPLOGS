@@ -2,26 +2,14 @@ import React from 'react';
 import {
   AlertTriangle,
   Award,
-  BookOpenCheck,
-  Calendar,
-  Clock3,
-  Compass,
   CreditCard,
-  Crosshair,
-  Droplet,
-  GraduationCap,
-  Link2,
-  Map as MapIcon,
-  Medal,
   Pencil,
   Save,
   ShieldCheck,
-  Snowflake,
-  Target,
+  Star,
+  Swords,
   Trash2,
-  Users,
   X,
-  Zap
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import EmailNotice from '../components/EmailNotice.jsx';
@@ -68,8 +56,8 @@ export default function Profile() {
   const unlockedAchievements = Array.isArray(userAchievements) ? userAchievements : [];
   const unlockedAchievementIds = new Set(unlockedAchievements.map((achievement) => achievement.achievementId));
   const achievementProgress = React.useMemo(
-    () => evaluateAchievements({ logs: beltLogs, profile }).progress,
-    [beltLogs, profile]
+    () => evaluateAchievements({ logs: [...beltLogs, ...assignedMaiLogs], profile }).progress,
+    [assignedMaiLogs, beltLogs, profile]
   );
   const totalStudentsTaught = React.useMemo(
     () => countTotalStudentsTaught(assignedMaiLogs),
@@ -168,6 +156,7 @@ export default function Profile() {
       {profileSection === 'achievements' ? (
         <AchievementsSection
           achievements={achievementDefinitions}
+          isMai={isMai}
           progress={achievementProgress}
           unlockedAchievementIds={unlockedAchievementIds}
           userAchievements={unlockedAchievements}
@@ -378,9 +367,10 @@ function isAccountCreationLog(log) {
   );
 }
 
-function AchievementsSection({ achievements, progress, unlockedAchievementIds, userAchievements }) {
+function AchievementsSection({ achievements, isMai, progress, unlockedAchievementIds, userAchievements }) {
   const unlockLookup = new Map(userAchievements.map((achievement) => [achievement.achievementId, achievement]));
-  const visibleAchievements = Array.isArray(achievements) && achievements.length ? achievements : fallbackAchievements;
+  const visibleAchievements = (Array.isArray(achievements) && achievements.length ? achievements : fallbackAchievements)
+    .filter((achievement) => !achievement.maiOnly || isMai);
 
   return (
     <section className="rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
@@ -473,25 +463,9 @@ function AchievementsSection({ achievements, progress, unlockedAchievementIds, u
 function AchievementIcon({ name }) {
   const iconProps = { size: 24, 'aria-hidden': true };
   const icons = {
-    droplet: Droplet,
-    chain: Link2,
-    helmet: Medal,
-    study: BookOpenCheck,
-    'shield-bolt': ShieldCheck,
-    compass: Compass,
-    badge: Award,
-    drum: Target,
-    glove: Zap,
-    graduation: GraduationCap,
-    runner: Zap,
-    ega: Award,
-    snowflake: Snowflake,
-    rifles: Crosshair,
-    users: Users,
-    crosshair: Crosshair,
-    calendar: Calendar,
-    clock: Clock3,
-    map: MapIcon
+    'crossed-knives': Swords,
+    mai: ShieldCheck,
+    'gold-star': Star
   };
   const Icon = icons[name] || Award;
   return <Icon {...iconProps} />;
@@ -503,7 +477,7 @@ function formatAchievementDate(date) {
 }
 
 function formatAchievementProgress(achievement, value) {
-  if (['first-blood', 'relentless', 'combat-athlete', 'sparring-partner', 'never-rest', 'chesty-proud', 'frozen-chosin', 'master-of-arms', 'belt-hunter'].includes(achievement.id)) {
+  if (['first-blood', 'relentless', 'combat-athlete', 'sparring-partner', 'tempered-steel', 'never-rest', 'chesty-proud', 'frozen-chosin', 'master-of-arms', 'belt-hunter', 'passing-the-torch', 'martial-mentor', 'combat-conditioner'].includes(achievement.id)) {
     return formatMinutes(value);
   }
   return String(value);
