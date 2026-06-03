@@ -526,7 +526,6 @@ function VerifiedEntriesTable({ expandedRecordId, logs, onSelectLog, onSelectStu
                 <MobileDetail label="Extra Verified Hours" value={formatExtraTime(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Verified Entry')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
-                <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
               </dl>
             ) : null}
           </div>
@@ -595,7 +594,6 @@ function ExtraHoursTable({ expandedRecordId, logs, onSelectLog, onSelectStudent,
                 <MobileDetail label="Verified By" value={formatVerifier(log)} />
                 <MobileDetail label="Source" value={formatLogSource(log, 'Extra Verified Hours')} />
                 {log.instructionPeriodNote ? <MobileDetail label="Instruction Period" value={log.instructionPeriodNote} /> : null}
-                <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
               </dl>
             ) : null}
           </div>
@@ -689,6 +687,7 @@ function renderMobileLogSummary(log, isExpanded, onSelectStudent) {
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-ink/50">
         Verified: {formatVerifiedDate(log)}
       </p>
+      <StudentListToggle onSelectStudent={onSelectStudent} students={log.combinedStudents || log.combinedStudentNames} />
       <p className="mt-3 text-sm font-black text-olive">
         {isExpanded ? '▲ Hide Details' : '▼ View Details'}
       </p>
@@ -733,9 +732,9 @@ function StudentProgressModal({ allLogs, onClose, student }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/70 px-3 py-6 backdrop-blur-sm">
-      <section className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-md border border-coyote/35 bg-paper shadow-panel">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-coyote/25 bg-paper p-5">
+    <div className="fixed inset-0 z-50 grid items-end bg-ink/70 px-0 pt-10 backdrop-blur-sm sm:place-items-center sm:px-3 sm:py-6">
+      <section className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-t-md border border-coyote/35 bg-paper pb-4 shadow-panel sm:max-h-[92vh] sm:rounded-md sm:pb-0">
+        <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-coyote/25 bg-paper p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-clay">Student Progress</p>
             <h2 className="mt-1 text-2xl font-black text-ink">{progress.name}</h2>
@@ -746,13 +745,13 @@ function StudentProgressModal({ allLogs, onClose, student }) {
           <button
             type="button"
             onClick={onClose}
-            className="focus-ring h-11 rounded-md border border-coyote/35 bg-field px-4 text-sm font-black text-ink"
+            className="focus-ring h-11 w-full rounded-md border border-coyote/35 bg-field px-4 text-sm font-black text-ink sm:w-auto"
           >
             Close
           </button>
         </div>
 
-        <div className="grid gap-5 p-5">
+        <div className="grid gap-5 p-4 sm:p-5">
           <div className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <ProgressMetric label="Current Belt" value={progress.currentBelt} />
