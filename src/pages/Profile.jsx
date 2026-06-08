@@ -332,7 +332,8 @@ function getSubscriptionAccessLabel({ activeRole, displaySubscription }) {
 
 const devTestMaiUserIds = [
   '18a9842e-84f8-46a8-806c-c2276a46c6f0',
-  '9fb3dac1-bfd7-440d-bbd4-9b625ec26dd6'
+  '9fb3dac1-bfd7-440d-bbd4-9b625ec26dd6',
+  '33ef0ef8-cfec-4524-a137-56e585897472'
 ];
 
 function Detail({ label, value }) {
