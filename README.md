@@ -109,3 +109,4 @@ Owner MAI accounts can use MAI verification tools without Stripe checkout.
 
 The profile page includes an account deletion action. It requires `SUPABASE_SERVICE_ROLE_KEY` in Vercel because the server function must delete the authenticated Supabase user. For paid MAI accounts, the deletion endpoint also cancels the saved Stripe subscription before removing the profile.
 Run `supabase/preserve-verified-logs-on-delete.sql` in the Supabase SQL editor before using account deletion in production. Verified logs are preserved for the verifying MAI's Logbook and anonymized as `Former Belt User`; pending or returned logs are removed.
+"# MCMAPLOGS" 
