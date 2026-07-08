@@ -5,8 +5,9 @@ import { useApp } from '../context/AppContext.jsx';
 
 export default function AppLayout() {
   const navigate = useNavigate();
-  const { achievementToasts, activeRole, dismissAchievementToast, markWelcomeSeen, profile, session } = useApp();
+  const { achievementToasts, activeRole, dismissAchievementToast, markSystemNoticeSeen, markWelcomeSeen, profile, session } = useApp();
   const [accountDeletionMessage, setAccountDeletionMessage] = React.useState('');
+  const showSystemNotice = Boolean(profile && profile.system_notice_seen === false);
   const showWelcome = Boolean(profile && profile.welcome_seen === false);
 
   React.useEffect(() => {
@@ -19,6 +20,11 @@ export default function AppLayout() {
 
   const continueToDashboard = async () => {
     await markWelcomeSeen();
+    navigate(activeRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard');
+  };
+
+  const acknowledgeSystemNotice = async () => {
+    await markSystemNoticeSeen();
     navigate(activeRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard');
   };
 
@@ -66,12 +72,62 @@ export default function AppLayout() {
           ))}
         </div>
       ) : null}
-      {showWelcome ? <WelcomeModal onContinue={continueToDashboard} /> : null}
+      {showSystemNotice ? (
+        <SystemUpdateNoticeModal onContinue={acknowledgeSystemNotice} />
+      ) : showWelcome ? (
+        <WelcomeModal onContinue={continueToDashboard} />
+      ) : null}
       <footer className="border-t border-coyote/30 bg-charcoal px-4 py-5 text-paper sm:px-6 lg:px-8">
         <p className="mx-auto max-w-7xl text-xs leading-5 text-paper/65">
           Disclaimer: This website is privately operated and is not affiliated with, endorsed by, or sponsored by the United States Government, the Department of Defense, the United States Marine Corps, or any of their subordinate commands or agencies.
         </p>
       </footer>
+    </div>
+  );
+}
+
+function SystemUpdateNoticeModal({ onContinue }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/70 px-4 py-6">
+      <section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-md border border-brass/30 bg-paper p-6 shadow-panel">
+        <p className="text-sm font-black uppercase tracking-wide text-clay">Account System Update</p>
+        <h2 className="mt-2 text-3xl font-bold text-ink">Important MCMAP Logs Account Notice</h2>
+        <div className="mt-5 space-y-4 text-sm leading-7 text-ink/75">
+          <p>Dear Warfighters,</p>
+          <p>
+            MCMAP Logs has expanded faster than we anticipated, and our current account storage system needs to be upgraded to support that growth.
+          </p>
+          <p>
+            Beginning Saturday, July 11, 2026, we will be migrating to our new account system. As part of this upgrade, all users will need to create a new account. This is a one-time requirement. After completing the new account setup, all future account information and MCMAP training records will be stored in the upgraded system.
+          </p>
+          <div>
+            <p className="font-semibold text-ink">This upgrade will provide:</p>
+            <ul className="mt-3 list-disc space-y-2 pl-5">
+              <li>Better tracking of MCMAP training logs</li>
+              <li>Easier communication between Belt Users and MAIs</li>
+              <li>Improved logbook and record management</li>
+              <li>Lower account pricing for MAIs</li>
+            </ul>
+          </div>
+          <p>
+            We understand that creating a new account is an inconvenience, and we sincerely appreciate your patience and support as we complete this major system upgrade. These improvements will allow us to continue expanding MCMAP Logs while providing a faster, more reliable experience for all users.
+          </p>
+          <p>Thank you for your continued support.</p>
+          <p className="font-semibold text-ink">
+            Respectfully,<br />
+            Keaton R. Permenter<br />
+            CEO and Founder, Broken Arrow Solutions<br />
+            "Stay informed. Stay Lethal."
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="focus-ring mt-6 inline-flex h-11 w-full items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white hover:bg-olive/90 sm:w-auto"
+        >
+          I Understand
+        </button>
+      </section>
     </div>
   );
 }

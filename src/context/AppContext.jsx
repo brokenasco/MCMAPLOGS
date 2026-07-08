@@ -1007,6 +1007,7 @@ export function AppProvider({ children }) {
       unit: role === 'MAI' ? currentMai.unit : currentBeltUser.unit,
       mai_number: maiNumber,
       subscription_status: role === 'MAI' ? 'unpaid' : 'free',
+      system_notice_seen: false,
       welcome_seen: false
     };
 
@@ -1066,6 +1067,32 @@ export function AppProvider({ children }) {
     const { error } = await supabase
       .from('profiles')
       .update({ welcome_seen: true })
+      .eq('id', currentUserId);
+
+    if (error) {
+      setAuthMessage(error.message);
+      throw error;
+    }
+
+    applyProfile(updatedProfile);
+  };
+
+  const markSystemNoticeSeen = async () => {
+    if (!profile) return;
+
+    const updatedProfile = {
+      ...profile,
+      system_notice_seen: true
+    };
+
+    if (!supabase || !currentUserId) {
+      applyProfile(updatedProfile);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ system_notice_seen: true })
       .eq('id', currentUserId);
 
     if (error) {
@@ -1569,6 +1596,7 @@ export function AppProvider({ children }) {
     updateAccount,
     advanceBeltUser,
     markWelcomeSeen,
+    markSystemNoticeSeen,
     refreshAccount,
     getFreshAccessToken,
     dismissAchievementToast
