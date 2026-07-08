@@ -120,7 +120,7 @@ function LegacySystemUpgradeNoticeModal({ onContinue }) {
           <p>
             We understand that creating a new account is an inconvenience, and we sincerely appreciate your patience and support as we complete this major system upgrade. These improvements will allow us to continue expanding MCMAP Logs while providing a faster, more reliable experience for all users.
           </p>
-          <p>Thank you for your continued support. Please follow the steps given by the next message.</p>
+          <p>Thank you for your continued support.</p>
           <p className="font-semibold text-ink">
             Keaton R. Permenter<br />
             CEO<br />
@@ -151,11 +151,10 @@ function LegacyMigrationInstructionsModal({ onContinue }) {
           <ol className="list-decimal space-y-2 pl-5">
             <li>Export your current Log Book as a PDF.</li>
             <li>Delete your old account.</li>
-            <li>Create a new account in the upgraded MCMAP Logs system.</li>
+            <li>Create a new account in the upgraded MCMAP Logs system. On July 11th 2026 at 1200pm EST.</li>
             <li>Email your exported PDF logbook to BrokenAS.co@gmail.com.</li>
             <li>Important: Send the email from the same email address used to create your new account.</li>
             <li>Our Customer Support team will import all previously approved logs into your new account within 5 business days.</li>
-            <li>If you have any questions please send all inquiries to BrokenAS.co@gmail.com.</li>
           </ol>
           <p className="font-semibold text-ink">
             Customer Support<br />
