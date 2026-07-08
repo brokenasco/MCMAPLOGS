@@ -2,12 +2,14 @@ import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Header from './Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { isLegacySupabaseProject } from '../lib/supabaseClient.js';
 
 export default function AppLayout() {
   const navigate = useNavigate();
-  const { achievementToasts, activeRole, dismissAchievementToast, markSystemNoticeSeen, markWelcomeSeen, profile, session } = useApp();
+  const { achievementToasts, activeRole, dismissAchievementToast, markWelcomeSeen, profile, session } = useApp();
   const [accountDeletionMessage, setAccountDeletionMessage] = React.useState('');
-  const showSystemNotice = Boolean(profile && profile.system_notice_seen === false);
+  const [legacyNoticeStep, setLegacyNoticeStep] = React.useState(0);
+  const isLegacyAccount = Boolean(session?.user && profile && isLegacySupabaseProject);
   const showWelcome = Boolean(profile && profile.welcome_seen === false);
 
   React.useEffect(() => {
@@ -18,13 +20,17 @@ export default function AppLayout() {
     sessionStorage.removeItem('mcmap-account-deletion-message');
   }, []);
 
+  React.useEffect(() => {
+    if (isLegacyAccount) {
+      setLegacyNoticeStep(1);
+      return;
+    }
+
+    setLegacyNoticeStep(0);
+  }, [isLegacyAccount, profile?.id]);
+
   const continueToDashboard = async () => {
     await markWelcomeSeen();
-    navigate(activeRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard');
-  };
-
-  const acknowledgeSystemNotice = async () => {
-    await markSystemNoticeSeen();
     navigate(activeRole === 'MAI' ? '/mai/dashboard' : '/belt/dashboard');
   };
 
@@ -72,8 +78,10 @@ export default function AppLayout() {
           ))}
         </div>
       ) : null}
-      {showSystemNotice ? (
-        <SystemUpdateNoticeModal onContinue={acknowledgeSystemNotice} />
+      {legacyNoticeStep === 1 ? (
+        <LegacySystemUpgradeNoticeModal onContinue={() => setLegacyNoticeStep(2)} />
+      ) : legacyNoticeStep === 2 ? (
+        <LegacyMigrationInstructionsModal onContinue={() => setLegacyNoticeStep(0)} />
       ) : showWelcome ? (
         <WelcomeModal onContinue={continueToDashboard} />
       ) : null}
@@ -86,12 +94,12 @@ export default function AppLayout() {
   );
 }
 
-function SystemUpdateNoticeModal({ onContinue }) {
+function LegacySystemUpgradeNoticeModal({ onContinue }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/70 px-4 py-6">
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-ink/75 px-4 py-6">
       <section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-md border border-brass/30 bg-paper p-6 shadow-panel">
-        <p className="text-sm font-black uppercase tracking-wide text-clay">Account System Update</p>
-        <h2 className="mt-2 text-3xl font-bold text-ink">Important MCMAP Logs Account Notice</h2>
+        <p className="text-sm font-black uppercase tracking-wide text-clay">System Upgrade Notice</p>
+        <h2 className="mt-2 text-3xl font-bold text-ink">System Upgrade Notice</h2>
         <div className="mt-5 space-y-4 text-sm leading-7 text-ink/75">
           <p>Dear Warfighters,</p>
           <p>
@@ -112,12 +120,46 @@ function SystemUpdateNoticeModal({ onContinue }) {
           <p>
             We understand that creating a new account is an inconvenience, and we sincerely appreciate your patience and support as we complete this major system upgrade. These improvements will allow us to continue expanding MCMAP Logs while providing a faster, more reliable experience for all users.
           </p>
-          <p>Thank you for your continued support.</p>
+          <p>Thank you for your continued support. Please follow the steps given by the next message.</p>
           <p className="font-semibold text-ink">
-            Respectfully,<br />
             Keaton R. Permenter<br />
-            CEO and Founder, Broken Arrow Solutions<br />
-            "Stay informed. Stay Lethal."
+            CEO<br />
+            Broken Arrow Solutions<br />
+            "Stay informed. Stay lethal."
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="focus-ring mt-6 inline-flex h-11 w-full items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white hover:bg-olive/90 sm:w-auto"
+        >
+          OK
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function LegacyMigrationInstructionsModal({ onContinue }) {
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-ink/75 px-4 py-6">
+      <section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-md border border-brass/30 bg-paper p-6 shadow-panel">
+        <p className="text-sm font-black uppercase tracking-wide text-clay">Migrating Your Account</p>
+        <h2 className="mt-2 text-3xl font-bold text-ink">Migrating Your Account</h2>
+        <div className="mt-5 space-y-4 text-sm leading-7 text-ink/75">
+          <p>Please complete the following steps to transfer your approved training records into the new system:</p>
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Export your current Log Book as a PDF.</li>
+            <li>Delete your old account.</li>
+            <li>Create a new account in the upgraded MCMAP Logs system.</li>
+            <li>Email your exported PDF logbook to BrokenAS.co@gmail.com.</li>
+            <li>Important: Send the email from the same email address used to create your new account.</li>
+            <li>Our Customer Support team will import all previously approved logs into your new account within 5 business days.</li>
+            <li>If you have any questions please send all inquiries to BrokenAS.co@gmail.com.</li>
+          </ol>
+          <p className="font-semibold text-ink">
+            Customer Support<br />
+            Broken Arrow Solutions
           </p>
         </div>
         <button

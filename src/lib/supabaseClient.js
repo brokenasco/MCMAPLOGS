@@ -14,6 +14,12 @@ export const supabaseConfigStatus = {
   urlHost: supabaseUrl ? new URL(supabaseUrl).host : ''
 };
 
+const legacySupabaseProjectRefs = ['cxxyoswcgyivljbqysne'];
+
+export const isLegacySupabaseProject =
+  import.meta.env.VITE_LEGACY_SUPABASE_NOTICE === 'true' ||
+  legacySupabaseProjectRefs.some((projectRef) => supabaseConfigStatus.urlHost.startsWith(`${projectRef}.`));
+
 function normalizeSupabaseUrl(rawUrl) {
   if (!rawUrl) return '';
 
