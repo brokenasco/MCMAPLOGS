@@ -25,5 +25,6 @@ set
   subscription_cancel_at_period_end = false
 where id in (
   '9fb3dac1-bfd7-440d-bbd4-9b625ec26dd6',
-  '33ef0ef8-cfec-4524-a137-56e585897472'
+  '33ef0ef8-cfec-4524-a137-56e585897472',
+  '3095224e-73bc-47d1-8ccc-a5e17bd718d8'
 );
