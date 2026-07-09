@@ -39,8 +39,9 @@ export default function Profile() {
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
   const isOwnerMai = ownerDeveloperUserIds.includes(profile?.id) || displaySubscription.status === 'owner_free' || profile?.mai_number === 'MAI-0000' || profile?.account_type === 'Owner/Developer';
+  const isDeveloperTester = developerTesterUserIds.includes(profile?.id);
   const isDevTestMai = Boolean(profile?.dev_test_access) || devTestMaiUserIds.includes(profile?.id);
-  const accountRoleLabel = isOwnerMai ? 'Owner / Developer' : isDevTestMai ? 'MAI / Dev Test' : isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const accountRoleLabel = isOwnerMai ? 'Owner / Developer' : isDeveloperTester ? 'Dev Tester' : isDevTestMai ? 'MAI / Dev Test' : isMai ? 'Martial Arts Instructor' : 'Belt User';
   const currentBelt = profile?.belt_level || user.beltLevel || beltUser.beltLevel;
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
@@ -335,6 +336,10 @@ const devTestMaiUserIds = [
   '9fb3dac1-bfd7-440d-bbd4-9b625ec26dd6',
   '33ef0ef8-cfec-4524-a137-56e585897472',
   '3095224e-73bc-47d1-8ccc-a5e17bd718d8'
+];
+
+const developerTesterUserIds = [
+  '16e59741-7d69-424d-a922-023f3ec0a0ec'
 ];
 
 const ownerDeveloperUserIds = [
