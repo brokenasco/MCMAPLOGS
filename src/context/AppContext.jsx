@@ -22,12 +22,12 @@ const subscriptionPlans = {
     monthlyDisplay: 'Free'
   },
   MAI: {
-    planName: 'MCMAP Logbook MAI Annual',
-    label: '$69.99/year',
+    planName: 'MCMAP Logbook MAI Quarterly',
+    label: 'Only $25 every 3 months',
     requiresPayment: true,
-    annualPrice: 69.99,
-    trialDays: 60,
-    monthlyDisplay: '$69.99/year'
+    annualPrice: 25,
+    trialDays: 21,
+    monthlyDisplay: 'Only $25 every 3 months'
   }
 };
 

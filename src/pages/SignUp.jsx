@@ -129,7 +129,7 @@ export default function SignUp() {
           )}
 
           <div className="rounded-md border border-brass/30 bg-brass/10 p-4 text-sm leading-6 text-ink/70">
-            Belt User accounts are free. MAI accounts start with a 60-day free trial, then bill annually at $69.99/year.
+            Belt User accounts are free. MAI accounts start with a 3-week free trial, then bill at only $25 every 3 months.
           </div>
 
           <div className="rounded-md border border-coyote/35 bg-field p-4">

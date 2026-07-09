@@ -116,7 +116,7 @@ export default function Subscription() {
       description={
         isUpgradeFlow
           ? 'Upgrade when you are ready to save time, verify records, reduce paperwork, and manage Marines from one account.'
-          : 'Belt User accounts are free. MAIs use the annual plan to protect records, speed up verification, and export official documentation.'
+          : 'Belt User accounts are free. MAIs use the discounted quarterly plan to protect records, speed up verification, and export official documentation.'
       }
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
@@ -136,14 +136,14 @@ export default function Subscription() {
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? '$69.99/year' : displaySubscription.monthlyDisplay}</p>
+              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? 'Only $25 every 3 months' : displaySubscription.monthlyDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
                 {isOwnerMai
                   ? 'owner access, no payment required'
                   : isLifetimeMai
                   ? 'lifetime access, no payment required'
                   : isMai || isUpgradeFlow
-                  ? '$69.99 billed annually after 60-day trial'
+                  ? 'Only $25 every 3 months after 3-week trial'
                   : 'no payment required'}
               </p>
             </div>
@@ -157,20 +157,20 @@ export default function Subscription() {
             <p className="mt-1 text-sm font-semibold text-ink/70">{subscriptionStatus.detail}</p>
             <p className="mt-2 text-sm leading-6 text-ink/70">
               {!isMai
-                ? 'Start the 60-day MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
+                ? 'Start the 3-week MAI trial to unlock verification tools, protected records, exportable history, and faster documentation for belt advancement, JEPES, and FITREP support.'
                 : isOwnerMai
                 ? 'This owner MAI account can use verification tools for free. No checkout or Stripe billing is required.'
                 : isLifetimeMai
                 ? 'This MAI account has lifetime access. No checkout, trial, or Stripe billing is required.'
                 : isTrialingMai
-                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is $69.99 per year for verification, exports, and reduced administrative work.`
+                  ? `Your MAI tools are unlocked during the trial${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}. After the trial, billing is only $25 every 3 months for verification, exports, and reduced administrative work.`
                   : isActiveMai
-                  ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your annual MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
+                  ? `${displaySubscription.cancelAtPeriodEnd ? 'Your plan is set to cancel at the end of the billing period' : 'Your discounted MAI plan is active'}${displaySubscription.currentPeriodEnd ? ` through ${formatDate(displaySubscription.currentPeriodEnd)}` : ''}.`
                   : isCanceledMai
                   ? 'This MAI subscription is canceled. Start checkout again to unlock verification tools.'
                   : isPastDueMai
                   ? 'Payment is missing or failed. Resume subscription to restore MAI premium features.'
-                  : 'Start the 60-day free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Annual billing is $69.99 after the trial.'}
+                  : 'Start the 3-week free trial to unlock MAI verification, exportable records, and paperwork-reduction tools. Billing is only $25 every 3 months after the trial.'}
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <SubscriptionDetail label="Billing cycle / renewal date" value={renewalLabel} />
@@ -230,10 +230,10 @@ export default function Subscription() {
 
         <aside className="grid gap-4">
           <StatCard label="Belt User accounts" value="Free" detail="No payment required" />
-          <StatCard label="MAI trial" value="60 days" detail="Free before annual billing" />
+          <StatCard label="MAI trial" value="3 weeks" detail="Free before discounted billing" />
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
-          <StatCard label="MAI annual price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged once per year" />
+          <StatCard label="MAI price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged every 3 months" />
           <StatCard label="Billing date" value={renewalLabel} detail="From Stripe subscription records" />
           {isMai ? (
             <StatCard
