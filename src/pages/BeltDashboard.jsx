@@ -33,7 +33,15 @@ export default function BeltDashboard() {
   const recentLogs = beltLogs.slice(0, 6);
   const hasNoLogs = beltLogs.length === 0;
   const hasCompletedTargetBelt = isTargetBeltComplete(progress);
-  const shouldShowCompletionBanner = hasCompletedTargetBelt && !progress.hasReachedBlackBelt;
+  const needsAdvancementTestConfirmation = hasCompletedTargetBelt && !progress.hasReachedBlackBelt;
+  const shouldShowCompletionBanner = needsAdvancementTestConfirmation;
+  const advancementTestName = formatAdvancementTestName(progress.targetBelt);
+  const logHoursActionLabel = needsAdvancementTestConfirmation
+    ? `I have taken my ${advancementTestName}`
+    : 'Log My Hours';
+  const logHoursActionDetail = needsAdvancementTestConfirmation
+    ? 'Confirm belt advancement test'
+    : 'Submit MCMAP hours';
 
   React.useEffect(() => {
     setTestBlocked(false);
@@ -77,7 +85,7 @@ export default function BeltDashboard() {
   const openLogMyHours = () => {
     setSelectedLog(null);
 
-    if (hasCompletedTargetBelt) {
+    if (needsAdvancementTestConfirmation) {
       setShowAdvancementModal(true);
       return;
     }
@@ -93,6 +101,12 @@ export default function BeltDashboard() {
   };
 
   const handleStickyAction = () => {
+    if (needsAdvancementTestConfirmation) {
+      setShowAdvancementModal(true);
+      scrollToSection('command-center');
+      return;
+    }
+
     if (returnedLogs.length) {
       openReturnedEdit(returnedLogs[0]);
       scrollToSection('returned-log-fix');
@@ -153,7 +167,7 @@ export default function BeltDashboard() {
         </section>
       )}
 
-      <section className="rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
+      <section id="command-center" className="scroll-mt-28 rounded-md border border-coyote/35 bg-charcoal p-5 text-paper shadow-sm sm:p-6">
         <p className="text-sm font-black uppercase tracking-wide text-brass">Progress Command Center</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <CommandDetail label="Current Belt" value={progress.currentBelt} />
@@ -169,9 +183,9 @@ export default function BeltDashboard() {
           />
           <CommandActionButton
             active={activePanel === 'log'}
-            detail="Submit MCMAP hours"
-            icon={PlusCircle}
-            label="Log My Hours"
+            detail={logHoursActionDetail}
+            icon={needsAdvancementTestConfirmation ? CheckCircle2 : PlusCircle}
+            label={logHoursActionLabel}
             onClick={openLogMyHours}
           />
         </div>
@@ -288,14 +302,15 @@ export default function BeltDashboard() {
       </section>
 
       <MobileStickyAction
-        label={returnedLogs.length ? 'Fix Returned Log' : 'Submit Hours'}
+        icon={needsAdvancementTestConfirmation ? CheckCircle2 : PlusCircle}
+        label={needsAdvancementTestConfirmation ? logHoursActionLabel : returnedLogs.length ? 'Fix Returned Log' : 'Submit Hours'}
         onClick={handleStickyAction}
       />
     </PageShell>
   );
 }
 
-function MobileStickyAction({ label, onClick }) {
+function MobileStickyAction({ icon: Icon = PlusCircle, label, onClick }) {
   return (
     <div className="fixed inset-x-0 bottom-[84px] z-20 border-t border-coyote/25 bg-paper/95 px-4 py-3 shadow-panel backdrop-blur sm:hidden">
       <button
@@ -303,7 +318,7 @@ function MobileStickyAction({ label, onClick }) {
         onClick={onClick}
         className="focus-ring inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-black text-white"
       >
-        <PlusCircle size={18} aria-hidden="true" />
+        <Icon size={18} aria-hidden="true" />
         {label}
       </button>
     </div>
@@ -333,7 +348,7 @@ function AdvancementModal({ isSubmitting, onNo, onYes, targetBelt }) {
     <div className="fixed inset-0 z-30 grid place-items-center bg-ink/50 px-4 py-8">
       <section className="w-full max-w-lg rounded-md border border-coyote/35 bg-paper p-6 shadow-panel">
         <p className="text-sm font-black uppercase tracking-wide text-clay">Belt Advancement Test</p>
-        <h2 className="mt-2 text-2xl font-bold text-ink">Have you successfully passed your {targetBelt} advancement test?</h2>
+        <h2 className="mt-2 text-2xl font-bold text-ink">Have you successfully completed your {formatAdvancementTestName(targetBelt)}?</h2>
         <p className="mt-3 text-sm leading-6 text-ink/65">
           {advancementReminderText}
         </p>
@@ -344,7 +359,7 @@ function AdvancementModal({ isSubmitting, onNo, onYes, targetBelt }) {
             disabled={isSubmitting}
             className="focus-ring inline-flex h-11 items-center justify-center rounded-md border border-ink/15 bg-field px-5 text-sm font-bold text-ink"
           >
-            No
+            No, not yet
           </button>
           <button
             type="button"
@@ -352,7 +367,7 @@ function AdvancementModal({ isSubmitting, onNo, onYes, targetBelt }) {
             disabled={isSubmitting}
             className="focus-ring inline-flex h-11 items-center justify-center rounded-md bg-olive px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? 'Updating...' : 'Yes'}
+            {isSubmitting ? 'Updating...' : 'Yes, I passed'}
           </button>
         </div>
       </section>
@@ -373,6 +388,12 @@ function BeltCompletionBanner({ targetBelt }) {
       <p className="mt-2 text-sm font-semibold leading-6 text-ink/80">{advancementReminderText}</p>
     </section>
   );
+}
+
+function formatAdvancementTestName(targetBelt = '') {
+  return targetBelt.toLowerCase().includes('belt')
+    ? `${targetBelt} Advancement Test`
+    : `${targetBelt} Belt Advancement Test`;
 }
 
 function CommandDetail({ label, value }) {
