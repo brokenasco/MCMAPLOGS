@@ -12,6 +12,7 @@ import {
   isAdditionalHoursTechnique,
   isAdditionalMcmapTarget
 } from '../data/mcmapReference.js';
+import { getRequiredHoursDisplay } from '../lib/submitHoursRequirement.js';
 
 function buildInitialForm(currentBelt, savedDraft) {
   const targetBelt = getTargetBeltOptions(currentBelt)[0] || getTargetBelt(currentBelt);
@@ -61,6 +62,10 @@ export function SubmitHoursForm({ embedded = false }) {
   const matchedMai = selectedMaiNumber ? findMaiByNumber(selectedMaiNumber) : null;
   const totalMinutes = getTotalMinutes(form.hours, form.minutes);
   const normalizedTime = formatMinutes(totalMinutes);
+  const requiredHoursDisplay = React.useMemo(
+    () => getRequiredHoursDisplay({ logs: beltLogs, selectedTechnique, targetBelt }),
+    [beltLogs, selectedTechnique, targetBelt]
+  );
   const showTargetSelect = targetOptions.length > 1 || isAdditionalMcmapTarget(targetBelt);
 
   React.useEffect(() => {
@@ -273,8 +278,8 @@ export function SubmitHoursForm({ embedded = false }) {
                 <ErrorText message={errors.techniqueId} />
               </label>
               {selectedTechnique ? (
-                <div className="rounded-md border border-coyote/35 bg-field p-4">
-                  <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
+                <div className="rounded-md border border-coyote/35 bg-field p-3">
+                  <Summary label="Required Hours" value={requiredHoursDisplay} />
                 </div>
               ) : null}
             </div>
@@ -456,12 +461,10 @@ export function SubmitHoursForm({ embedded = false }) {
               hint={totalMinutes > 0 ? `Time will be saved as ${normalizedTime}.` : 'Example: 90 minutes will count as 1:30.'}
             />
 
-            <div className="rounded-md border border-coyote/35 bg-field p-4 md:col-span-2">
-              <p className="text-sm font-bold text-ink">Selected class requirement</p>
+            <div className="rounded-md border border-coyote/35 bg-field p-3 md:col-span-1">
               {selectedTechnique ? (
-                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Summary label="Required" value={selectedTechnique.requiredMinutes ? formatMinutes(selectedTechnique.requiredMinutes) : 'No progression requirement'} />
-                  <Summary label="Logged now" value={normalizedTime} />
+                <dl>
+                  <Summary label="Required Hours" value={requiredHoursDisplay} />
                 </dl>
               ) : null}
             </div>
