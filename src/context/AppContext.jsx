@@ -18,16 +18,18 @@ const subscriptionPlans = {
     planName: 'MCMAP Logbook Belt User',
     label: 'Free',
     requiresPayment: false,
-    annualPrice: 0,
-    monthlyDisplay: 'Free'
+    priceAmount: 0,
+    priceDisplay: 'Free',
+    billingDetail: 'No payment required'
   },
   MAI: {
     planName: 'MCMAP Logbook MAI Quarterly',
     label: 'Only $25 every 3 months',
     requiresPayment: true,
-    annualPrice: 25,
+    priceAmount: 25,
+    priceDisplay: 'ONLY $25 every 3 months',
+    billingDetail: '3-week free trial, then ONLY $25 every 3 months',
     trialDays: 21,
-    monthlyDisplay: 'Only $25 every 3 months'
   }
 };
 
@@ -73,7 +75,7 @@ export function AppProvider({ children }) {
   const [subscription, setSubscription] = React.useState({
     status: 'free',
     planName: subscriptionPlans['Belt User'].planName,
-    annualPrice: subscriptionPlans['Belt User'].annualPrice,
+    priceAmount: subscriptionPlans['Belt User'].priceAmount,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
     paymentMethod: null
@@ -120,8 +122,9 @@ export function AppProvider({ children }) {
   const displaySubscription = {
     ...subscription,
     planName: currentPlan.planName,
-    annualPrice: currentPlan.annualPrice,
-    monthlyDisplay: currentPlan.monthlyDisplay,
+    priceAmount: currentPlan.priceAmount,
+    priceDisplay: currentPlan.priceDisplay,
+    billingDetail: currentPlan.billingDetail,
     requiresPayment: currentPlan.requiresPayment,
     trialDays: currentPlan.trialDays || 0,
     label: currentPlan.label

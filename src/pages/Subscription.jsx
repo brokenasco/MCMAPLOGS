@@ -136,14 +136,14 @@ export default function Subscription() {
               </p>
             </div>
             <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? 'Only $25 every 3 months' : displaySubscription.monthlyDisplay}</p>
+              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? subscriptionPlans.MAI.priceDisplay : displaySubscription.priceDisplay}</p>
               <p className="text-sm font-semibold text-ink/60">
                 {isOwnerMai
                   ? 'owner access, no payment required'
                   : isLifetimeMai
                   ? 'lifetime access, no payment required'
                   : isMai || isUpgradeFlow
-                  ? 'Only $25 every 3 months after 3-week trial'
+                  ? subscriptionPlans.MAI.billingDetail
                   : 'no payment required'}
               </p>
             </div>
@@ -233,7 +233,7 @@ export default function Subscription() {
           <StatCard label="MAI trial" value="3 weeks" detail="Free before discounted billing" />
           <StatCard label="MAI value" value="Less admin" detail="Verify, return, and export records faster" />
           <StatCard label="Records" value="Protected" detail="Keep verified MCMAP documentation organized" />
-          <StatCard label="MAI price" value={`$${subscriptionPlans.MAI.annualPrice}`} detail="Charged every 3 months" />
+          <StatCard label="MAI discount price" value="ONLY $25" detail="Charged every 3 months after the 3-week trial" />
           <StatCard label="Billing date" value={renewalLabel} detail="From Stripe subscription records" />
           {isMai ? (
             <StatCard
