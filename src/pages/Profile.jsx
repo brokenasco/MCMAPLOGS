@@ -42,6 +42,7 @@ export default function Profile() {
   const isDeveloperTester = developerTesterUserIds.includes(profile?.id);
   const isDevTestMai = Boolean(profile?.dev_test_access) || devTestMaiUserIds.includes(profile?.id);
   const accountRoleLabel = isOwnerMai ? 'Owner / Developer' : isDeveloperTester ? 'Dev Tester' : isDevTestMai ? 'MAI / Dev Test' : isMai ? 'Martial Arts Instructor' : 'Belt User';
+  const maiCodeBadge = isMai ? profile?.mai_number || maiUser.maiNumber : '';
   const currentBelt = profile?.belt_level || user.beltLevel || beltUser.beltLevel;
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
@@ -132,7 +133,7 @@ export default function Profile() {
       eyebrow="Settings"
       title="Profile"
       description="Review your account details."
-      actions={<RoleBadge role={accountRoleLabel} />}
+      actions={<ProfileBadges isMai={isMai} maiCode={maiCodeBadge} roleLabel={accountRoleLabel} />}
     >
       <div className="mb-5 flex flex-wrap gap-2">
         {[
@@ -339,13 +340,27 @@ const devTestMaiUserIds = [
 ];
 
 const developerTesterUserIds = [
-  '16e59741-7d69-424d-a922-023f3ec0a0ec'
+  '16e59741-7d69-424d-a922-023f3ec0a0ec',
+  '3095224e-73bc-47d1-8ccc-a5e17bd718d8'
 ];
 
 const ownerDeveloperUserIds = [
   '8c5a14d7-5f97-4020-ade5-de534b315287',
   'cbfab507-3f3a-402e-868d-399f387d83d1'
 ];
+
+function ProfileBadges({ isMai, maiCode, roleLabel }) {
+  if (!isMai) return <RoleBadge role="Belt User" />;
+
+  const hasSpecialBadge = ['Owner / Developer', 'Dev Tester', 'MAI / Dev Test'].includes(roleLabel);
+
+  return (
+    <div className="flex flex-wrap justify-end gap-2">
+      <RoleBadge role={maiCode || 'MAI Code Pending'} />
+      {hasSpecialBadge ? <RoleBadge role={roleLabel} /> : null}
+    </div>
+  );
+}
 
 function Detail({ label, value }) {
   return (

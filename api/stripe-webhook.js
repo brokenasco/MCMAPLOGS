@@ -83,6 +83,12 @@ function mapSubscriptionUpdate(subscription, customerId) {
     stripe_customer_id: customerId || null,
     stripe_subscription_id: subscription.id,
     subscription_status: subscription.status,
+    trial_start_date: subscription.trial_start
+      ? new Date(subscription.trial_start * 1000).toISOString()
+      : null,
+    trial_end_date: subscription.trial_end
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : null,
     subscription_price_id: subscription.items?.data?.[0]?.price?.id || null,
     subscription_current_period_end: subscription.current_period_end
       ? new Date(subscription.current_period_end * 1000).toISOString()
@@ -235,10 +241,17 @@ function normalizeUrl(rawUrl) {
 }
 
 async function generateUniqueMaiNumber() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    const maiNumber = `MAI-${Math.floor(2000 + Math.random() * 7000)}`;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const digits = attempt < 35 ? 4 : attempt < 45 ? 5 : 6;
+    const maiNumber = generateMaiNumber(digits);
     if (!await isMaiNumberTaken(maiNumber)) return maiNumber;
   }
 
   throw new Error('Unable to assign a unique MAI number. Please try checkout again or contact support.');
+}
+
+function generateMaiNumber(digits) {
+  const minimum = 10 ** (digits - 1);
+  const maximum = (10 ** digits) - 1;
+  return `MAI-${Math.floor(minimum + Math.random() * (maximum - minimum + 1))}`;
 }

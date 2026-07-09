@@ -980,7 +980,7 @@ export function AppProvider({ children }) {
 
   const createAccount = async ({ role, name, email, password, beltLevel }) => {
     setAuthMessage('');
-    const maiNumber = role === 'MAI' ? `MAI-${Math.floor(2000 + Math.random() * 7000)}` : null;
+    const maiNumber = null;
 
     if (!supabase) {
       if (import.meta.env.PROD) {

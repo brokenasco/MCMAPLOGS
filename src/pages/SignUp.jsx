@@ -61,6 +61,7 @@ export default function SignUp() {
 
       if (isMai) {
         setAssignedMaiNumber(account.maiNumber || account.mai_number);
+        navigate('/profile/subscription');
         return;
       }
 
@@ -106,11 +107,10 @@ export default function SignUp() {
 
           {isMai ? (
             <div className="rounded-md border border-olive/20 bg-olive/10 p-4">
-              <p className="text-sm font-bold text-olive">Assigned MAI number</p>
-              <p className="mt-2 text-3xl font-bold text-ink">{assignedMaiNumber || 'Generated after account creation'}</p>
+              <p className="text-sm font-bold text-olive">MAI number</p>
+              <p className="mt-2 text-3xl font-bold text-ink">{assignedMaiNumber || 'Generated when trial starts'}</p>
               <p className="mt-2 text-sm leading-6 text-ink/65">
-                This number is created when the MAI account is created. It verifies the MAI when they sign
-                Belt User logbooks.
+                This number is created when the MAI starts the 3-week free trial. It verifies the MAI when they sign Belt User logbooks.
               </p>
               {assignedMaiNumber ? (
                 <button
