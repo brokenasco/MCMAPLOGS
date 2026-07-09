@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
+import ProfileBadges from '../components/ProfileBadges.jsx';
 import StatCard from '../components/StatCard.jsx';
-import { RoleBadge } from '../components/Header.jsx';
 import PasswordField from '../components/PasswordField.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { achievements as fallbackAchievements, evaluateAchievements } from '../data/achievements.js';
@@ -40,10 +40,6 @@ export default function Profile() {
   } = useApp();
   const isMai = activeRole === 'MAI';
   const user = isMai ? maiUser : beltUser;
-  const isOwnerMai = ownerDeveloperUserIds.includes(profile?.id) || displaySubscription.status === 'owner_free' || profile?.mai_number === 'MAI-0000' || profile?.account_type === 'Owner/Developer';
-  const isDeveloperTester = developerTesterUserIds.includes(profile?.id);
-  const isDevTestMai = Boolean(profile?.dev_test_access) || devTestMaiUserIds.includes(profile?.id);
-  const accountRoleLabel = isOwnerMai ? 'Owner / Developer' : isDeveloperTester ? 'Dev Tester' : isDevTestMai ? 'MAI / Dev Test' : isMai ? 'Martial Arts Instructor' : 'Belt User';
   const maiCodeBadge = isMai ? profile?.mai_number || maiUser.maiNumber : '';
   const currentBelt = profile?.belt_level || user.beltLevel || beltUser.beltLevel;
   const [isEditing, setIsEditing] = React.useState(false);
@@ -165,7 +161,7 @@ export default function Profile() {
       eyebrow="Settings"
       title="Profile"
       description="Review your account details."
-      actions={<ProfileBadges isMai={isMai} maiCode={maiCodeBadge} roleLabel={accountRoleLabel} />}
+      actions={<ProfileBadges displaySubscription={displaySubscription} isMai={isMai} maiCode={maiCodeBadge} profile={profile} />}
     >
       <div className="mb-5 flex flex-wrap gap-2">
         {[
@@ -399,36 +395,6 @@ function getSubscriptionAccessLabel({ activeRole, displaySubscription }) {
   if (displaySubscription.status === 'trialing') return 'Free Trial';
   if (displaySubscription.status === 'active') return 'Full Access';
   return 'Restricted Access';
-}
-
-const devTestMaiUserIds = [
-  '18a9842e-84f8-46a8-806c-c2276a46c6f0',
-  '9fb3dac1-bfd7-440d-bbd4-9b625ec26dd6',
-  '33ef0ef8-cfec-4524-a137-56e585897472',
-  '3095224e-73bc-47d1-8ccc-a5e17bd718d8'
-];
-
-const developerTesterUserIds = [
-  '16e59741-7d69-424d-a922-023f3ec0a0ec',
-  '3095224e-73bc-47d1-8ccc-a5e17bd718d8'
-];
-
-const ownerDeveloperUserIds = [
-  '8c5a14d7-5f97-4020-ade5-de534b315287',
-  'cbfab507-3f3a-402e-868d-399f387d83d1'
-];
-
-function ProfileBadges({ isMai, maiCode, roleLabel }) {
-  if (!isMai) return <RoleBadge role="Belt User" />;
-
-  const hasSpecialBadge = ['Owner / Developer', 'Dev Tester', 'MAI / Dev Test'].includes(roleLabel);
-
-  return (
-    <div className="flex flex-wrap justify-end gap-2">
-      <RoleBadge role={maiCode || 'MAI Code Pending'} />
-      {hasSpecialBadge ? <RoleBadge role={roleLabel} /> : null}
-    </div>
-  );
 }
 
 function Detail({ label, value }) {

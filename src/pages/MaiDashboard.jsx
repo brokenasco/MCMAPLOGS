@@ -3,14 +3,14 @@ import { CheckCircle2, ClipboardList, Clock3, Eye, MessageSquare, PlusCircle, XC
 import EmptyState from '../components/EmptyState.jsx';
 import LogDetailPanel from '../components/LogDetailPanel.jsx';
 import PageShell from '../components/PageShell.jsx';
-import { RoleBadge } from '../components/Header.jsx';
+import ProfileBadges from '../components/ProfileBadges.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { formatMinutes } from '../data/mcmapReference.js';
 import { buildBeltProgress, getBeltTrail } from '../lib/mcmapProgress.js';
 import { SubmitMaiHoursForm } from './SubmitMaiHours.jsx';
 
 export default function MaiDashboard() {
-  const { maiUser, pendingLogs, profile, verifiedLogs, returnedLogs, maiSubmittedLogs, verifyLog, returnLog } = useApp();
+  const { displaySubscription, maiUser, pendingLogs, profile, verifiedLogs, returnedLogs, maiSubmittedLogs, verifyLog, returnLog } = useApp();
   const [selectedLog, setSelectedLog] = React.useState(null);
   const [returningLog, setReturningLog] = React.useState(null);
   const [returnReason, setReturnReason] = React.useState('Missing detail');
@@ -57,7 +57,14 @@ export default function MaiDashboard() {
       eyebrow="MAI"
       title={`Verification queue for ${maiUser.name}`}
       description={`Unit: ${maiUser.unit}. Assigned MAI number: ${maiUser.maiNumber}.`}
-      actions={<RoleBadge role="MAI" />}
+      actions={
+        <ProfileBadges
+          displaySubscription={displaySubscription}
+          isMai
+          maiCode={profile?.mai_number || maiUser.maiNumber}
+          profile={profile}
+        />
+      }
     >
       <section className="mb-6 rounded-md border border-coyote/35 bg-paper p-5 shadow-sm">
         <p className="text-sm font-bold uppercase tracking-wide text-clay">Belt path</p>
