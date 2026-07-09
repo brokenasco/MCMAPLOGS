@@ -27,8 +27,8 @@ const subscriptionPlans = {
     label: 'Only $25 every 3 months',
     requiresPayment: true,
     priceAmount: 25,
-    priceDisplay: 'ONLY $25 every 3 months',
-    billingDetail: '3-week free trial, then ONLY $25 every 3 months',
+    priceDisplay: '3-week free trial',
+    billingDetail: 'Then ONLY $25 every 3 months',
     trialDays: 21,
   }
 };

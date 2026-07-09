@@ -135,9 +135,10 @@ export default function Subscription() {
                   : 'Your Belt User account stays free. Upgrade this same account to MAI when you are ready to reduce paperwork and verify Marine training records.'}
               </p>
             </div>
-            <div className="rounded-md bg-field px-4 py-3 text-right">
-              <p className="text-3xl font-bold text-ink">{isUpgradeFlow ? subscriptionPlans.MAI.priceDisplay : displaySubscription.priceDisplay}</p>
-              <p className="text-sm font-semibold text-ink/60">
+            <div className="rounded-md bg-field px-4 py-4 text-center sm:min-w-64">
+              <p className="text-sm font-black uppercase tracking-wide text-clay">Limited MAI offer</p>
+              <p className="mt-2 text-3xl font-black leading-tight text-ink">{isUpgradeFlow ? subscriptionPlans.MAI.priceDisplay : displaySubscription.priceDisplay}</p>
+              <p className="mt-2 text-sm font-black uppercase tracking-wide text-olive">
                 {isOwnerMai
                   ? 'owner access, no payment required'
                   : isLifetimeMai
