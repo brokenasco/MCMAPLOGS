@@ -1,5 +1,5 @@
 const priceIds = {
-  MAI: process.env.STRIPE_MAI_PRICE_ID || process.env.STRIPE_MAI_ANNUAL_PRICE_ID
+  MAI: process.env.STRIPE_PRICING || process.env.STRIPE_MAI_PRICE_ID || process.env.STRIPE_MAI_ANNUAL_PRICE_ID
 };
 
 export default async function handler(request, response) {
