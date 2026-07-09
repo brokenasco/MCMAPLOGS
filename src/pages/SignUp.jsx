@@ -17,6 +17,7 @@ export default function SignUp() {
     name: '',
     email: '',
     password: '',
+    unit: '',
     beltLevel: 'No MCMAP Belt'
   });
   const [assignedMaiNumber, setAssignedMaiNumber] = React.useState('');
@@ -50,13 +51,20 @@ export default function SignUp() {
       return;
     }
 
+    if (!form.unit.trim()) {
+      setStatusMessage('Unit is required.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const account = await createAccount({
         role: accountType,
         name: form.name,
         email: form.email,
         password: form.password,
-        beltLevel: form.beltLevel
+        beltLevel: form.beltLevel,
+        unit: form.unit
       });
 
       if (account.needsEmailConfirmation) {
@@ -96,6 +104,15 @@ export default function SignUp() {
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Full name" name="name" value={form.name} onChange={updateField} placeholder="LCpl Jordan Hayes" />
             <Field label="Email" name="email" value={form.email} onChange={updateField} type="email" placeholder="name@example.mil" />
+            <Field
+              label="Unit"
+              name="unit"
+              value={form.unit}
+              onChange={updateField}
+              placeholder="Unit or training section"
+              helperText="This can be changed later in your profile."
+              required
+            />
             <PasswordField
               name="password"
               value={form.password}
@@ -196,11 +213,12 @@ export default function SignUp() {
   );
 }
 
-function Field({ label, ...props }) {
+function Field({ label, helperText, ...props }) {
   return (
     <label className="block">
       <span className="text-sm font-bold text-ink">{label}</span>
       <input className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 px-3 text-sm" {...props} />
+      {helperText ? <span className="mt-1 block text-xs font-semibold text-ink/55">{helperText}</span> : null}
     </label>
   );
 }

@@ -12,13 +12,14 @@ import {
   X,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import EmailNotice from '../components/EmailNotice.jsx';
 import PageShell from '../components/PageShell.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { RoleBadge } from '../components/Header.jsx';
+import PasswordField from '../components/PasswordField.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { achievements as fallbackAchievements, evaluateAchievements } from '../data/achievements.js';
 import { formatMinutes, getTargetBelt } from '../data/mcmapReference.js';
+import { passwordRequirementMessage, validatePassword } from '../lib/passwordValidation.js';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ export default function Profile() {
     verifiedLogs,
     userAchievements,
     displaySubscription,
+    changePassword,
     deleteAccount,
     updateAccount
   } = useApp();
@@ -45,10 +47,12 @@ export default function Profile() {
   const maiCodeBadge = isMai ? profile?.mai_number || maiUser.maiNumber : '';
   const currentBelt = profile?.belt_level || user.beltLevel || beltUser.beltLevel;
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editForm, setEditForm] = React.useState({ email: user.email || '', unit: user.unit || '' });
+  const [editForm, setEditForm] = React.useState({ unit: user.unit || '' });
   const [editMessage, setEditMessage] = React.useState('');
-  const [emailNotice, setEmailNotice] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [passwordForm, setPasswordForm] = React.useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordMessage, setPasswordMessage] = React.useState('');
+  const [isChangingPassword, setIsChangingPassword] = React.useState(false);
   const [deleteText, setDeleteText] = React.useState('');
   const [deleteMessage, setDeleteMessage] = React.useState('');
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -67,11 +71,10 @@ export default function Profile() {
   );
 
   React.useEffect(() => {
-    setEditForm({ email: user.email || '', unit: user.unit || '' });
+    setEditForm({ unit: user.unit || '' });
     setEditMessage('');
-    setEmailNotice(false);
     setIsEditing(false);
-  }, [user.email, user.unit]);
+  }, [user.unit]);
 
   const updateEditField = (event) => {
     setEditForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -81,28 +84,57 @@ export default function Profile() {
   const handleSaveAccount = async (event) => {
     event.preventDefault();
 
-    if (!editForm.email.trim() || !editForm.unit.trim()) {
-      setEditMessage('Email and unit are both required.');
+    if (!editForm.unit.trim()) {
+      setEditMessage('Unit is required.');
       return;
     }
 
     setIsSaving(true);
     setEditMessage('');
-    setEmailNotice(false);
 
     try {
-      const result = await updateAccount(editForm);
+      await updateAccount(editForm);
       setIsEditing(false);
-      setEmailNotice(Boolean(result.emailConfirmationRequired));
-      setEditMessage(
-        result.emailConfirmationRequired
-          ? 'Saved. Confirm the email change before using the new email to log in.'
-          : 'Account updated.'
-      );
+      setEditMessage('Unit updated successfully.');
     } catch (error) {
       setEditMessage(error.message || 'Account could not be updated. Try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const updatePasswordField = (event) => {
+    setPasswordForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    setPasswordMessage('');
+  };
+
+  const handleChangePassword = async (event) => {
+    event.preventDefault();
+    setPasswordMessage('');
+
+    if (!validatePassword(passwordForm.newPassword)) {
+      setPasswordMessage(passwordRequirementMessage);
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage('The two passwords do not match.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordMessage('Password updated successfully.');
+    } catch (error) {
+      setPasswordMessage(error.message || 'Unable to update password. Please check your current password and try again.');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -171,6 +203,7 @@ export default function Profile() {
           <p className="mt-1 text-sm text-ink/60">{user.email}</p>
           <dl className="mt-6 space-y-4">
             <Detail label="Unit" value={user.unit || maiUser.unit} />
+            <Detail label="Email" value={user.email} />
             <Detail label="Belt level" value={currentBelt} />
             <Detail label="Current target" value={getTargetBelt(currentBelt)} />
             <Detail label="MAI number" value={isMai ? maiUser.maiNumber : 'Assigned only to MAI accounts'} />
@@ -198,21 +231,8 @@ export default function Profile() {
               </div>
             ) : null}
 
-            {emailNotice ? <div className="mt-4"><EmailNotice title="Email Change Sent" /></div> : null}
-
             {isEditing ? (
               <form className="mt-4 grid gap-4" onSubmit={handleSaveAccount}>
-                <label className="block">
-                  <span className="text-sm font-bold text-ink">Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={editForm.email}
-                    onChange={updateEditField}
-                    className="focus-ring mt-2 h-11 w-full rounded-md border border-ink/15 px-3 text-sm"
-                    placeholder="name@example.mil"
-                  />
-                </label>
                 <label className="block">
                   <span className="text-sm font-bold text-ink">Unit</span>
                   <input
@@ -235,15 +255,64 @@ export default function Profile() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditForm({ email: user.email || '', unit: user.unit || '' });
+                      setEditForm({ unit: user.unit || '' });
                       setEditMessage('');
-                      setEmailNotice(false);
                       setIsEditing(false);
                     }}
                     className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ink/15 bg-field px-4 text-sm font-bold text-ink sm:h-10"
                   >
                     <X size={17} aria-hidden="true" />
                     Cancel
+                  </button>
+                </div>
+
+                <div className="mt-2 rounded-md border border-coyote/35 bg-field p-4">
+                  <h3 className="font-bold text-ink">Change password</h3>
+                  <p className="mt-1 text-sm leading-6 text-ink/65">
+                    Enter your current password first, then choose a new password.
+                  </p>
+
+                  <div className="mt-4 grid gap-4">
+                    <PasswordField
+                      label="Current Password"
+                      name="currentPassword"
+                      value={passwordForm.currentPassword}
+                      onChange={updatePasswordField}
+                      placeholder="Current password"
+                      autoComplete="current-password"
+                    />
+                    <PasswordField
+                      label="New Password"
+                      name="newPassword"
+                      value={passwordForm.newPassword}
+                      onChange={updatePasswordField}
+                      placeholder="New password"
+                      autoComplete="new-password"
+                    />
+                    <PasswordField
+                      label="Confirm New Password"
+                      name="confirmPassword"
+                      value={passwordForm.confirmPassword}
+                      onChange={updatePasswordField}
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  {passwordMessage ? (
+                    <div className="mt-4 rounded-md border border-coyote/35 bg-paper p-4 text-sm font-semibold text-ink/75">
+                      {passwordMessage}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword}
+                    className="focus-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-olive px-4 text-sm font-bold text-white hover:bg-olive/90 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
+                  >
+                    <Save size={17} aria-hidden="true" />
+                    {isChangingPassword ? 'Updating password...' : 'Update password'}
                   </button>
                 </div>
 

@@ -985,9 +985,16 @@ export function AppProvider({ children }) {
     localStorage.removeItem('mcmap-log-draft');
   };
 
-  const createAccount = async ({ role, name, email, password, beltLevel }) => {
+  const createAccount = async ({ role, name, email, password, beltLevel, unit }) => {
     setAuthMessage('');
     const maiNumber = null;
+    const trimmedUnit = unit?.trim();
+
+    if (!trimmedUnit) {
+      const unitError = new Error('Unit is required.');
+      setAuthMessage(unitError.message);
+      throw unitError;
+    }
 
     if (!validatePassword(password)) {
       setAuthMessage(passwordRequirementMessage);
@@ -998,7 +1005,7 @@ export function AppProvider({ children }) {
       if (import.meta.env.PROD) {
         throw new Error('Supabase is not configured for this deployment.');
       }
-      return createMockAccount({ role, name, email, beltLevel, maiNumber });
+      return createMockAccount({ role, name, email, beltLevel, maiNumber, unit: trimmedUnit });
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -1009,7 +1016,7 @@ export function AppProvider({ children }) {
           full_name: name,
           account_type: role,
           belt_level: beltLevel,
-          unit: role === 'MAI' ? currentMai.unit : currentBeltUser.unit,
+          unit: trimmedUnit,
           mai_number: maiNumber
         },
         emailRedirectTo: `${window.location.origin}/login`
@@ -1027,7 +1034,7 @@ export function AppProvider({ children }) {
       email,
       account_type: role,
       belt_level: beltLevel,
-      unit: role === 'MAI' ? currentMai.unit : currentBeltUser.unit,
+      unit: trimmedUnit,
       mai_number: maiNumber,
       subscription_status: role === 'MAI' ? 'unpaid' : 'free',
       system_notice_seen: false,
@@ -1174,6 +1181,45 @@ export function AppProvider({ children }) {
     setSession(null);
   };
 
+  const changePassword = async ({ currentPassword, newPassword }) => {
+    setAuthMessage('');
+
+    if (!currentPassword?.trim()) {
+      throw new Error('Current password is required.');
+    }
+
+    if (!validatePassword(newPassword)) {
+      setAuthMessage(passwordRequirementMessage);
+      throw new Error(passwordRequirementMessage);
+    }
+
+    if (!supabase || !session?.user?.email) {
+      if (import.meta.env.PROD) {
+        throw new Error('Supabase is not configured for this deployment.');
+      }
+      return;
+    }
+
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: session.user.email,
+      password: currentPassword
+    });
+
+    if (verifyError) {
+      const message = 'Unable to update password. Please check your current password and try again.';
+      setAuthMessage(message);
+      throw new Error(message);
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      const message = 'Unable to update password. Please check your current password and try again.';
+      setAuthMessage(message);
+      throw new Error(message);
+    }
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -1212,13 +1258,18 @@ export function AppProvider({ children }) {
     return data;
   };
 
-  const updateAccount = async ({ email, unit }) => {
+  const updateAccount = async ({ unit }) => {
     setAuthMessage('');
 
-    const trimmedEmail = email.trim();
-    const trimmedUnit = unit.trim();
+    const trimmedUnit = unit?.trim();
+
+    if (!trimmedUnit) {
+      const unitError = new Error('Unit is required.');
+      setAuthMessage(unitError.message);
+      throw unitError;
+    }
+
     const accountUpdate = {
-      email: trimmedEmail,
       unit: trimmedUnit
     };
 
@@ -1234,33 +1285,14 @@ export function AppProvider({ children }) {
       return { emailConfirmationRequired: false };
     }
 
-    const currentEmail = profile?.email || session?.user?.email || '';
-    let emailConfirmationRequired = false;
-
-    if (trimmedEmail && trimmedEmail.toLowerCase() !== currentEmail.toLowerCase()) {
-      const { data, error } = await supabase.auth.updateUser(
-        { email: trimmedEmail },
-        { emailRedirectTo: `${window.location.origin}/profile` }
-      );
-
-      if (error) {
-        setAuthMessage(error.message);
-        throw error;
-      }
-
-      emailConfirmationRequired = Boolean(data.user?.new_email);
-    }
-
     const updatedProfile = {
       ...profile,
-      email: trimmedEmail,
       unit: trimmedUnit
     };
 
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
-        email: trimmedEmail,
         unit: trimmedUnit
       })
       .eq('id', currentUserId);
@@ -1271,7 +1303,7 @@ export function AppProvider({ children }) {
     }
 
     applyProfile(updatedProfile);
-    return { emailConfirmationRequired };
+    return {};
   };
 
   const advanceBeltUser = async (nextBelt) => {
@@ -1325,7 +1357,7 @@ export function AppProvider({ children }) {
     return updatedProfile;
   };
 
-  const createMockAccount = ({ role, name, email, beltLevel, maiNumber }) => {
+  const createMockAccount = ({ role, name, email, beltLevel, maiNumber, unit }) => {
     setActiveRole(role);
 
     if (role === 'MAI') {
@@ -1334,6 +1366,7 @@ export function AppProvider({ children }) {
         ...maiUser,
         name: name || maiUser.name,
         email: email || 'avery.morgan@example.mil',
+        unit: unit || maiUser.unit,
         maiNumber: assignedNumber
       };
       setMaiUser(updatedMai);
@@ -1344,6 +1377,7 @@ export function AppProvider({ children }) {
       ...beltUser,
       name: name || beltUser.name,
       email: email || beltUser.email,
+      unit: unit || beltUser.unit,
       beltLevel: beltLevel || beltUser.beltLevel
     };
     setBeltUser(updatedBeltUser);
@@ -1626,6 +1660,7 @@ export function AppProvider({ children }) {
     signIn,
     requestPasswordReset,
     updatePassword,
+    changePassword,
     signOut,
     deleteAccount,
     updateAccount,
