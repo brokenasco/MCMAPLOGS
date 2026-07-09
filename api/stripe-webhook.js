@@ -26,7 +26,11 @@ export default async function handler(request, response) {
       await handleCheckoutCompleted(event.data.object);
     }
 
-    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+    if (
+      event.type === 'customer.subscription.created' ||
+      event.type === 'customer.subscription.updated' ||
+      event.type === 'customer.subscription.deleted'
+    ) {
       await handleSubscriptionChanged(event.data.object);
     }
 
@@ -42,23 +46,36 @@ async function handleCheckoutCompleted(session) {
   if (!userId || !session.subscription) return;
 
   const subscription = await getStripeSubscription(session.subscription);
-  const profile = await getProfileByUserId(userId);
-  const update = {
-    ...mapSubscriptionUpdate(subscription, session.customer),
-    account_type: 'MAI',
-    mai_number: profile?.mai_number || generateMaiNumber()
-  };
-
-  await updateProfileByUserId(userId, update);
+  await applyMaiSubscriptionAccess(userId, subscription, session.customer);
 }
 
 async function handleSubscriptionChanged(subscription) {
+  if (subscription.metadata?.user_id && isMaiAccessSubscriptionStatus(subscription.status)) {
+    await applyMaiSubscriptionAccess(subscription.metadata.user_id, subscription, subscription.customer);
+    return;
+  }
+
   const update = mapSubscriptionUpdate(subscription, subscription.customer);
   const updatedBySubscription = await updateProfileBySubscriptionId(subscription.id, update);
 
   if (!updatedBySubscription && subscription.metadata?.user_id) {
     await updateProfileByUserId(subscription.metadata.user_id, update);
   }
+}
+
+async function applyMaiSubscriptionAccess(userId, subscription, customerId) {
+  const profile = await getProfileByUserId(userId);
+  const update = {
+    ...mapSubscriptionUpdate(subscription, customerId),
+    account_type: 'MAI',
+    mai_number: profile?.mai_number || await generateUniqueMaiNumber()
+  };
+
+  await updateProfileByUserId(userId, update);
+}
+
+function isMaiAccessSubscriptionStatus(status) {
+  return ['active', 'trialing'].includes(status);
 }
 
 function mapSubscriptionUpdate(subscription, customerId) {
@@ -117,6 +134,32 @@ async function getProfileByUserId(userId) {
 
   const profiles = await supabaseResponse.json();
   return profiles[0] || null;
+}
+
+async function isMaiNumberTaken(maiNumber) {
+  const supabaseUrl = normalizeUrl(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
+
+  if (!supabaseUrl || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase service role settings are missing in Vercel.');
+  }
+
+  const supabaseResponse = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?mai_number=eq.${encodeURIComponent(maiNumber)}&select=id&limit=1`,
+    {
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    }
+  );
+
+  if (!supabaseResponse.ok) {
+    const error = await supabaseResponse.text();
+    throw new Error(error || 'Unable to check MAI number availability.');
+  }
+
+  const profiles = await supabaseResponse.json();
+  return profiles.length > 0;
 }
 
 async function updateProfileBySubscriptionId(subscriptionId, update) {
@@ -191,6 +234,11 @@ function normalizeUrl(rawUrl) {
   }
 }
 
-function generateMaiNumber() {
-  return `MAI-${Math.floor(2000 + Math.random() * 7000)}`;
+async function generateUniqueMaiNumber() {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const maiNumber = `MAI-${Math.floor(2000 + Math.random() * 7000)}`;
+    if (!await isMaiNumberTaken(maiNumber)) return maiNumber;
+  }
+
+  throw new Error('Unable to assign a unique MAI number. Please try checkout again or contact support.');
 }
