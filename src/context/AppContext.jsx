@@ -39,6 +39,10 @@ const devTestMaiUserIds = [
   '33ef0ef8-cfec-4524-a137-56e585897472',
   '3095224e-73bc-47d1-8ccc-a5e17bd718d8'
 ];
+const ownerDeveloperUserIds = [
+  '8c5a14d7-5f97-4020-ade5-de534b315287',
+  'cbfab507-3f3a-402e-868d-399f387d83d1'
+];
 const paidMaiAccessStatuses = ['active', 'trialing', 'owner_free', 'lifetime_free'];
 const ownerMaiAccount = {
   id: '8c5a14d7-5f97-4020-ade5-de534b315287',
@@ -1878,6 +1882,7 @@ function hasLifetimeMaiAccess(profileData) {
   return Boolean(
     profileData?.lifetime_mai_access ||
     profileData?.dev_test_access ||
+    ownerDeveloperUserIds.includes(profileData?.id) ||
     devTestMaiUserIds.includes(profileData?.id)
   );
 }
