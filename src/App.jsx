@@ -107,10 +107,14 @@ export default function App() {
 }
 
 function RequireAccount({ children }) {
-  const { session, loading, isSupabaseEnabled, isProductionBuild } = useApp();
+  const { session, loading, isSupabaseEnabled, isProductionBuild, passwordRecoveryActive } = useApp();
 
   if (loading) {
     return <RouteLoading />;
+  }
+
+  if (passwordRecoveryActive) {
+    return <Navigate to="/reset-password" replace />;
   }
 
   if ((isSupabaseEnabled || isProductionBuild) && !session) {
@@ -121,10 +125,14 @@ function RequireAccount({ children }) {
 }
 
 function RequireRole({ role, children }) {
-  const { activeRole, profile, session, loading, isSupabaseEnabled, isProductionBuild, hasPaidMaiAccess } = useApp();
+  const { activeRole, profile, session, loading, isSupabaseEnabled, isProductionBuild, hasPaidMaiAccess, passwordRecoveryActive } = useApp();
 
   if (loading) {
     return <RouteLoading />;
+  }
+
+  if (passwordRecoveryActive) {
+    return <Navigate to="/reset-password" replace />;
   }
 
   if ((isSupabaseEnabled || isProductionBuild) && !session) {

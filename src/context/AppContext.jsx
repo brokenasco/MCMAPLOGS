@@ -9,6 +9,7 @@ import {
   isAdditionalHoursTechnique,
   noMcmapBelt
 } from '../data/mcmapReference.js';
+import { passwordRequirementMessage, validatePassword } from '../lib/passwordValidation.js';
 import { supabase, supabaseConfigStatus } from '../lib/supabaseClient.js';
 
 const AppContext = React.createContext(null);
@@ -67,6 +68,7 @@ export function AppProvider({ children }) {
   const [maiDirectory, setMaiDirectory] = React.useState(fallbackMaiDirectory);
   const [profile, setProfile] = React.useState(null);
   const [session, setSession] = React.useState(null);
+  const [passwordRecoveryActive, setPasswordRecoveryActive] = React.useState(false);
   const [logs, setLogs] = React.useState(trainingLogs);
   const [messageThreads, setMessageThreads] = React.useState(mockMessageThreads);
   const [userAchievements, setUserAchievements] = React.useState([]);
@@ -149,9 +151,11 @@ export function AppProvider({ children }) {
 
     async function loadInitialSession() {
       const { data } = await supabase.auth.getSession();
+      const isRecoveryRoute = isPasswordRecoveryRoute();
       if (!isMounted) return;
       setSession(data.session);
-      if (data.session?.user) {
+      setPasswordRecoveryActive(isRecoveryRoute && Boolean(data.session?.user));
+      if (data.session?.user && !isRecoveryRoute) {
         await loadProfileAndLogs(data.session.user.id);
       }
       setLoading(false);
@@ -159,19 +163,22 @@ export function AppProvider({ children }) {
 
     loadInitialSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const isRecovery = event === 'PASSWORD_RECOVERY' || (isPasswordRecoveryRoute() && Boolean(nextSession?.user));
       setSession(nextSession);
-      if (nextSession?.user) {
+      setPasswordRecoveryActive(isRecovery);
+
+      if (nextSession?.user && !isRecovery) {
         loadProfileAndLogs(nextSession.user.id);
-    } else {
-      setProfile(null);
-      setLogs(trainingLogs);
-      setMessageThreads(mockMessageThreads);
-      setUserAchievements([]);
-      setAchievementToasts([]);
-      setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
-      setMaiDirectory(fallbackMaiDirectory);
-    }
+      } else if (!isRecovery) {
+        setProfile(null);
+        setLogs(trainingLogs);
+        setMessageThreads(mockMessageThreads);
+        setUserAchievements([]);
+        setAchievementToasts([]);
+        setSubscription(getProfileSubscription({ account_type: 'Belt User' }));
+        setMaiDirectory(fallbackMaiDirectory);
+      }
     });
 
     return () => {
@@ -982,6 +989,11 @@ export function AppProvider({ children }) {
     setAuthMessage('');
     const maiNumber = null;
 
+    if (!validatePassword(password)) {
+      setAuthMessage(passwordRequirementMessage);
+      throw new Error(passwordRequirementMessage);
+    }
+
     if (!supabase) {
       if (import.meta.env.PROD) {
         throw new Error('Supabase is not configured for this deployment.');
@@ -1058,6 +1070,7 @@ export function AppProvider({ children }) {
     }
 
     setSession(data.session);
+    setPasswordRecoveryActive(false);
     const signedInProfile = await loadProfileAndLogs(data.user.id);
     return signedInProfile;
   };
@@ -1137,6 +1150,11 @@ export function AppProvider({ children }) {
   const updatePassword = async (password) => {
     setAuthMessage('');
 
+    if (!validatePassword(password)) {
+      setAuthMessage(passwordRequirementMessage);
+      throw new Error(passwordRequirementMessage);
+    }
+
     if (!supabase) {
       if (import.meta.env.PROD) {
         throw new Error('Supabase is not configured for this deployment.');
@@ -1150,6 +1168,10 @@ export function AppProvider({ children }) {
       setAuthMessage(error.message);
       throw error;
     }
+
+    setPasswordRecoveryActive(false);
+    await supabase.auth.signOut();
+    setSession(null);
   };
 
   const signOut = async () => {
@@ -1157,6 +1179,7 @@ export function AppProvider({ children }) {
       await supabase.auth.signOut();
     }
     setSession(null);
+    setPasswordRecoveryActive(false);
     setProfile(null);
     setLogs(trainingLogs);
     setMessageThreads(mockMessageThreads);
@@ -1561,6 +1584,7 @@ export function AppProvider({ children }) {
     maiUser,
     profile,
     session,
+    passwordRecoveryActive,
     loading,
     authMessage,
     isSupabaseEnabled,
@@ -1907,6 +1931,19 @@ function getMaiAccessStatus(profileData) {
 
 function getEffectiveAccountRole(accountType) {
   return accountType === 'Owner/Developer' ? 'MAI' : accountType;
+}
+
+function isPasswordRecoveryRoute() {
+  if (typeof window === 'undefined') return false;
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+
+  return (
+    window.location.pathname === '/reset-password' ||
+    searchParams.get('type') === 'recovery' ||
+    hashParams.get('type') === 'recovery'
+  );
 }
 
 function getVisibleMessageThreads({ activeRole, beltUser, maiUser, messageThreads }) {

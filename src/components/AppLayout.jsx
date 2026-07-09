@@ -6,11 +6,12 @@ import { isLegacySupabaseProject } from '../lib/supabaseClient.js';
 
 export default function AppLayout() {
   const navigate = useNavigate();
-  const { achievementToasts, activeRole, dismissAchievementToast, markWelcomeSeen, profile, session } = useApp();
+  const { achievementToasts, activeRole, dismissAchievementToast, markWelcomeSeen, passwordRecoveryActive, profile, session } = useApp();
   const [accountDeletionMessage, setAccountDeletionMessage] = React.useState('');
   const [legacyNoticeStep, setLegacyNoticeStep] = React.useState(0);
-  const isLegacyAccount = Boolean(session?.user && profile && isLegacySupabaseProject);
-  const showWelcome = Boolean(profile && profile.welcome_seen === false);
+  const isAppSession = Boolean(session && !passwordRecoveryActive);
+  const isLegacyAccount = Boolean(isAppSession && profile && isLegacySupabaseProject);
+  const showWelcome = Boolean(isAppSession && profile && profile.welcome_seen === false);
 
   React.useEffect(() => {
     const deletionMessage = sessionStorage.getItem('mcmap-account-deletion-message');
@@ -37,7 +38,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-field text-ink">
       <Header />
-      <main className={session ? 'pb-64 lg:pb-0' : ''}>
+      <main className={isAppSession ? 'pb-64 lg:pb-0' : ''}>
         {accountDeletionMessage ? (
           <div className="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="rounded-md border border-olive/25 bg-olive/10 p-4 text-sm font-semibold leading-6 text-olive">

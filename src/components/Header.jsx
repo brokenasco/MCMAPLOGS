@@ -38,9 +38,10 @@ const mobileRoleLinks = {
 };
 
 export default function Header() {
-  const { activeRole, session, signOut, unreadMessageCount } = useApp();
+  const { activeRole, passwordRecoveryActive, session, signOut, unreadMessageCount } = useApp();
   const navLinks = roleLinks[activeRole];
   const mobileNavLinks = mobileRoleLinks[activeRole] || navLinks;
+  const showAppSession = Boolean(session && !passwordRecoveryActive);
 
   return (
     <header className="sticky top-0 z-20 border-b border-coyote/30 bg-charcoal text-paper shadow-panel">
@@ -57,7 +58,7 @@ export default function Header() {
           </span>
         </NavLink>
 
-        {session ? (
+        {showAppSession ? (
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
             {navLinks.map((link) => (
               <NavLink
@@ -76,7 +77,7 @@ export default function Header() {
         ) : null}
 
         <div className="flex items-center gap-2">
-          {session ? (
+          {showAppSession ? (
             <button
               type="button"
               onClick={signOut}
@@ -105,7 +106,7 @@ export default function Header() {
           )}
         </div>
       </div>
-      {session ? (
+      {showAppSession ? (
         <div className="fixed inset-x-0 bottom-0 z-30 h-[84px] border-t border-coyote/30 bg-charcoal px-2 py-2 shadow-panel lg:hidden">
         <div className={`mx-auto grid h-full max-w-xl gap-1 ${mobileNavLinks.length === 4 ? 'grid-cols-4' : 'grid-cols-5'}`}>
           {mobileNavLinks.map((link) => (

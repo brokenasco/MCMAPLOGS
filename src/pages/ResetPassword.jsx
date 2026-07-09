@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell.jsx';
 import PasswordField from '../components/PasswordField.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { passwordRequirementMessage, validatePassword } from '../lib/passwordValidation.js';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -23,8 +24,8 @@ export default function ResetPassword() {
     event.preventDefault();
     setStatusMessage('');
 
-    if (form.password.length < 8) {
-      setStatusMessage('Use at least 8 characters for the new password.');
+    if (!validatePassword(form.password)) {
+      setStatusMessage(passwordRequirementMessage);
       return;
     }
 
@@ -61,6 +62,7 @@ export default function ResetPassword() {
               value={form.password}
               onChange={updateField}
               placeholder="At least 8 characters"
+              autoComplete="new-password"
             />
             <PasswordField
               label="Confirm new password"
@@ -68,6 +70,7 @@ export default function ResetPassword() {
               value={form.confirmPassword}
               onChange={updateField}
               placeholder="Re-enter password"
+              autoComplete="new-password"
             />
           </div>
 
