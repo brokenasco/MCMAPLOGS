@@ -1,10 +1,11 @@
 import React from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isLegacySupabaseProject } from '../lib/supabaseClient.js';
 
 export default function AppLayout() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { achievementToasts, activeRole, dismissAchievementToast, markWelcomeSeen, passwordRecoveryActive, profile, session } = useApp();
   const [accountDeletionMessage, setAccountDeletionMessage] = React.useState('');
@@ -20,6 +21,12 @@ export default function AppLayout() {
     setAccountDeletionMessage(deletionMessage);
     sessionStorage.removeItem('mcmap-account-deletion-message');
   }, []);
+
+  React.useEffect(() => {
+    if (passwordRecoveryActive && location.pathname !== '/reset-password') {
+      navigate('/reset-password', { replace: true });
+    }
+  }, [location.pathname, navigate, passwordRecoveryActive]);
 
   React.useEffect(() => {
     if (isLegacyAccount) {
