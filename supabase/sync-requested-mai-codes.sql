@@ -84,11 +84,10 @@ begin
       else 6
     end;
 
-    generated_code := 'MAI-' || lpad(
-      floor(random() * power(10, digit_count))::bigint::text,
-      digit_count,
-      '0'
-    );
+    generated_code := 'MAI-' || (
+      (power(10, digit_count - 1)::bigint) +
+      floor(random() * (9 * power(10, digit_count - 1)))::bigint
+    )::text;
 
     if generated_code not in ('MAI-0000', 'MAI-0001')
       and not exists (

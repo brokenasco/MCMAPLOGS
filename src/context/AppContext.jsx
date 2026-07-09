@@ -1361,7 +1361,7 @@ export function AppProvider({ children }) {
     setActiveRole(role);
 
     if (role === 'MAI') {
-      const assignedNumber = maiNumber || `MAI-${Math.floor(2000 + Math.random() * 7000)}`;
+      const assignedNumber = maiNumber || generateMockMaiNumber();
       const updatedMai = {
         ...maiUser,
         name: name || maiUser.name,
@@ -1966,6 +1966,10 @@ function getMaiAccessStatus(profileData) {
 
 function getEffectiveAccountRole(accountType) {
   return accountType === 'Owner/Developer' ? 'MAI' : accountType;
+}
+
+function generateMockMaiNumber() {
+  return `MAI-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function isPasswordRecoveryRoute() {

@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 
 export const config = {
   api: {
@@ -252,6 +252,6 @@ async function generateUniqueMaiNumber() {
 
 function generateMaiNumber(digits) {
   const minimum = 10 ** (digits - 1);
-  const maximum = (10 ** digits) - 1;
-  return `MAI-${Math.floor(minimum + Math.random() * (maximum - minimum + 1))}`;
+  const maximum = 10 ** digits;
+  return `MAI-${randomInt(minimum, maximum)}`;
 }

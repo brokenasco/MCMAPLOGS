@@ -32,8 +32,8 @@ export default function Messages() {
       return;
     }
 
-    if (!/^MAI-\d{4}$/i.test(cleanMaiNumber)) {
-      setMessageError('Use the format MAI-0000.');
+    if (!/^MAI-\d{4,}$/i.test(cleanMaiNumber)) {
+      setMessageError('Use the format MAI-0000 or MAI-12345.');
       return;
     }
 

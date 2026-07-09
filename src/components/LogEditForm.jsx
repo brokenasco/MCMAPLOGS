@@ -51,8 +51,8 @@ export default function LogEditForm({ beltUser, findMaiByNumber, log, mode = 'ed
     if (!selectedTechnique) nextErrors.techniqueId = 'Choose a technique or tie-in.';
     if (totalMinutes <= 0) nextErrors.time = 'Enter training time greater than zero.';
     if (!selectedMaiNumber) nextErrors.maiNumber = 'Enter the MAI code for the verifier.';
-    if (selectedMaiNumber && !/^MAI-\d{4}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842.';
-    if (selectedMaiNumber && /^MAI-\d{4}$/i.test(selectedMaiNumber) && !matchedMai) {
+    if (selectedMaiNumber && !/^MAI-\d{4,}$/i.test(selectedMaiNumber)) nextErrors.maiNumber = 'Use the format MAI-1842 or MAI-10542.';
+    if (selectedMaiNumber && /^MAI-\d{4,}$/i.test(selectedMaiNumber) && !matchedMai) {
       nextErrors.maiNumber = 'That MAI code does not match an active MAI account. Check the code and try again.';
     }
 
