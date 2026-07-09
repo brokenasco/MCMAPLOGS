@@ -21,6 +21,7 @@ declare
   dev_random_uid uuid := '16e59741-7d69-424d-a922-023f3ec0a0ec';
   old_random_code text;
   generated_code text;
+  candidate_code text;
   digit_count integer;
   attempt_count integer := 0;
 begin
@@ -76,7 +77,7 @@ begin
   where id = dev_one_uid;
 
   -- Generate a randomized unique MAI code for the requested Dev Tester account.
-  loop
+  while generated_code is null loop
     attempt_count := attempt_count + 1;
     digit_count := case
       when attempt_count <= 35 then 4
@@ -84,20 +85,20 @@ begin
       else 6
     end;
 
-    generated_code := 'MAI-' || (
+    candidate_code := 'MAI-' || (
       (power(10, digit_count - 1)::bigint) +
       floor(random() * (9 * power(10, digit_count - 1)))::bigint
     )::text;
 
-    if generated_code not in ('MAI-0000', 'MAI-0001')
+    if candidate_code not in ('MAI-0000', 'MAI-0001')
       and not exists (
         select 1
         from public.profiles
-        where upper(trim(mai_number)) = upper(generated_code)
+        where upper(trim(mai_number)) = upper(candidate_code)
           and id <> dev_random_uid
       )
     then
-      exit;
+      generated_code := candidate_code;
     end if;
 
     if attempt_count >= 60 then
