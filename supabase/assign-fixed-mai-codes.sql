@@ -100,7 +100,9 @@ where upper(trim(mt.recipient_mai_number)) = upper(trim(p.mai_number))
   );
 
 -- Keep the MAI lookup view tied to profiles so new trial/subscription MAIs are searchable immediately.
-create or replace view public.mai_code_lookup
+drop view if exists public.mai_code_lookup;
+
+create view public.mai_code_lookup
 with (security_invoker = true) as
 select
   trim(p.mai_number) as mai_code,

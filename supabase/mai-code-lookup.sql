@@ -10,7 +10,9 @@ alter table public.profiles
   add column if not exists trial_start_date timestamptz,
   add column if not exists trial_end_date timestamptz;
 
-create or replace view public.mai_code_lookup
+drop view if exists public.mai_code_lookup;
+
+create view public.mai_code_lookup
 with (security_invoker = true) as
 select
   trim(p.mai_number) as mai_code,

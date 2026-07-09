@@ -1,5 +1,6 @@
 -- One-time admin script: sync requested MAI codes and generate one random Dev Tester MAI code.
 -- Paste this into Supabase SQL Editor for the active MCMAP Logs project.
+-- IMPORTANT: Run this entire script from begin; through commit; do not run selected lines by themselves.
 -- This preserves logs, messages, achievements, profile data, and lifetime access flags.
 
 begin;
@@ -195,7 +196,9 @@ create index if not exists idx_profiles_user_id_mai_lookup
   on public.profiles (id)
   where mai_number is not null and trim(mai_number) <> '';
 
-create or replace view public.mai_code_lookup
+drop view if exists public.mai_code_lookup;
+
+create view public.mai_code_lookup
 with (security_invoker = true) as
 select
   trim(p.mai_number) as mai_code,

@@ -87,7 +87,9 @@ create trigger assign_random_mai_code_before_write
   for each row
   execute function public.assign_random_mai_code_if_missing();
 
-create or replace view public.mai_code_lookup
+drop view if exists public.mai_code_lookup;
+
+create view public.mai_code_lookup
 with (security_invoker = true) as
 select
   trim(p.mai_number) as mai_code,
